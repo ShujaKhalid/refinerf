@@ -29,7 +29,7 @@ class NeRFNetworkDynamic(NeRFRenderer):
                  ):
         super().__init__(bound, **kwargs)
 
-        # deformation network
+        # deformation network ==============================================
         self.num_layers_deform = num_layers_deform
         self.hidden_dim_deform = hidden_dim_deform
         self.encoder_deform, self.in_dim_deform = get_encoder(
@@ -53,7 +53,7 @@ class NeRFNetworkDynamic(NeRFRenderer):
 
         self.deform_net = nn.ModuleList(deform_net)
 
-        # sigma network
+        # sigma network ==============================================
         self.num_layers = num_layers
         self.hidden_dim = hidden_dim
         self.geo_feat_dim = geo_feat_dim
@@ -77,7 +77,7 @@ class NeRFNetworkDynamic(NeRFRenderer):
 
         self.sigma_net = nn.ModuleList(sigma_net)
 
-        # color network
+        # color network ==============================================
         self.num_layers_color = num_layers_color
         self.hidden_dim_color = hidden_dim_color
         self.encoder_dir, self.in_dim_dir = get_encoder(encoding_dir)
@@ -98,7 +98,51 @@ class NeRFNetworkDynamic(NeRFRenderer):
 
         self.color_net = nn.ModuleList(color_net)
 
-        # background network
+        # scene-flow network ==============================================
+        # TODO: Add scene flow parameters - using color params for now
+        self.num_layers_sf = 1
+        self.hidden_dim_sf = 256
+        self.encoder_dir, self.in_dim_dir = get_encoder(encoding_dir)
+
+        sf_net = []
+        for l in range(self.num_layers_sf):
+            if l == 0:
+                in_dim = self.in_dim + self.in_dim_time
+            else:
+                in_dim = hidden_dim
+
+            if l == self.num_layers_sf - 1:
+                out_dim = 6  # 3 sf
+            else:
+                out_dim = hidden_dim
+
+            sf_net.append(nn.Linear(in_dim, out_dim, bias=False))
+
+        self.sf_net = nn.ModuleList(sf_net)
+
+        # blending network ==============================================
+        # TODO: Add scene flow parameters - using color params for now
+        self.num_layers_blend = 1
+        self.hidden_dim_blend = 256
+        self.encoder_dir, self.in_dim_dir = get_encoder(encoding_dir)
+
+        blend_net = []
+        for l in range(self.num_layers_blend):
+            if l == 0:
+                in_dim = self.in_dim + self.in_dim_time
+            else:
+                in_dim = hidden_dim
+
+            if l == self.num_layers_blend - 1:
+                out_dim = 1  # 3 sf
+            else:
+                out_dim = hidden_dim
+
+            blend_net.append(nn.Linear(in_dim, out_dim, bias=False))
+
+        self.blend_net = nn.ModuleList(blend_net)
+
+        # background network ==============================================
         if self.bg_radius > 0:
             self.num_layers_bg = num_layers_bg
             self.hidden_dim_bg = hidden_dim_bg
@@ -165,10 +209,16 @@ class NeRFNetworkDynamic(NeRFRenderer):
         # sigmoid activation for rgb
         rgbs = torch.sigmoid(h)
 
+        # Scene-flow
+        sf = torch.tanh(self.sf_net(h))
+
+        # Blending
+        blend = torch.sigmoid(self.blend_net(h))
+
         # TODO - Dynamic model requires -> (blending, rgb, alpha, sf)
         # Add here...
 
-        return sigma, rgbs, deform
+        return sigma, rgbs, deform, sf, blend
 
     def density(self, x, t):
         # x: [N, 3], in [-bound, bound]
@@ -205,6 +255,56 @@ class NeRFNetworkDynamic(NeRFRenderer):
 
         results['sigma'] = sigma
         results['geo_feat'] = geo_feat
+
+        return results
+
+    def sf(self, x, t):
+        # x: [N, 3], in [-bound, bound]
+        # t: [1, 1], in [0, 1]
+
+        results = {}
+
+        enc_t = self.encoder_time(t)  # [1, 1] --> [1, C']
+        if enc_t.shape[0] == 1:
+            enc_t = enc_t.repeat(x.shape[0], 1)  # [1, C'] --> [N, C']
+
+        # sigma
+        x = self.encoder(x, bound=self.bound)
+        h = torch.cat([x, enc_t], dim=1)
+        for l in range(self.num_layers):
+            h = self.sf_net[l](h)
+            if l != self.num_layers - 1:
+                h = F.relu(h, inplace=True)
+
+        #sigma = F.relu(h[..., 0])
+        sf = trunc_exp(h)  # TODO: prefer relu?
+
+        results['sf'] = sf
+
+        return results
+
+    def blend(self, x, t):
+        # x: [N, 3], in [-bound, bound]
+        # t: [1, 1], in [0, 1]
+
+        results = {}
+
+        enc_t = self.encoder_time(t)  # [1, 1] --> [1, C']
+        if enc_t.shape[0] == 1:
+            enc_t = enc_t.repeat(x.shape[0], 1)  # [1, C'] --> [N, C']
+
+        # sigma
+        x = self.encoder(x, bound=self.bound)
+        h = torch.cat([x, enc_t], dim=1)
+        for l in range(self.num_layers):
+            h = self.blend_net[l](h)
+            if l != self.num_layers - 1:
+                h = F.relu(h, inplace=True)
+
+        #sigma = F.relu(h[..., 0])
+        blend = trunc_exp(h)  # TODO: prefer relu?
+
+        results['blend'] = blend
 
         return results
 
@@ -269,6 +369,8 @@ class NeRFNetworkDynamic(NeRFRenderer):
             {'params': self.encoder_deform.parameters(), 'lr': lr},
             {'params': self.encoder_time.parameters(), 'lr': lr},
             {'params': self.deform_net.parameters(), 'lr': lr_net},
+            {'params': self.sf_net.parameters(), 'lr': lr_net},
+            {'params': self.blend_net.parameters(), 'lr': lr_net},
         ]
         if self.bg_radius > 0:
             params.append({'params': self.encoder_bg.parameters(), 'lr': lr})

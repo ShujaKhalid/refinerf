@@ -256,6 +256,15 @@ class NeRFRenderer(nn.Module):
 
         #print(xyzs.shape, 'valid_rgb:', mask.sum().item())
 
+        # calculate blending
+        blend = self.blend_model(xyzs.reshape(-1, 3), time)
+
+        # calculate scene-flow -> [-1, 0, +1]
+        sf = self.sf_model(xyzs.reshape(-1, 3), time)
+
+        # TODO: Create a function here to convert all of these
+        # outputs into something that can be sent back...
+
         # calculate weight_sum (mask)
         weights_sum = weights.sum(dim=-1)  # [N]
 
