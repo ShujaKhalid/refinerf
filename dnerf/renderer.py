@@ -256,14 +256,16 @@ class NeRFRenderer(nn.Module):
 
         #print(xyzs.shape, 'valid_rgb:', mask.sum().item())
 
-        # calculate blending
-        blend = self.blend_model(xyzs.reshape(-1, 3), time)
+        # # calculate blending
+        # if (hasattr(self, "blend_model")):
+        #     blend = self.blend_model(xyzs.reshape(-1, 3), time)
 
-        # calculate scene-flow -> [-1, 0, +1]
-        sf = self.sf_model(xyzs.reshape(-1, 3), time)
+        # # calculate scene-flow -> [-1, 0, +1]
+        # if (hasattr(self, "sf_model")):
+        #     sf = self.sf_model(xyzs.reshape(-1, 3), time)
 
-        # TODO: Create a function here to convert all of these
-        # outputs into something that can be sent back...
+        # # TODO: Create a function here to convert all of these
+        # # outputs into something that can be sent back...
 
         # calculate weight_sum (mask)
         weights_sum = weights.sum(dim=-1)  # [N]
@@ -301,132 +303,163 @@ class NeRFRenderer(nn.Module):
             'deform': density_outputs['deform'],
         }
 
-    # def run_cuda(self, rays_o, rays_d, time, dt_gamma=0, bg_color=None, perturb=False, force_all_rays=False, max_steps=1024, **kwargs):
-    #     # rays_o, rays_d: [B, N, 3], assumes B == 1
-    #     # time: [B, 1], B == 1, so only one time is used.
-    #     # return: image: [B, N, 3], depth: [B, N]
+    def run_cuda(self, rays_o, rays_d, time, dt_gamma=0, bg_color=None, perturb=False, force_all_rays=False, max_steps=1024, **kwargs):
+        # rays_o, rays_d: [B, N, 3], assumes B == 1
+        # time: [B, 1], B == 1, so only one time is used.
+        # return: image: [B, N, 3], depth: [B, N]
 
-    #     prefix = rays_o.shape[:-1]
-    #     rays_o = rays_o.contiguous().view(-1, 3)
-    #     rays_d = rays_d.contiguous().view(-1, 3)
+        prefix = rays_o.shape[:-1]
+        rays_o = rays_o.contiguous().view(-1, 3)
+        rays_d = rays_d.contiguous().view(-1, 3)
 
-    #     N = rays_o.shape[0] # N = B * N, in fact
-    #     device = rays_o.device
+        N = rays_o.shape[0]  # N = B * N, in fact
+        device = rays_o.device
 
-    #     # pre-calculate near far
-    #     nears, fars = raymarching.near_far_from_aabb(rays_o, rays_d, self.aabb_train if self.training else self.aabb_infer, self.min_near)
+        # pre-calculate near far
+        nears, fars = raymarching.near_far_from_aabb(
+            rays_o, rays_d, self.aabb_train if self.training else self.aabb_infer, self.min_near)
 
-    #     # mix background color
-    #     if self.bg_radius > 0:
-    #         # use the bg model to calculate bg_color
-    #         sph = raymarching.sph_from_ray(rays_o, rays_d, self.bg_radius) # [N, 2] in [-1, 1]
-    #         bg_color = self.background(sph, rays_d) # [N, 3]
-    #     elif bg_color is None:
-    #         bg_color = 1
+        # mix background color
+        if self.bg_radius > 0:
+            # use the bg model to calculate bg_color
+            sph = raymarching.sph_from_ray(
+                rays_o, rays_d, self.bg_radius)  # [N, 2] in [-1, 1]
+            bg_color = self.background(sph, rays_d)  # [N, 3]
+        elif bg_color is None:
+            bg_color = 1
 
-    #     # determine the correct frame of density grid to use
-    #     t = torch.floor(time[0][0] * self.time_size).clamp(min=0, max=self.time_size - 1).long()
+        # determine the correct frame of density grid to use
+        t = torch.floor(time[0][0] * self.time_size).clamp(min=0,
+                                                           max=self.time_size - 1).long()
 
-    #     results = {}
+        results = {}
 
-    #     if self.training:
-    #         # setup counter
-    #         counter = self.step_counter[self.local_step % 16]
-    #         counter.zero_() # set to 0
-    #         self.local_step += 1
+        if self.training:
+            # setup counter
+            counter = self.step_counter[self.local_step % 16]
+            counter.zero_()  # set to 0
+            self.local_step += 1
 
-    #         xyzs, dirs, deltas, rays = raymarching.march_rays_train(rays_o, rays_d, self.bound, self.density_bitfield[t], self.cascade, self.grid_size, nears, fars, counter, self.mean_count, perturb, 128, force_all_rays, dt_gamma, max_steps)
+            xyzs, dirs, deltas, rays = raymarching.march_rays_train(
+                rays_o, rays_d, self.bound, self.density_bitfield[t], self.cascade, self.grid_size, nears, fars, counter, self.mean_count, perturb, 128, force_all_rays, dt_gamma, max_steps)
 
-    #         #plot_pointcloud(xyzs.reshape(-1, 3).detach().cpu().numpy())
+            #plot_pointcloud(xyzs.reshape(-1, 3).detach().cpu().numpy())
 
-    #         sigmas, rgbs, deform = self(xyzs, dirs, time)
-    #         # density_outputs = self.density(xyzs, time) # [M,], use a dict since it may include extra things, like geo_feat for rgb.
-    #         # sigmas = density_outputs['sigma']
-    #         # rgbs = self.color(xyzs, dirs, **density_outputs)
-    #         sigmas = self.density_scale * sigmas
+            sigmas, rgbs, deform = self(xyzs, dirs, time)
+            # density_outputs = self.density(xyzs, time) # [M,], use a dict since it may include extra things, like geo_feat for rgb.
+            # sigmas = density_outputs['sigma']
+            # rgbs = self.color(xyzs, dirs, **density_outputs)
+            sigmas = self.density_scale * sigmas
 
-    #         #print(f'valid RGB query ratio: {mask.sum().item() / mask.shape[0]} (total = {mask.sum().item()})')
+            #print(f'valid RGB query ratio: {mask.sum().item() / mask.shape[0]} (total = {mask.sum().item()})')
 
-    #         # special case for CCNeRF's residual learning
-    #         if len(sigmas.shape) == 2:
-    #             K = sigmas.shape[0]
-    #             depths = []
-    #             images = []
-    #             for k in range(K):
-    #                 weights_sum, depth, image = raymarching.composite_rays_train(sigmas[k], rgbs[k], deltas, rays)
-    #                 image = image + (1 - weights_sum).unsqueeze(-1) * bg_color
-    #                 depth = torch.clamp(depth - nears, min=0) / (fars - nears)
-    #                 images.append(image.view(*prefix, 3))
-    #                 depths.append(depth.view(*prefix))
+            # calculate blending
+            if (hasattr(self, "blend_model")):
+                blend = self.blend_model(xyzs.reshape(-1, 3), time)
 
-    #             depth = torch.stack(depths, axis=0) # [K, B, N]
-    #             image = torch.stack(images, axis=0) # [K, B, N, 3]
+            # calculate scene-flow -> [-1, 0, +1]
+            if (hasattr(self, "sf_model")):
+                sf = self.sf_model(xyzs.reshape(-1, 3), time)
 
-    #         else:
+            # TODO: Create a function here to convert all of these
+            # outputs into something that can be sent back...
 
-    #             weights_sum, depth, image = raymarching.composite_rays_train(sigmas, rgbs, deltas, rays)
-    #             image = image + (1 - weights_sum).unsqueeze(-1) * bg_color
-    #             depth = torch.clamp(depth - nears, min=0) / (fars - nears)
-    #             image = image.view(*prefix, 3)
-    #             depth = depth.view(*prefix)
+            # special case for CCNeRF's residual learning
+            if len(sigmas.shape) == 2:
+                K = sigmas.shape[0]
+                depths = []
+                images = []
+                for k in range(K):
+                    weights_sum, depth, image = raymarching.composite_rays_train(
+                        sigmas[k], rgbs[k], deltas, rays)
+                    image = image + (1 - weights_sum).unsqueeze(-1) * bg_color
+                    depth = torch.clamp(depth - nears, min=0) / (fars - nears)
+                    images.append(image.view(*prefix, 3))
+                    depths.append(depth.view(*prefix))
 
-    #         results['deform'] = deform
+                depth = torch.stack(depths, axis=0)  # [K, B, N]
+                image = torch.stack(images, axis=0)  # [K, B, N, 3]
 
-    #     else:
+            else:
 
-    #         # allocate outputs
-    #         # if use autocast, must init as half so it won't be autocasted and lose reference.
-    #         #dtype = torch.half if torch.is_autocast_enabled() else torch.float32
-    #         # output should always be float32! only network inference uses half.
-    #         dtype = torch.float32
+                weights_sum, depth, image = raymarching.composite_rays_train(
+                    sigmas, rgbs, deltas, rays)
+                image = image + (1 - weights_sum).unsqueeze(-1) * bg_color
+                depth = torch.clamp(depth - nears, min=0) / (fars - nears)
+                image = image.view(*prefix, 3)
+                depth = depth.view(*prefix)
 
-    #         weights_sum = torch.zeros(N, dtype=dtype, device=device)
-    #         depth = torch.zeros(N, dtype=dtype, device=device)
-    #         image = torch.zeros(N, 3, dtype=dtype, device=device)
+            results['deform'] = deform
 
-    #         n_alive = N
-    #         rays_alive = torch.arange(n_alive, dtype=torch.int32, device=device) # [N]
-    #         rays_t = nears.clone() # [N]
+        else:
 
-    #         step = 0
+            # allocate outputs
+            # if use autocast, must init as half so it won't be autocasted and lose reference.
+            #dtype = torch.half if torch.is_autocast_enabled() else torch.float32
+            # output should always be float32! only network inference uses half.
+            dtype = torch.float32
 
-    #         while step < max_steps:
+            weights_sum = torch.zeros(N, dtype=dtype, device=device)
+            depth = torch.zeros(N, dtype=dtype, device=device)
+            image = torch.zeros(N, 3, dtype=dtype, device=device)
 
-    #             # count alive rays
-    #             n_alive = rays_alive.shape[0]
+            n_alive = N
+            rays_alive = torch.arange(
+                n_alive, dtype=torch.int32, device=device)  # [N]
+            rays_t = nears.clone()  # [N]
 
-    #             # exit loop
-    #             if n_alive <= 0:
-    #                 break
+            step = 0
 
-    #             # decide compact_steps
-    #             n_step = max(min(N // n_alive, 8), 1)
+            while step < max_steps:
 
-    #             xyzs, dirs, deltas = raymarching.march_rays(n_alive, n_step, rays_alive, rays_t, rays_o, rays_d, self.bound, self.density_bitfield[t], self.cascade, self.grid_size, nears, fars, 128, perturb, dt_gamma, max_steps)
+                # count alive rays
+                n_alive = rays_alive.shape[0]
 
-    #             sigmas, rgbs, _ = self(xyzs, dirs, time)
-    #             # density_outputs = self.density(xyzs) # [M,], use a dict since it may include extra things, like geo_feat for rgb.
-    #             # sigmas = density_outputs['sigma']
-    #             # rgbs = self.color(xyzs, dirs, **density_outputs)
-    #             sigmas = self.density_scale * sigmas
+                # exit loop
+                if n_alive <= 0:
+                    break
 
-    #             raymarching.composite_rays(n_alive, n_step, rays_alive, rays_t, sigmas, rgbs, deltas, weights_sum, depth, image)
+                # decide compact_steps
+                n_step = max(min(N // n_alive, 8), 1)
 
-    #             rays_alive = rays_alive[rays_alive >= 0]
+                xyzs, dirs, deltas = raymarching.march_rays(n_alive, n_step, rays_alive, rays_t, rays_o, rays_d, self.bound,
+                                                            self.density_bitfield[t], self.cascade, self.grid_size, nears, fars, 128, perturb, dt_gamma, max_steps)
 
-    #             #print(f'step = {step}, n_step = {n_step}, n_alive = {n_alive}, xyzs: {xyzs.shape}')
+                sigmas, rgbs, _ = self(xyzs, dirs, time)
+                # density_outputs = self.density(xyzs) # [M,], use a dict since it may include extra things, like geo_feat for rgb.
+                # sigmas = density_outputs['sigma']
+                # rgbs = self.color(xyzs, dirs, **density_outputs)
+                sigmas = self.density_scale * sigmas
 
-    #             step += n_step
+                # calculate blending
+                if (hasattr(self, "blend_model")):
+                    blend = self.blend_model(xyzs.reshape(-1, 3), time)
 
-    #         image = image + (1 - weights_sum).unsqueeze(-1) * bg_color
-    #         depth = torch.clamp(depth - nears, min=0) / (fars - nears)
-    #         image = image.view(*prefix, 3)
-    #         depth = depth.view(*prefix)
+                # calculate scene-flow -> [-1, 0, +1]
+                if (hasattr(self, "sf_model")):
+                    sf = self.sf_model(xyzs.reshape(-1, 3), time)
 
-    #     results['depth'] = depth
-    #     results['image'] = image
+                # TODO: Create a function here to convert all of these
+                # outputs into something that can be sent back...
 
-    #     return results
+                raymarching.composite_rays(
+                    n_alive, n_step, rays_alive, rays_t, sigmas, rgbs, deltas, weights_sum, depth, image)
+
+                rays_alive = rays_alive[rays_alive >= 0]
+
+                #print(f'step = {step}, n_step = {n_step}, n_alive = {n_alive}, xyzs: {xyzs.shape}')
+
+                step += n_step
+
+            image = image + (1 - weights_sum).unsqueeze(-1) * bg_color
+            depth = torch.clamp(depth - nears, min=0) / (fars - nears)
+            image = image.view(*prefix, 3)
+            depth = depth.view(*prefix)
+
+        results['depth'] = depth
+        results['image'] = image
+
+        return results
 
     @torch.no_grad()
     def mark_untrained_grid(self, poses, intrinsic, S=64):

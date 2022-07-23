@@ -72,7 +72,7 @@ class Trainer(_Trainer):
         if self.opt.color_space == 'linear':
             images[..., :3] = srgb_to_linear(images[..., :3])
 
-        if C == 3 or self.model.bg_radius > 0:
+        if C == 3 or self.model_s.bg_radius > 0 or self.model_d.bg_radius > 0:
             bg_color = 1
         # train with random background color if not using a bg model and has alpha channel.
         else:
@@ -131,8 +131,8 @@ class Trainer(_Trainer):
         # deform regularization
         # SK_DEBUG = super important - this is what we are adding
         # to dynamicNeRF
-        if 'deform' in outputs and outputs['deform'] is not None:
-            loss = loss + 1e-3 * outputs['deform'].abs().mean()
+        if 'deform' in outputs_d and outputs_d['deform'] is not None:
+            loss = loss + 1e-3 * outputs_d['deform'].abs().mean()
 
         # NEW: Add all subsequent losses here using static and dynamic models
         # - outputs_s
@@ -159,15 +159,19 @@ class Trainer(_Trainer):
         else:
             gt_rgb = images
 
-        outputs = self.model.render(
+        outputs_s = self.model_s.render(
+            rays_o, rays_d, time, staged=True, bg_color=bg_color, perturb=False, **vars(self.opt))
+        outputs_d = self.model_d.render(
             rays_o, rays_d, time, staged=True, bg_color=bg_color, perturb=False, **vars(self.opt))
 
-        pred_rgb = outputs['image'].reshape(B, H, W, 3)
-        pred_depth = outputs['depth'].reshape(B, H, W)
+        pred_rgb_s = outputs_s['image'].reshape(B, H, W, 3)
+        pred_depth_s = outputs_s['depth'].reshape(B, H, W)
 
-        loss = self.criterion(pred_rgb, gt_rgb).mean()
+        # TODO: Add dynamics here
 
-        return pred_rgb, pred_depth, gt_rgb, loss
+        loss = self.criterion(pred_rgb_s, gt_rgb).mean()
+
+        return pred_rgb_s, pred_depth_s, gt_rgb, loss
 
     # moved out bg_color and perturb for more flexible control...
     def test_step(self, data, bg_color=None, perturb=False):
@@ -180,13 +184,17 @@ class Trainer(_Trainer):
         if bg_color is not None:
             bg_color = bg_color.to(self.device)
 
-        outputs = self.model.render(
-            rays_o, rays_d, time, staged=True, bg_color=bg_color, perturb=perturb, **vars(self.opt))
+        outputs_s = self.model_s.render(
+            rays_o, rays_d, time, staged=True, bg_color=bg_color, perturb=False, **vars(self.opt))
+        outputs_d = self.model_d.render(
+            rays_o, rays_d, time, staged=True, bg_color=bg_color, perturb=False, **vars(self.opt))
 
-        pred_rgb = outputs['image'].reshape(-1, H, W, 3)
-        pred_depth = outputs['depth'].reshape(-1, H, W)
+        pred_rgb_s = outputs_s['image'].reshape(-1, H, W, 3)
+        pred_depth_d = outputs_d['depth'].reshape(-1, H, W)
 
-        return pred_rgb, pred_depth
+        # TODO: Add dynamics here
+
+        return pred_rgb_s, pred_depth_d
 
     # [GUI] test on a single image
     def test_gui(self, pose, intrinsics, W, H, time=0, bg_color=None, spp=1, downscale=1):
@@ -209,7 +217,8 @@ class Trainer(_Trainer):
             'W': rW,
         }
 
-        self.model.eval()
+        self.model_s.eval()
+        self.model_d.eval()
 
         if self.ema is not None:
             self.ema.store()

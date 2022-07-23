@@ -95,7 +95,7 @@ if __name__ == '__main__':
 
     if opt.O:
         opt.fp16 = True
-        opt.cuda_ray = False  # FIXME: sk_debug
+        opt.cuda_ray = True  # FIXME: sk_debug
         opt.preload = True
 
     if opt.basis:
