@@ -169,7 +169,7 @@ class NeRFNetworkStatic(NeRFRenderer):
         # TODO - Once this is done, the static model is complete!
 
         # DynamicNeRF has (alpha, rgbs, blending)
-        return sigma, rgbs, deform
+        return sigma, rgbs, deform, None, None
 
     def density(self, x, t):
         # x: [N, 3], in [-bound, bound]

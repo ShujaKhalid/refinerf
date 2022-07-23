@@ -105,18 +105,10 @@ class NeRFNetworkDynamic(NeRFRenderer):
         self.encoder_dir, self.in_dim_dir = get_encoder(encoding_dir)
 
         sf_net = []
-        for l in range(self.num_layers_sf):
-            if l == 0:
-                in_dim = self.in_dim + self.in_dim_time
-            else:
-                in_dim = hidden_dim
+        in_dim = self.in_dim + self.in_dim_time
+        out_dim = 6
 
-            if l == self.num_layers_sf - 1:
-                out_dim = 6  # 3 sf
-            else:
-                out_dim = hidden_dim
-
-            sf_net.append(nn.Linear(in_dim, out_dim, bias=False))
+        sf_net.append(nn.Linear(in_dim, out_dim, bias=False))
 
         self.sf_net = nn.ModuleList(sf_net)
 
@@ -127,18 +119,10 @@ class NeRFNetworkDynamic(NeRFRenderer):
         self.encoder_dir, self.in_dim_dir = get_encoder(encoding_dir)
 
         blend_net = []
-        for l in range(self.num_layers_blend):
-            if l == 0:
-                in_dim = self.in_dim + self.in_dim_time
-            else:
-                in_dim = hidden_dim
+        in_dim = self.in_dim + self.in_dim_time
+        out_dim = 1
 
-            if l == self.num_layers_blend - 1:
-                out_dim = 1  # 3 sf
-            else:
-                out_dim = hidden_dim
-
-            blend_net.append(nn.Linear(in_dim, out_dim, bias=False))
+        blend_net.append(nn.Linear(in_dim, out_dim, bias=False))
 
         self.blend_net = nn.ModuleList(blend_net)
 
@@ -210,10 +194,14 @@ class NeRFNetworkDynamic(NeRFRenderer):
         rgbs = torch.sigmoid(h)
 
         # Scene-flow
-        sf = torch.tanh(self.sf_net(h))
+        h = torch.cat([x, enc_t], dim=-1)
+        sf = torch.tanh(self.sf_net[0](h))
+        #sf = None
 
         # Blending
-        blend = torch.sigmoid(self.blend_net(h))
+        h = torch.cat([x, enc_t], dim=-1)
+        blend = torch.sigmoid(self.blend_net[0](h))
+        #blend = None
 
         # TODO - Dynamic model requires -> (blending, rgb, alpha, sf)
         # Add here...

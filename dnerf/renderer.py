@@ -345,7 +345,7 @@ class NeRFRenderer(nn.Module):
 
             #plot_pointcloud(xyzs.reshape(-1, 3).detach().cpu().numpy())
 
-            sigmas, rgbs, deform = self(xyzs, dirs, time)
+            sigmas, rgbs, deform, sf, blend = self(xyzs, dirs, time)
             # density_outputs = self.density(xyzs, time) # [M,], use a dict since it may include extra things, like geo_feat for rgb.
             # sigmas = density_outputs['sigma']
             # rgbs = self.color(xyzs, dirs, **density_outputs)
@@ -354,12 +354,12 @@ class NeRFRenderer(nn.Module):
             #print(f'valid RGB query ratio: {mask.sum().item() / mask.shape[0]} (total = {mask.sum().item()})')
 
             # calculate blending
-            if (hasattr(self, "blend_model")):
-                blend = self.blend_model(xyzs.reshape(-1, 3), time)
+            # if (hasattr(self, "blend_model")):
+            #     blend = self.blend_model(xyzs.reshape(-1, 3), time)
 
-            # calculate scene-flow -> [-1, 0, +1]
-            if (hasattr(self, "sf_model")):
-                sf = self.sf_model(xyzs.reshape(-1, 3), time)
+            # # calculate scene-flow -> [-1, 0, +1]
+            # if (hasattr(self, "sf_model")):
+            #     sf = self.sf_model(xyzs.reshape(-1, 3), time)
 
             # TODO: Create a function here to convert all of these
             # outputs into something that can be sent back...
@@ -425,19 +425,19 @@ class NeRFRenderer(nn.Module):
                 xyzs, dirs, deltas = raymarching.march_rays(n_alive, n_step, rays_alive, rays_t, rays_o, rays_d, self.bound,
                                                             self.density_bitfield[t], self.cascade, self.grid_size, nears, fars, 128, perturb, dt_gamma, max_steps)
 
-                sigmas, rgbs, _ = self(xyzs, dirs, time)
+                sigmas, rgbs, deform, sf, blend = self(xyzs, dirs, time)
                 # density_outputs = self.density(xyzs) # [M,], use a dict since it may include extra things, like geo_feat for rgb.
                 # sigmas = density_outputs['sigma']
                 # rgbs = self.color(xyzs, dirs, **density_outputs)
                 sigmas = self.density_scale * sigmas
 
-                # calculate blending
-                if (hasattr(self, "blend_model")):
-                    blend = self.blend_model(xyzs.reshape(-1, 3), time)
+                # # calculate blending
+                # if (hasattr(self, "blend_model")):
+                #     blend = self.blend_model(xyzs.reshape(-1, 3), time)
 
-                # calculate scene-flow -> [-1, 0, +1]
-                if (hasattr(self, "sf_model")):
-                    sf = self.sf_model(xyzs.reshape(-1, 3), time)
+                # # calculate scene-flow -> [-1, 0, +1]
+                # if (hasattr(self, "sf_model")):
+                #     sf = self.sf_model(xyzs.reshape(-1, 3), time)
 
                 # TODO: Create a function here to convert all of these
                 # outputs into something that can be sent back...
