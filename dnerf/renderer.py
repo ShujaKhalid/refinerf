@@ -8,6 +8,7 @@ import torch.nn.functional as F
 
 import raymarching
 from .utils import custom_meshgrid
+from .utils import raw2outputs, raw2outputs_d, run_network
 
 
 def sample_pdf(bins, weights, n_samples, det=False):
@@ -156,7 +157,7 @@ class NeRFRenderer(nn.Module):
         nears.unsqueeze_(-1)
         fars.unsqueeze_(-1)
 
-        #print(f'nears = {nears.min().item()} ~ {nears.max().item()}, fars = {fars.min().item()} ~ {fars.max().item()}')
+        # print(f'nears = {nears.min().item()} ~ {nears.max().item()}, fars = {fars.min().item()} ~ {fars.max().item()}')
 
         z_vals = torch.linspace(0.0, 1.0, num_steps,
                                 device=device).unsqueeze(0)  # [1, T]
@@ -176,7 +177,7 @@ class NeRFRenderer(nn.Module):
             rays_d.unsqueeze(-2) * z_vals.unsqueeze(-1)
         xyzs = torch.min(torch.max(xyzs, aabb[:3]), aabb[3:])  # a manual clip.
 
-        #plot_pointcloud(xyzs.reshape(-1, 3).detach().cpu().numpy())
+        # plot_pointcloud(xyzs.reshape(-1, 3).detach().cpu().numpy())
 
         # TODO: If you want to run a smart algorithm to pick points
         # in a non-random way, do it here
@@ -254,15 +255,15 @@ class NeRFRenderer(nn.Module):
                           mask=mask.reshape(-1), **density_outputs)
         rgbs = rgbs.view(N, -1, 3)  # [N, T+t, 3]
 
-        #print(xyzs.shape, 'valid_rgb:', mask.sum().item())
+        # print(xyzs.shape, 'valid_rgb:', mask.sum().item())
 
-        # # calculate blending
-        # if (hasattr(self, "blend_model")):
-        #     blend = self.blend_model(xyzs.reshape(-1, 3), time)
+        # calculate blending
+        if (hasattr(self, "blend_model")):
+            blend = self.blend_model(xyzs.reshape(-1, 3), time)
 
-        # # calculate scene-flow -> [-1, 0, +1]
-        # if (hasattr(self, "sf_model")):
-        #     sf = self.sf_model(xyzs.reshape(-1, 3), time)
+        # calculate scene-flow -> [-1, 0, +1]
+        if (hasattr(self, "sf_model")):
+            sf = self.sf_model(xyzs.reshape(-1, 3), time)
 
         # # TODO: Create a function here to convert all of these
         # # outputs into something that can be sent back...
@@ -334,6 +335,21 @@ class NeRFRenderer(nn.Module):
 
         results = {}
 
+        N_samples = 12
+        N_rays = N
+        t_vals = torch.linspace(0., 1., steps=N_samples)
+        lindisp = False  # FIXME
+        near = 0.0
+        far = 1.0
+        if not lindisp:
+            # Space integration times linearly between 'near' and 'far'. Same
+            # integration points will be used for all rays.
+            z_vals = near * (1.-t_vals) + far * (t_vals)
+        else:
+            # Sample linearly in inverse depth (disparity).
+            z_vals = 1./(1./near * (1.-t_vals) + 1./far * (t_vals))
+        z_vals = z_vals.expand([N_rays, N_samples])
+
         if self.training:
             # setup counter
             counter = self.step_counter[self.local_step % 16]
@@ -343,7 +359,7 @@ class NeRFRenderer(nn.Module):
             xyzs, dirs, deltas, rays = raymarching.march_rays_train(
                 rays_o, rays_d, self.bound, self.density_bitfield[t], self.cascade, self.grid_size, nears, fars, counter, self.mean_count, perturb, 128, force_all_rays, dt_gamma, max_steps)
 
-            #plot_pointcloud(xyzs.reshape(-1, 3).detach().cpu().numpy())
+            # plot_pointcloud(xyzs.reshape(-1, 3).detach().cpu().numpy())
 
             sigmas, rgbs, deform, sf, blend = self(xyzs, dirs, time)
             # density_outputs = self.density(xyzs, time) # [M,], use a dict since it may include extra things, like geo_feat for rgb.
@@ -351,15 +367,61 @@ class NeRFRenderer(nn.Module):
             # rgbs = self.color(xyzs, dirs, **density_outputs)
             sigmas = self.density_scale * sigmas
 
-            #print(f'valid RGB query ratio: {mask.sum().item() / mask.shape[0]} (total = {mask.sum().item()})')
+            # print(f'valid RGB query ratio: {mask.sum().item() / mask.shape[0]} (total = {mask.sum().item()})')
 
-            # calculate blending
+            # Use data from forward pass of NeRF network
+            raw_s_rgba = torch.cat([xyzs, sigmas], -1)  # FIXME
+            raw_d_rgba = torch.cat([xyzs, sigmas], -1)
+            blending = blend  # FIXME
+            raw_noise_std = 0.0
+
+            rgb_map_full, depth_map_full, acc_map_full, weights_full, \
+                rgb_map_s, depth_map_s, acc_map_s, weights_s, \
+                rgb_map_d, depth_map_d, acc_map_d, weights_d, \
+                dynamicness_map = raw2outputs(raw_s_rgba,
+                                              raw_d_rgba,
+                                              blending,
+                                              z_vals,
+                                              rays_d,
+                                              raw_noise_std)
+            # Begin scene flow antics
+            num_img = 12  # FIXME - shouldn't be hard-coded
+            t_interval = 1. / num_img * 2.
+            sceneflow_b = sf[..., :3]
+            sceneflow_f = sf[..., 3:]
+            pts = xyzs  # Original set of points
+            pts_f = torch.cat(
+                [pts + sceneflow_f, torch.ones_like(pts[..., 0:1]) * (t + t_interval)], -1)
+            pts_b = torch.cat(
+                [pts + sceneflow_b, torch.ones_like(pts[..., 0:1]) * (t - t_interval)], -1)
+
+            # Rendering t - 1
+            sigmas, raw_d_b_rgba, deform, sf, blend = self(pts_b, dirs, time)
+            rgb_map_d_b, weights_d_b = raw2outputs_d(raw_d_b_rgba,
+                                                     z_vals,
+                                                     rays_d,
+                                                     raw_noise_std)
+
+            # Rendering t + 1
+            sigmas, raw_d_f_rgba, deform, sf, blend = self(pts_f, dirs, time)
+            rgb_map_d_f, weights_d_f = raw2outputs_d(raw_d_f_rgba,
+                                                     z_vals,
+                                                     rays_d,
+                                                     raw_noise_std)
+
+            # # calculate blending
             # if (hasattr(self, "blend_model")):
             #     blend = self.blend_model(xyzs.reshape(-1, 3), time)
+            #     blend = torch.reshape(blend, list(
+            #         xyzs.shape[:-1]) + [blend.shape[-1]])
+            #     print("blend.shape: {}".format(blend.shape))
 
             # # calculate scene-flow -> [-1, 0, +1]
             # if (hasattr(self, "sf_model")):
             #     sf = self.sf_model(xyzs.reshape(-1, 3), time)
+            #     sf = torch.reshape(sf, list(
+            #         xyzs.shape[:-1]) + [sf.shape[-1]])
+            #     print("sf.shape: {}".format(sf.shape))
 
             # TODO: Create a function here to convert all of these
             # outputs into something that can be sent back...
@@ -395,7 +457,7 @@ class NeRFRenderer(nn.Module):
 
             # allocate outputs
             # if use autocast, must init as half so it won't be autocasted and lose reference.
-            #dtype = torch.half if torch.is_autocast_enabled() else torch.float32
+            # dtype = torch.half if torch.is_autocast_enabled() else torch.float32
             # output should always be float32! only network inference uses half.
             dtype = torch.float32
 
@@ -431,13 +493,15 @@ class NeRFRenderer(nn.Module):
                 # rgbs = self.color(xyzs, dirs, **density_outputs)
                 sigmas = self.density_scale * sigmas
 
-                # # calculate blending
-                # if (hasattr(self, "blend_model")):
-                #     blend = self.blend_model(xyzs.reshape(-1, 3), time)
+                # calculate blending
+                if (hasattr(self, "blend_model")):
+                    blend = self.blend_model(xyzs.reshape(-1, 3), time)
+                    print("blend.shape".format(blend.shape))
 
-                # # calculate scene-flow -> [-1, 0, +1]
-                # if (hasattr(self, "sf_model")):
-                #     sf = self.sf_model(xyzs.reshape(-1, 3), time)
+                # calculate scene-flow -> [-1, 0, +1]
+                if (hasattr(self, "sf_model")):
+                    sf = self.sf_model(xyzs.reshape(-1, 3), time)
+                    print("sf.shape".format(sf.shape))
 
                 # TODO: Create a function here to convert all of these
                 # outputs into something that can be sent back...
@@ -447,7 +511,7 @@ class NeRFRenderer(nn.Module):
 
                 rays_alive = rays_alive[rays_alive >= 0]
 
-                #print(f'step = {step}, n_step = {n_step}, n_alive = {n_alive}, xyzs: {xyzs.shape}')
+                # print(f'step = {step}, n_step = {n_step}, n_alive = {n_alive}, xyzs: {xyzs.shape}')
 
                 step += n_step
 
@@ -537,7 +601,7 @@ class NeRFRenderer(nn.Module):
         self.density_grid[count.unsqueeze(
             0).expand_as(self.density_grid) == 0] = -1
 
-        #print(f'[mark untrained grid] {(count == 0).sum()} from {resolution ** 3 * self.cascade}')
+        # print(f'[mark untrained grid] {(count == 0).sum()} from {resolution ** 3 * self.cascade}')
 
     @torch.no_grad()
     def update_extra_state(self, decay=0.95, S=128):
@@ -666,7 +730,7 @@ class NeRFRenderer(nn.Module):
                 self.step_counter[:total_step, 0].sum().item() / total_step)
         self.local_step = 0
 
-        #print(f'[density grid] min={self.density_grid.min().item():.4f}, max={self.density_grid.max().item():.4f}, mean={self.mean_density:.4f}, occ_rate={(self.density_grid > 0.01).sum() / (128**3 * self.cascade):.3f} | [step counter] mean={self.mean_count}')
+        # print(f'[density grid] min={self.density_grid.min().item():.4f}, max={self.density_grid.max().item():.4f}, mean={self.mean_density:.4f}, occ_rate={(self.density_grid > 0.01).sum() / (128**3 * self.cascade):.3f} | [step counter] mean={self.mean_count}')
 
     def render(self, rays_o, rays_d, time, staged=False, max_ray_batch=4096, **kwargs):
         # rays_o, rays_d: [B, N, 3], assumes B == 1
