@@ -87,7 +87,7 @@ class Trainer(_Trainer):
         else:
             gt_rgb = images
 
-        outputs_s = self.model_s.render(rays_o, rays_d, time, staged=False,
+        outputs_s = self.model_d.render(rays_o, rays_d, time, staged=False,
                                         bg_color=bg_color, perturb=True, force_all_rays=False, **vars(self.opt))
         outputs_d = self.model_d.render(rays_o, rays_d, time, staged=False,
                                         bg_color=bg_color, perturb=True, force_all_rays=False, **vars(self.opt))
@@ -159,7 +159,7 @@ class Trainer(_Trainer):
         else:
             gt_rgb = images
 
-        outputs_s = self.model_s.render(
+        outputs_s = self.model_d.render(
             rays_o, rays_d, time, staged=True, bg_color=bg_color, perturb=False, **vars(self.opt))
         outputs_d = self.model_d.render(
             rays_o, rays_d, time, staged=True, bg_color=bg_color, perturb=False, **vars(self.opt))
@@ -184,7 +184,7 @@ class Trainer(_Trainer):
         if bg_color is not None:
             bg_color = bg_color.to(self.device)
 
-        outputs_s = self.model_s.render(
+        outputs_s = self.model_d.render(
             rays_o, rays_d, time, staged=True, bg_color=bg_color, perturb=False, **vars(self.opt))
         outputs_d = self.model_d.render(
             rays_o, rays_d, time, staged=True, bg_color=bg_color, perturb=False, **vars(self.opt))
@@ -306,15 +306,16 @@ def raw2outputs(raw_s,
     """
     # Function for computing density from model prediction. This value is
     # strictly between [0, 1].
-    def raw2alpha(raw, dists, act_fn=F.relu): return 1.0 - \
-        torch.exp(-act_fn(raw) * dists)
+    def raw2alpha(raw, dists, act_fn=F.relu):
+        print("raw.shape: {}".format(raw.shape))
+        print("dists.shape: {}".format(dists.shape))
+        return 1.0 - torch.exp(-act_fn(torch.unsqueeze(raw, -1)) * dists)
 
     # Compute 'distance' (in time) between each integration time along a ray.
     dists = (z_vals[..., 1:] - z_vals[..., :-1])
     print("dists.shape: {}".format(dists.shape))
     print("rays_d.shape: {}".format(rays_d.shape))
     print("raw_d.shape: {}".format(raw_d.shape))
-
     # The 'distance' from the last integration time is infinity.
     dists = torch.cat(
         [dists, torch.Tensor([1e10]).expand(dists[..., :1].shape)],
@@ -325,20 +326,26 @@ def raw2outputs(raw_s,
     dists = dists.cuda() * torch.norm(rays_d[..., None, :], dim=-1)
 
     # Extract RGB of each sample position along each ray.
-    rgb_d = torch.sigmoid(raw_d)  # [N_rays, N_samples, 3]
-    rgb_s = torch.sigmoid(raw_s)  # [N_rays, N_samples, 3]
+    rgb_d = torch.sigmoid(raw_d[..., :3])  # [N_rays, N_samples, 3]
+    rgb_s = torch.sigmoid(raw_s[..., :3])  # [N_rays, N_samples, 3]
 
     # Add noise to model's predictions for density. Can be used to
     # regularize network during training (prevents floater artifacts).
     noise = 0.
     if raw_noise_std > 0.:
-        noise = torch.randn(raw_d.shape) * raw_noise_std
+        noise = torch.randn(raw_d[..., 3].shape) * raw_noise_std
 
     # Predict density of each sample along each ray. Higher values imply
     # higher likelihood of being absorbed at this point.
-    alpha_d = raw2alpha(raw_d + noise, dists)  # [N_rays, N_samples]
-    alpha_s = raw2alpha(raw_s + noise, dists)  # [N_rays, N_samples]
+    alpha_d = raw2alpha(raw_d[..., 3] + noise,
+                        dists).cpu()  # [N_rays, N_samples]
+    alpha_s = raw2alpha(raw_s[..., 3] + noise,
+                        dists).cpu()  # [N_rays, N_samples]
     alphas = 1. - (1. - alpha_s) * (1. - alpha_d)  # [N_rays, N_samples]
+
+    print(alpha_s)
+    print(alpha_d)
+    print(blending)
 
     T_d = torch.cumprod(torch.cat(
         [torch.ones((alpha_d.shape[0], 1)), 1. - alpha_d + 1e-10], -1), -1)[:, :-1]
@@ -357,6 +364,9 @@ def raw2outputs(raw_s,
     weights_full = (alpha_d * blending + alpha_s * (1. - blending)) * T_full
     # weights_full = alphas * T_full
 
+    print("weights_d.shape; {}".format(weights_d.shape))
+    print("weights_d[..., None].shape; {}".format(weights_d[..., None].shape))
+    print("rgb_d.shape; {}".format(rgb_d.shape))
     # Computed weighted color of each sample along each ray.
     rgb_map_d = torch.sum(weights_d[..., None] * rgb_d, -2)
     rgb_map_s = torch.sum(weights_s[..., None] * rgb_s, -2)

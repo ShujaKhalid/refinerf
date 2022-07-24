@@ -335,21 +335,6 @@ class NeRFRenderer(nn.Module):
 
         results = {}
 
-        N_samples = 12
-        N_rays = N
-        t_vals = torch.linspace(0., 1., steps=N_samples)
-        lindisp = False  # FIXME
-        near = 0.0
-        far = 1.0
-        if not lindisp:
-            # Space integration times linearly between 'near' and 'far'. Same
-            # integration points will be used for all rays.
-            z_vals = near * (1.-t_vals) + far * (t_vals)
-        else:
-            # Sample linearly in inverse depth (disparity).
-            z_vals = 1./(1./near * (1.-t_vals) + 1./far * (t_vals))
-        z_vals = z_vals.expand([N_rays, N_samples])
-
         if self.training:
             # setup counter
             counter = self.step_counter[self.local_step % 16]
@@ -368,11 +353,30 @@ class NeRFRenderer(nn.Module):
             sigmas = self.density_scale * sigmas
 
             # print(f'valid RGB query ratio: {mask.sum().item() / mask.shape[0]} (total = {mask.sum().item()})')
+            N_samples = 12
+            N_rays = xyzs.shape[0]
+            t_vals = torch.linspace(0., 1., steps=N_samples)
+            lindisp = False  # FIXME
+            near = 0.0
+            far = 1.0
+            if not lindisp:
+                # Space integration times linearly between 'near' and 'far'. Same
+                # integration points will be used for all rays.
+                z_vals = near * (1.-t_vals) + far * (t_vals)
+            else:
+                # Sample linearly in inverse depth (disparity).
+                z_vals = 1./(1./near * (1.-t_vals) + 1./far * (t_vals))
+            z_vals = z_vals.expand([N_rays, N_samples])
 
             # Use data from forward pass of NeRF network
-            raw_s_rgba = torch.cat([xyzs, sigmas], -1)  # FIXME
-            raw_d_rgba = torch.cat([xyzs, sigmas], -1)
-            blending = blend  # FIXME
+            print("xyzs.shape: {}".format(xyzs.shape))
+            print("z_vals.shape: {}".format(z_vals.shape))
+            print("sigmas.shape: {}".format(sigmas.shape))
+            raw_s_rgba = torch.cat(
+                [rgbs, torch.unsqueeze(sigmas, -1)], -1)  # FIXME
+            rays_d = dirs  # FIXME
+            raw_d_rgba = torch.cat([rgbs, torch.unsqueeze(sigmas, -1)], -1)
+            blending = blend.cpu()  # FIXME
             raw_noise_std = 0.0
 
             rgb_map_full, depth_map_full, acc_map_full, weights_full, \
