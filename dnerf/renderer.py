@@ -415,10 +415,8 @@ class NeRFRenderer(nn.Module):
                                               raw_noise_std)
 
             # Do all the required calculations here
-            print(sigmas_s.shape)
-            print(rgb_map_full.shape)
-            sigmas = sigmas_s  # FIXME
-            rgbs = rgbs_s  # FIXME
+            sigmas = torch.unsqueeze(sigmas_s, 0)  # FIXME
+            rgbs = torch.unsqueeze(rgbs_s, 0)  # FIXME
             # special case for CCNeRF's residual learning
             if len(sigmas.shape) == 2:
                 K = sigmas.shape[0]
@@ -517,6 +515,9 @@ class NeRFRenderer(nn.Module):
                     pts, rays_d, time, svd="static")
                 # sigmas_d, rgbs_d, deform_d, blend, sf = self(
                 #     pts, rays_d, time, svd="dynamic")
+
+                sigmas_s = torch.unsqueeze(sigmas_s, 0)  # FIXME
+                rgbs_s = torch.unsqueeze(rgbs_s, 0)  # FIXME
 
                 sigmas = self.density_scale * sigmas_s
 
