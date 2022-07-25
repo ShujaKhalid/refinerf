@@ -1,3 +1,4 @@
+from re import X
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -41,6 +42,9 @@ class NeRFNetwork(NeRFRenderer):
         self.encoder_time, self.in_dim_time = get_encoder(
             encoding_time, input_dim=1, multires=6)
 
+        print("self.in_dim_deform: {}".format(self.in_dim_deform))
+        print("self.in_dim_time: {}".format(self.in_dim_time))
+
         deform_s_net = []
         for l in range(num_layers_deform):
             if l == 0:
@@ -64,6 +68,9 @@ class NeRFNetwork(NeRFRenderer):
         self.encoder, self.in_dim = get_encoder(
             encoding, desired_resolution=2048 * bound)
 
+        print("self.in_dim: {}".format(self.in_dim))
+        print("self.in_dim_time: {}".format(self.in_dim_time))
+
         sigma_s_net = []
         for l in range(num_layers):
             if l == 0:
@@ -85,6 +92,9 @@ class NeRFNetwork(NeRFRenderer):
         self.num_layers_color = num_layers_color
         self.hidden_dim_color = hidden_dim_color
         self.encoder_dir, self.in_dim_dir = get_encoder(encoding_dir)
+
+        print("self.in_dim_dir: {}".format(self.in_dim_dir))
+        print("self.geo_feat_dim: {}".format(self.geo_feat_dim))
 
         color_s_net = []
         for l in range(num_layers_color):
@@ -108,6 +118,9 @@ class NeRFNetwork(NeRFRenderer):
             self.hidden_dim_bg = hidden_dim_bg
             self.encoder_bg, self.in_dim_bg = get_encoder(
                 encoding_bg, input_dim=2, num_levels=4, log2_hashmap_size=19, desired_resolution=2048)  # much smaller hashgrid
+
+            print("self.in_dim_bg: {}".format(self.in_dim_bg))
+            print("self.in_dim_dir: {}".format(self.in_dim_dir))
 
             bg_s_net = []
             for l in range(num_layers_bg):
@@ -257,9 +270,18 @@ class NeRFNetwork(NeRFRenderer):
         if enc_t.shape[0] == 1:
             enc_t = enc_t.repeat(x.shape[0], 1)  # [1, C'] --> [N, C']
 
-        deform = torch.cat([enc_ori_x, enc_t], dim=1)  # [N, C + C']
+        # TODO: Added -> confirm
+        enc_t = torch.unsqueeze(
+            enc_t, -1).repeat(1, 1, enc_t.shape[1])
+        # print("x.shape: {}".format(x.shape))
+        # print("enc_t.shape: {}".format(enc_t.shape))
+        # print("enc_ori_x.shape: {}".format(enc_ori_x.shape))
+
+        deform = torch.cat([enc_ori_x, enc_t], dim=-1)  # [N, C + C']
+        # print("deform.shape: {}".format(deform.shape))
+
         for l in range(self.num_layers_deform):
-            deform = self.deform_net[l](deform)
+            deform = self.deform_s_net[l](deform)
             if l != self.num_layers_deform - 1:
                 deform = F.relu(deform, inplace=True)
 
@@ -267,9 +289,9 @@ class NeRFNetwork(NeRFRenderer):
 
         # sigma
         x = self.encoder(x, bound=self.bound)
-        h = torch.cat([x, enc_ori_x, enc_t], dim=1)
+        h = torch.cat([x, enc_ori_x, enc_t], dim=-1)
         for l in range(self.num_layers):
-            h = self.sigma_net[l](h)
+            h = self.sigma_s_net[l](h)
             if l != self.num_layers - 1:
                 h = F.relu(h, inplace=True)
 
@@ -279,9 +301,12 @@ class NeRFNetwork(NeRFRenderer):
 
         # color
         d = self.encoder_dir(d)
+        d = torch.unsqueeze(
+            d, 1).repeat(1, enc_t.shape[1], 1)
+
         h = torch.cat([d, geo_feat], dim=-1)
         for l in range(self.num_layers_color):
-            h = self.color_net[l](h)
+            h = self.color_s_net[l](h)
             if l != self.num_layers_color - 1:
                 h = F.relu(h, inplace=True)
 
@@ -306,7 +331,7 @@ class NeRFNetwork(NeRFRenderer):
         sf = torch.tanh(self.sf_net(h))
         blending = torch.sigmoid(self.blend_net(h))
 
-        return sigma, rgbs, deform, sf, blending
+        return sigma, rgbs, deform, blending, sf
 
     def density(self, x, t):
         # x: [N, 3], in [-bound, bound]
@@ -322,7 +347,7 @@ class NeRFNetwork(NeRFRenderer):
 
         deform = torch.cat([enc_ori_x, enc_t], dim=1)  # [N, C + C']
         for l in range(self.num_layers_deform):
-            deform = self.deform_net[l](deform)
+            deform = self.deform_s_net[l](deform)
             if l != self.num_layers_deform - 1:
                 deform = F.relu(deform, inplace=True)
 
@@ -333,7 +358,7 @@ class NeRFNetwork(NeRFRenderer):
         x = self.encoder(x, bound=self.bound)
         h = torch.cat([x, enc_ori_x, enc_t], dim=1)
         for l in range(self.num_layers):
-            h = self.sigma_net[l](h)
+            h = self.sigma_s_net[l](h)
             if l != self.num_layers - 1:
                 h = F.relu(h, inplace=True)
 
@@ -354,7 +379,7 @@ class NeRFNetwork(NeRFRenderer):
 
         h = torch.cat([d, h], dim=-1)
         for l in range(self.num_layers_bg):
-            h = self.bg_net[l](h)
+            h = self.bg_s_net[l](h)
             if l != self.num_layers_bg - 1:
                 h = F.relu(h, inplace=True)
 
@@ -382,7 +407,7 @@ class NeRFNetwork(NeRFRenderer):
         d = self.encoder_dir(d)
         h = torch.cat([d, geo_feat], dim=-1)
         for l in range(self.num_layers_color):
-            h = self.color_net[l](h)
+            h = self.color_s_net[l](h)
             if l != self.num_layers_color - 1:
                 h = F.relu(h, inplace=True)
 
@@ -412,7 +437,7 @@ class NeRFNetwork(NeRFRenderer):
                 params.append(
                     {'params': self.encoder_bg.parameters(), 'lr': lr})
                 params.append(
-                    {'params': self.bg_net.parameters(), 'lr': lr_net})
+                    {'params': self.bg_s_net.parameters(), 'lr': lr_net})
         elif (svd == "dynamic"):
             params = [
                 {'params': self.encoder.parameters(), 'lr': lr},
@@ -422,14 +447,14 @@ class NeRFNetwork(NeRFRenderer):
                 {'params': self.sigma_d_net.parameters(), 'lr': lr_net},
                 {'params': self.color_d_net.parameters(), 'lr': lr_net},
                 {'params': self.deform_d_net.parameters(), 'lr': lr_net},
-                {'params': self.blend_d_net.parameters(), 'lr': lr_net},
-                {'params': self.sf_d_net.parameters(), 'lr': lr_net},
+                {'params': self.blend_net.parameters(), 'lr': lr_net},
+                {'params': self.sf_net.parameters(), 'lr': lr_net},
             ]
             if self.bg_radius > 0:
                 params.append(
                     {'params': self.encoder_bg.parameters(), 'lr': lr})
                 params.append(
-                    {'params': self.bg_net.parameters(), 'lr': lr_net})
+                    {'params': self.bg_s_net.parameters(), 'lr': lr_net})
         else:
             raise Exception("Run NeRF in either `static` or `dynamic` mode")
         return params
