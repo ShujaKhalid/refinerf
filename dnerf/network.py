@@ -273,12 +273,12 @@ class NeRFNetwork(NeRFRenderer):
         # TODO: Added -> confirm
         enc_t = torch.unsqueeze(
             enc_t, -1).repeat(1, 1, enc_t.shape[1])
-        # print("x.shape: {}".format(x.shape))
-        # print("enc_t.shape: {}".format(enc_t.shape))
-        # print("enc_ori_x.shape: {}".format(enc_ori_x.shape))
+        print("x.shape: {}".format(x.shape))
+        print("enc_t.shape: {}".format(enc_t.shape))
+        print("enc_ori_x.shape: {}".format(enc_ori_x.shape))
 
         deform = torch.cat([enc_ori_x, enc_t], dim=-1)  # [N, C + C']
-        # print("deform.shape: {}".format(deform.shape))
+        print("deform.shape: {}".format(deform.shape))
 
         for l in range(self.num_layers_deform):
             deform = self.deform_s_net[l](deform)
