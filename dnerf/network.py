@@ -119,8 +119,8 @@ class NeRFNetwork(NeRFRenderer):
             self.encoder_bg, self.in_dim_bg = get_encoder(
                 encoding_bg, input_dim=2, num_levels=4, log2_hashmap_size=19, desired_resolution=2048)  # much smaller hashgrid
 
-            print("self.in_dim_bg: {}".format(self.in_dim_bg))
-            print("self.in_dim_dir: {}".format(self.in_dim_dir))
+            # print("self.in_dim_bg: {}".format(self.in_dim_bg))
+            # print("self.in_dim_dir: {}".format(self.in_dim_dir))
 
             bg_s_net = []
             for l in range(num_layers_bg):
@@ -271,14 +271,16 @@ class NeRFNetwork(NeRFRenderer):
             enc_t = enc_t.repeat(x.shape[0], 1)  # [1, C'] --> [N, C']
 
         # TODO: Added -> confirm
-        enc_t = torch.unsqueeze(
-            enc_t, -1).repeat(1, 1, enc_t.shape[1])
-        print("x.shape: {}".format(x.shape))
-        print("enc_t.shape: {}".format(enc_t.shape))
-        print("enc_ori_x.shape: {}".format(enc_ori_x.shape))
-
-        deform = torch.cat([enc_ori_x, enc_t], dim=-1)  # [N, C + C']
-        print("deform.shape: {}".format(deform.shape))
+        if (len(x.shape) == 3):
+            enc_t = torch.unsqueeze(
+                enc_t, -1).repeat(1, 1, enc_t.shape[1])
+            deform = torch.cat([enc_ori_x, enc_t], dim=-1)  # [N, C + C']
+        else:
+            deform = torch.cat([enc_ori_x, enc_t], dim=1)  # [N, C + C']
+        # print("x.shape: {}".format(x.shape))
+        # print("enc_t.shape: {}".format(enc_t.shape))
+        # print("enc_ori_x.shape: {}".format(enc_ori_x.shape))
+        # print("deform.shape: {}".format(deform.shape))
 
         for l in range(self.num_layers_deform):
             deform = self.deform_s_net[l](deform)
@@ -289,7 +291,11 @@ class NeRFNetwork(NeRFRenderer):
 
         # sigma
         x = self.encoder(x, bound=self.bound)
-        h = torch.cat([x, enc_ori_x, enc_t], dim=-1)
+        # TODO: Added -> confirm
+        if (len(x.shape) == 3):
+            h = torch.cat([x, enc_ori_x, enc_t], dim=-1)
+        else:
+            h = torch.cat([x, enc_ori_x, enc_t], dim=1)
         for l in range(self.num_layers):
             h = self.sigma_s_net[l](h)
             if l != self.num_layers - 1:
@@ -301,8 +307,9 @@ class NeRFNetwork(NeRFRenderer):
 
         # color
         d = self.encoder_dir(d)
-        d = torch.unsqueeze(
-            d, 1).repeat(1, enc_t.shape[1], 1)
+        # TODO: Added -> confirm
+        if (len(x.shape) == 3):
+            d = torch.unsqueeze(d, 1).repeat(1, enc_t.shape[1], 1)
 
         h = torch.cat([d, geo_feat], dim=-1)
         for l in range(self.num_layers_color):

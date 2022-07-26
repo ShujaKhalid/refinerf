@@ -442,8 +442,8 @@ class NeRFRenderer(nn.Module):
                 image = image.view(*prefix, 3)
                 depth = depth.view(*prefix)
 
-            print(image.shape)
-            print(depth.shape)
+            # print(image.shape)
+            # print(depth.shape)
 
             results['deform'] = deform_s
 
@@ -504,23 +504,24 @@ class NeRFRenderer(nn.Module):
                 # FIXME: Figure out the details here
                 z_vals = z_vals.expand([N_rays, N_samples]).cuda()
 
-                # print(z_vals.shape)
-                # print(rays_o.shape)
-                # print(rays_d.shape)
+                # print("z_vals.shape: {}".format(z_vals.shape))
+                # print("rays_o.shape: {}".format(rays_o.shape))
+                # print("rays_d.shape: {}".format(rays_d.shape))
 
                 # Points in space to evaluate model at.
                 pts = rays_o[..., None, :] + rays_d[..., None, :] * \
                     z_vals[..., :, None]  # [N_rays, N_samples, 3]
                 sigmas_s, rgbs_s, deform_s = self(
-                    pts, rays_d, time, svd="static")
-                # sigmas_d, rgbs_d, deform_d, blend, sf = self(
-                #     pts, rays_d, time, svd="dynamic")
+                    xyzs, dirs, time, svd="static")
+                sigmas_d, rgbs_d, deform_d, blend, sf = self(
+                    xyzs, dirs, time, svd="dynamic")
 
-                sigmas_s = torch.unsqueeze(sigmas_s, 0)  # FIXME
-                rgbs_s = torch.unsqueeze(rgbs_s, 0)  # FIXME
+                # sigmas_s = torch.unsqueeze(sigmas_s, 0)  # FIXME
+                # rgbs_s = torch.unsqueeze(rgbs_s, 0)  # FIXME
 
+                # TODO: FIXME
                 sigmas = self.density_scale * sigmas_s
-
+                rgbs = rgbs_s
                 raymarching.composite_rays(
                     n_alive, n_step, rays_alive, rays_t, sigmas, rgbs, deltas, weights_sum, depth, image)
 
