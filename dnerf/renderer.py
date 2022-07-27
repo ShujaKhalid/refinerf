@@ -351,46 +351,46 @@ class NeRFRenderer(nn.Module):
             #     raise Exception(
             #         "Run NeRF in either `static` or `dynamic` mode")
 
-            # Add the time dimension to xyz.
-            raw_noise_std = 0.0
+            # # Add the time dimension to xyz.
+            # raw_noise_std = 0.0
 
-            lindisp = False
-            N_rays = N
-            N_samples = 13
-            near = 0
-            far = 1
+            # lindisp = False
+            # N_rays = N
+            # N_samples = 13
+            # near = 0
+            # far = 1
 
-            # Decide where to sample along each ray. Under the logic, all rays will be sampled at
-            # the same times.
-            t_vals = torch.linspace(0., 1., steps=N_samples)
-            if not lindisp:
-                # Space integration times linearly between 'near' and 'far'. Same
-                # integration points will be used for all rays.
-                z_vals = near * (1.-t_vals) + far * (t_vals)
-            else:
-                # Sample linearly in inverse depth (disparity).
-                z_vals = 1./(1./near * (1.-t_vals) + 1./far * (t_vals))
-            # FIXME: Figure out the details here
-            z_vals = z_vals.expand([N_rays, N_samples]).cuda()
+            # # Decide where to sample along each ray. Under the logic, all rays will be sampled at
+            # # the same times.
+            # t_vals = torch.linspace(0., 1., steps=N_samples)
+            # if not lindisp:
+            #     # Space integration times linearly between 'near' and 'far'. Same
+            #     # integration points will be used for all rays.
+            #     z_vals = near * (1.-t_vals) + far * (t_vals)
+            # else:
+            #     # Sample linearly in inverse depth (disparity).
+            #     z_vals = 1./(1./near * (1.-t_vals) + 1./far * (t_vals))
+            # # FIXME: Figure out the details here
+            # z_vals = z_vals.expand([N_rays, N_samples]).cuda()
 
-            # print(z_vals.shape)
-            # print(rays_o.shape)
-            # print(rays_d.shape)
+            # # print(z_vals.shape)
+            # # print(rays_o.shape)
+            # # print(rays_d.shape)
 
-            # Points in space to evaluate model at.
-            pts = rays_o[..., None, :] + rays_d[..., None, :] * \
-                z_vals[..., :, None]  # [N_rays, N_samples, 3]
-            pts_ref = torch.cat([pts, torch.ones_like(pts[..., 0:1]) * t], -1)
+            # # Points in space to evaluate model at.
+            # pts = rays_o[..., None, :] + rays_d[..., None, :] * \
+            #     z_vals[..., :, None]  # [N_rays, N_samples, 3]
+            # pts_ref = torch.cat([pts, torch.ones_like(pts[..., 0:1]) * t], -1)
 
-            # print(pts.shape)
-            # print(pts_ref.shape)
-            # print(dirs.shape)
-            # print(time.shape)
+            # # print(pts.shape)
+            # # print(pts_ref.shape)
+            # # print(dirs.shape)
+            # # print(time.shape)
 
             sigmas_s, rgbs_s, deform_s = self(
-                pts, rays_d, time, svd="static")
+                xyzs, dirs, time, svd="static")
             sigmas_d, rgbs_d, deform_d, blend, sf = self(
-                pts, rays_d, time, svd="dynamic")
+                xyzs, dirs, time, svd="dynamic")
 
             sigmas_s = self.density_scale * sigmas_s
             sigmas_d = self.density_scale * sigmas_d
@@ -402,45 +402,70 @@ class NeRFRenderer(nn.Module):
             sceneflow_b = sf[..., :3]
             sceneflow_f = sf[..., 3:]
 
+            # print("sigmas_s.shape: {}".format(sigmas_s.shape))
+            # print("rgbs_s.shape: {}".format(rgbs_s.shape))
+            # print("deltas.shape: {}".format(deltas.shape))
+            # print("rays.shape: {}".format(rays.shape))
+
             # FIXME: get the dimensions in the correct format
             # torch.reshape(, (N_rays//N_samples, N_samples, -1))
-            rgb_map_full, depth_map_full, acc_map_full, weights_full, \
-                rgb_map_s, depth_map_s, acc_map_s, weights_s, \
-                rgb_map_d, depth_map_d, acc_map_d, weights_d, \
-                dynamicness_map = raw2outputs(raw_s_rgba,
-                                              raw_d_rgba,
-                                              blend,
-                                              z_vals.cuda(),
-                                              rays_d,  # FIXME: was rays_d
-                                              raw_noise_std)
+            # rgb_map_full, depth_map_full, acc_map_full, weights_full, \
+            #     rgb_map_s, depth_map_s, acc_map_s, weights_s, \
+            #     rgb_map_d, depth_map_d, acc_map_d, weights_d, \
+            #     dynamicness_map = raw2outputs(raw_s_rgba,
+            #                                   raw_d_rgba,
+            #                                   blend,
+            #                                   z_vals.cuda(),
+            #                                   rays_d,  # FIXME: was rays_d
+            #                                   raw_noise_std)
 
             # Do all the required calculations here
-            sigmas = torch.unsqueeze(sigmas_s, 0)  # FIXME
-            rgbs = torch.unsqueeze(rgbs_s, 0)  # FIXME
+            sigmas = sigmas_s
+            rgbs = rgbs_s
+            # sigmas = torch.unsqueeze(sigmas_s, 0)  # FIXME
+            # rgbs = torch.unsqueeze(rgbs_s, 0)  # FIXME
             # special case for CCNeRF's residual learning
-            if len(sigmas.shape) == 2:
-                K = sigmas.shape[0]
-                depths = []
-                images = []
-                for k in range(K):
-                    weights_sum, depth, image = raymarching.composite_rays_train(
-                        sigmas[k], rgbs[k], deltas, rays)
-                    image = image + (1 - weights_sum).unsqueeze(-1) * bg_color
-                    depth = torch.clamp(depth - nears, min=0) / (fars - nears)
-                    images.append(image.view(*prefix, 3))
-                    depths.append(depth.view(*prefix))
+            # if len(sigmas.shape) == 2:
+            #     K = sigmas.shape[0]
+            #     depths = []
+            #     images = []
+            #     for k in range(K):
+            #         weights_sum, depth, image = raymarching.composite_rays_train(
+            #             sigmas[k], rgbs[k], deltas, rays)
+            #         image = image + (1 - weights_sum).unsqueeze(-1) * bg_color
+            #         depth = torch.clamp(depth - nears, min=0) / (fars - nears)
+            #         images.append(image.view(*prefix, 3))
+            #         depths.append(depth.view(*prefix))
 
-                depth = torch.stack(depths, axis=0)  # [K, B, N]
-                image = torch.stack(images, axis=0)  # [K, B, N, 3]
+            #     depth = torch.stack(depths, axis=0)  # [K, B, N]
+            #     image = torch.stack(images, axis=0)  # [K, B, N, 3]
 
-            else:
+            # else:
 
-                weights_sum, depth, image = raymarching.composite_rays_train(
-                    sigmas, rgbs, deltas, rays)
-                image = image + (1 - weights_sum).unsqueeze(-1) * bg_color
-                depth = torch.clamp(depth - nears, min=0) / (fars - nears)
-                image = image.view(*prefix, 3)
-                depth = depth.view(*prefix)
+            weights_sum, depth, image = raymarching.composite_rays_train(
+                sigmas, rgbs, deltas, rays)
+            image = image + (1 - weights_sum).unsqueeze(-1) * bg_color
+            depth = torch.clamp(depth - nears, min=0) / (fars - nears)
+            image = image.view(*prefix, 3)
+            depth = depth.view(*prefix)
+
+            # TODO: Create a CUDA kernel here for each of static and dynamic
+
+            # TODO: We have everything that we need here
+            # Required:
+            #          - rgb_map_s
+            #          - rgb_map_d
+            #          - depth_map_s
+            #          - depth_map_d
+            #          - acc_map_s
+            #          - acc_map_d
+            #          - weights_s
+            #          - weights_d
+            #          - rgb_map_full
+            #          - depth_map_full
+            #          - acc_map_full
+            #          - weights_full
+            #          - dynamicness_map
 
             # print(image.shape)
             # print(depth.shape)
