@@ -1,3 +1,4 @@
+import sys
 import math
 import trimesh
 import numpy as np
@@ -8,6 +9,7 @@ import torch.nn.functional as F
 
 import raymarching
 from .utils import custom_meshgrid, raw2outputs, raw2outputs_d
+sys.path.append("..")  # Adds higher directory to python modules path.
 
 
 def sample_pdf(bins, weights, n_samples, det=False):
