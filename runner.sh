@@ -31,7 +31,7 @@ then
 	--database_path $DATASET_PATH/database.db \
 	--image_path $DATASET_PATH/images_colmap \
 	--ImageReader.mask_path $DATASET_PATH/background_mask \
-	--ImageReader.single_camera 1
+	# --ImageReader.single_camera 1
 
 	colmap exhaustive_matcher \
 	--database_path $DATASET_PATH/database.db
@@ -42,12 +42,12 @@ then
 	--image_path $DATASET_PATH/images_colmap \
 	--output_path $DATASET_PATH/sparse \
 	--Mapper.num_threads 16 \
-	--Mapper.init_min_tri_angle 6 \
-	--Mapper.multiple_models 0 \
-	--Mapper.extract_colors 0
+	--Mapper.init_min_tri_angle 6 
+	# --Mapper.multiple_models 0 \
+	# --Mapper.extract_colors 0
 
-	python ./utils/generate_depth.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_MIDAS
-	python ./utils/generate_flow.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_RAFT 
+	# python ./utils/generate_depth.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_MIDAS
+	# python ./utils/generate_flow.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_RAFT 
 	python ./utils/generate_motion_mask.py --dataset_path $DATASET_PATH
 fi
 
