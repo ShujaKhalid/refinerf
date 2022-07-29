@@ -3,6 +3,10 @@ build/
 *.egg-info/
 *.so
 
+*.mdl
+*.pth
+*.pt
+
 tmp*
 data/
 trial*/

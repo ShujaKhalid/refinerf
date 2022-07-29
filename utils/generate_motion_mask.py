@@ -70,6 +70,7 @@ def run_maskrcnn(model, img_path, intWidth=1024, intHeight=576):
 
     tenHumans = torch.FloatTensor(intHeight, intWidth).fill_(1.0).cuda()
 
+    image_tensor = image_tensor[:3, :, :]  # sk_debug
     objPredictions = model([image_tensor])[0]
 
     for intMask in range(objPredictions['masks'].size(0)):
@@ -124,7 +125,7 @@ def motion_segmentation(basedir, threshold,
     pts3d = read_points3d_binary(points3dfile)
 
     img_dir = glob.glob(basedir + '/images_colmap')[0]
-    img0 = glob.glob(glob.glob(img_dir)[0] + '/*jpg')[0]
+    img0 = glob.glob(glob.glob(img_dir)[0] + '/*png')[0]
     shape_0 = cv2.imread(img0).shape
 
     resized_height, resized_width = shape_0[0], shape_0[1]
@@ -223,7 +224,7 @@ def motion_segmentation(basedir, threshold,
             '.jpg', '.png')), np.uint8(255 * (0. + motion_mask)))
 
     # RUN SEMANTIC SEGMENTATION
-    img_dir = os.path.join(basedir, 'images')
+    img_dir = os.path.join(basedir, 'images_colmap')  # sk_debug
     img_path_list = sorted(glob.glob(os.path.join(img_dir, '*.jpg'))) \
         + sorted(glob.glob(os.path.join(img_dir, '*.png')))
     semantic_mask_dir = os.path.join(basedir, 'semantic_mask')

@@ -23,6 +23,8 @@ def create_dir(dir):
 def load_image(imfile):
     img = np.array(Image.open(imfile)).astype(np.uint8)
     img = torch.from_numpy(img).permute(2, 0, 1).float()
+    img = img[:3,:,:] # sk_debug
+    print("img.shape: {}".format(img.shape))
     return img[None].to(DEVICE)
 
 
@@ -60,16 +62,21 @@ def run(args, input_path, output_path, output_img_path):
     model = model.module
     model.to(DEVICE)
     model.eval()
-
+    
     with torch.no_grad():
         images = glob.glob(os.path.join(input_path, '*.png')) + \
                  glob.glob(os.path.join(input_path, '*.jpg'))
 
         images = sorted(images)
+        print("images: {}".format(images))
         for i in range(len(images) - 1):
             print(i)
+            print(images[i])
+            print(images[i+1])
             image1 = load_image(images[i])
             image2 = load_image(images[i + 1])
+            
+            print("img1.shp: {} - img2.shp: {}".format(image1.shape, image2.shape))
 
             padder = InputPadder(image1.shape)
             image1, image2 = padder.pad(image1, image2)
@@ -102,7 +109,7 @@ if __name__ == '__main__':
     parser.add_argument('--mixed_precision', action='store_true', help='use mixed precision')
     args = parser.parse_args()
 
-    input_path = os.path.join(args.dataset_path, 'images')
+    input_path = os.path.join(args.dataset_path, 'train')
     output_path = os.path.join(args.dataset_path, 'flow')
     output_img_path = os.path.join(args.dataset_path, 'flow_png')
     create_dir(output_path)

@@ -5,6 +5,7 @@ from PIL import Image
 from os.path import *
 UNKNOWN_FLOW_THRESH = 1e7
 
+
 def flow_to_image(flow, global_max=None):
     """
     Convert flow into middlebury color code image
@@ -75,7 +76,7 @@ def compute_color(u, v):
     k1[k1 == ncols+1] = 1
     f = fk - k0
 
-    for i in range(0, np.size(colorwheel,1)):
+    for i in range(0, np.size(colorwheel, 1)):
         tmp = colorwheel[:, i]
         col0 = tmp[k0-1] / 255
         col1 = tmp[k1-1] / 255
@@ -115,27 +116,32 @@ def make_color_wheel():
     col += RY
 
     # YG
-    colorwheel[col:col+YG, 0] = 255 - np.transpose(np.floor(255*np.arange(0, YG) / YG))
+    colorwheel[col:col+YG, 0] = 255 - \
+        np.transpose(np.floor(255*np.arange(0, YG) / YG))
     colorwheel[col:col+YG, 1] = 255
     col += YG
 
     # GC
     colorwheel[col:col+GC, 1] = 255
-    colorwheel[col:col+GC, 2] = np.transpose(np.floor(255*np.arange(0, GC) / GC))
+    colorwheel[col:col+GC,
+               2] = np.transpose(np.floor(255*np.arange(0, GC) / GC))
     col += GC
 
     # CB
-    colorwheel[col:col+CB, 1] = 255 - np.transpose(np.floor(255*np.arange(0, CB) / CB))
+    colorwheel[col:col+CB, 1] = 255 - \
+        np.transpose(np.floor(255*np.arange(0, CB) / CB))
     colorwheel[col:col+CB, 2] = 255
     col += CB
 
     # BM
     colorwheel[col:col+BM, 2] = 255
-    colorwheel[col:col+BM, 0] = np.transpose(np.floor(255*np.arange(0, BM) / BM))
+    colorwheel[col:col+BM,
+               0] = np.transpose(np.floor(255*np.arange(0, BM) / BM))
     col += + BM
 
     # MR
-    colorwheel[col:col+MR, 2] = 255 - np.transpose(np.floor(255 * np.arange(0, MR) / MR))
+    colorwheel[col:col+MR, 2] = 255 - \
+        np.transpose(np.floor(255 * np.arange(0, MR) / MR))
     colorwheel[col:col+MR, 0] = 255
 
     return colorwheel
@@ -143,18 +149,18 @@ def make_color_wheel():
 
 def resize_flow(flow, H_new, W_new):
     H_old, W_old = flow.shape[0:2]
-    flow_resized = cv2.resize(flow, (W_new, H_new), interpolation=cv2.INTER_LINEAR)
+    flow_resized = cv2.resize(flow, (W_new, H_new),
+                              interpolation=cv2.INTER_LINEAR)
     flow_resized[:, :, 0] *= H_new / H_old
     flow_resized[:, :, 1] *= W_new / W_old
     return flow_resized
 
 
-
 def warp_flow(img, flow):
     h, w = flow.shape[:2]
     flow_new = flow.copy()
-    flow_new[:,:,0] += np.arange(w)
-    flow_new[:,:,1] += np.arange(h)[:,np.newaxis]
+    flow_new[:, :, 0] += np.arange(w)
+    flow_new[:, :, 1] += np.arange(h)[:, np.newaxis]
 
     res = cv2.remap(img, flow_new, None,
                     cv2.INTER_CUBIC,
@@ -174,7 +180,7 @@ def consistCheck(flowB, flowF):
 
     imgH, imgW, _ = flowF.shape
 
-    (fy, fx) = np.mgrid[0 : imgH, 0 : imgW].astype(np.float32)
+    (fy, fx) = np.mgrid[0: imgH, 0: imgW].astype(np.float32)
     fxx = fx + flowB[:, :, 0]  # horizontal
     fyy = fy + flowB[:, :, 1]  # vertical
 
@@ -188,17 +194,17 @@ def consistCheck(flowB, flowF):
 def read_optical_flow(basedir, img_i_name, read_fwd):
     flow_dir = os.path.join(basedir, 'flow')
 
-    fwd_flow_path = os.path.join(flow_dir, '%s_fwd.npz'%img_i_name[:-4])
-    bwd_flow_path = os.path.join(flow_dir, '%s_bwd.npz'%img_i_name[:-4])
+    fwd_flow_path = os.path.join(flow_dir, '%s_fwd.npz' % img_i_name[2:-4])
+    bwd_flow_path = os.path.join(flow_dir, '%s_bwd.npz' % img_i_name[2:-4])
 
     if read_fwd:
-      fwd_data = np.load(fwd_flow_path)
-      fwd_flow, fwd_mask = fwd_data['flow'], fwd_data['mask']
-      return fwd_flow, fwd_mask
+        fwd_data = np.load(fwd_flow_path)
+        fwd_flow, fwd_mask = fwd_data['flow'], fwd_data['mask']
+        return fwd_flow, fwd_mask
     else:
-      bwd_data = np.load(bwd_flow_path)
-      bwd_flow, bwd_mask = bwd_data['flow'], bwd_data['mask']
-      return bwd_flow, bwd_mask
+        bwd_data = np.load(bwd_flow_path)
+        bwd_flow, bwd_mask = bwd_data['flow'], bwd_data['mask']
+        return bwd_flow, bwd_mask
 
 
 def compute_epipolar_distance(T_21, K, p_1, p_2):
