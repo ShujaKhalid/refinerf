@@ -194,8 +194,8 @@ def consistCheck(flowB, flowF):
 def read_optical_flow(basedir, img_i_name, read_fwd):
     flow_dir = os.path.join(basedir, 'flow')
 
-    fwd_flow_path = os.path.join(flow_dir, '%s_fwd.npz' % img_i_name[2:-4])
-    bwd_flow_path = os.path.join(flow_dir, '%s_bwd.npz' % img_i_name[2:-4])
+    fwd_flow_path = os.path.join(flow_dir, '%s_fwd.npz' % img_i_name[:-4])
+    bwd_flow_path = os.path.join(flow_dir, '%s_bwd.npz' % img_i_name[:-4])
 
     if read_fwd:
         fwd_data = np.load(fwd_flow_path)

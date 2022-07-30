@@ -62,11 +62,6 @@ then
 	--Mapper.multiple_models 0 \
 	--Mapper.extract_colors 0
 
-	colmap model_merger \
-    --input_path1 /path/to/sub-model1 \
-    --input_path2 /path/to/sub-model2 \
-    --output_path /path/to/merged-model
-
 	python ./utils/generate_depth.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_MIDAS
 	python ./utils/generate_flow.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_RAFT 
 	python ./utils/generate_motion_mask.py --dataset_path $DATASET_PATH
