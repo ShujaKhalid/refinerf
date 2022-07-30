@@ -370,10 +370,18 @@ class NeRFDataset:
         print("flows_b.shape: {}".format(flows_b.shape))
         print("flow_masks_b.shape: {}".format(flow_masks_b.shape))
 
-        assert(imgs.shape[0] == disp.shape[-1])
-        assert(imgs.shape[0] == masks.shape[-1])
-        assert(imgs.shape[0] == flows_f.shape[-1])
-        assert(imgs.shape[0] == flow_masks_f.shape[-1])
+        self.flows_f = flows_f
+        self.flow_masks_f = flow_masks_f
+        self.flows_b = flows_b
+        self.flow_masks_b = flow_masks_b
+        self.masks = masks
+        self.disp = disp
+
+        # FIXME: sk_debug
+        # assert(imgs.shape[0] == disp.shape[-1])
+        # assert(imgs.shape[0] == masks.shape[-1])
+        # assert(imgs.shape[0] == flows_f.shape[-1])
+        # assert(imgs.shape[0] == flow_masks_f.shape[-1])
         # assert(imgs.shape[1] == disp.shape[-1])
         # assert(imgs.shape[1] == masks.shape[-1])
 
@@ -455,6 +463,10 @@ class NeRFDataset:
             'W': self.W,
             'rays_o': rays['rays_o'],
             'rays_d': rays['rays_d'],
+            'masks': self.masks,
+            'poses': self.poses,
+            'disp': self.disp,
+            'masks': self.masks
         }
 
         if self.images is not None:

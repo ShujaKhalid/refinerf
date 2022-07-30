@@ -45,6 +45,9 @@ class Trainer(_Trainer):
         rays_d = data['rays_d']  # [B, N, 3]
         time = data['time']  # [B, 1]
 
+        print("data: {}".format(data))
+        print("data.keys(): {}".format(data.keys()))
+
         # if there is no gt image, we train with CLIP loss.
         if 'images' not in data:
 

@@ -125,7 +125,7 @@ def motion_segmentation(basedir, threshold,
     pts3d = read_points3d_binary(points3dfile)
 
     img_dir = glob.glob(basedir + '/images_colmap')[0]
-    img0 = glob.glob(glob.glob(img_dir)[0] + '/*png')[0]
+    img0 = glob.glob(glob.glob(img_dir)[0] + '/*jpg')[0]
     shape_0 = cv2.imread(img0).shape
 
     resized_height, resized_width = shape_0[0], shape_0[1]
@@ -149,20 +149,24 @@ def motion_segmentation(basedir, threshold,
         (p_ref_h, np.ones((p_ref_h.shape[0], 1))), axis=-1).T
 
     num_frames = len(perm)
+    print("perm.shape: {}".format(perm.shape))
+    print("num_frames: {}".format(num_frames))
 
     if os.path.isdir(os.path.join(basedir, 'images_colmap')):
         num_colmap_frames = len(
             glob.glob(os.path.join(basedir, 'images_colmap', '*.jpg')))
         num_data_frames = len(
-            glob.glob(os.path.join(basedir, 'images', '*.png')))
+            glob.glob(os.path.join(basedir, 'images', '*.jpg')))
 
-        if num_colmap_frames != num_data_frames:
-            num_frames = num_data_frames
+        # if num_colmap_frames != num_data_frames:
+        #     num_frames = num_data_frames
 
     save_mask_dir = os.path.join(basedir, 'motion_segmentation')
     create_dir(save_mask_dir)
 
+    print("num_frames: {}".format(num_frames))
     for i in range(0, num_frames):
+        print("i: {}".format(i))
         im_prev = imdata[img_keys[perm[max(0, i - 1)]]]
         im_ref = imdata[img_keys[perm[i]]]
         im_post = imdata[img_keys[perm[min(num_frames - 1, i + 1)]]]
@@ -220,8 +224,12 @@ def motion_segmentation(basedir, threshold,
         motion_mask = skimage.morphology.binary_opening(
             e_dist > threshold, skimage.morphology.disk(1))
 
-        cv2.imwrite(os.path.join(save_mask_dir, im_ref.name.replace(
-            '.jpg', '.png')), np.uint8(255 * (0. + motion_mask)))
+        fn = os.path.join(save_mask_dir, im_ref.name.replace(
+            '.jpg', '.png'))
+
+        print("fn: {}".format(fn))
+
+        cv2.imwrite(fn, np.uint8(255 * (0. + motion_mask)))
 
     # RUN SEMANTIC SEGMENTATION
     img_dir = os.path.join(basedir, 'images_colmap')  # sk_debug
