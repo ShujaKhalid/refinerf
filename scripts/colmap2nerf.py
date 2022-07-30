@@ -20,28 +20,40 @@ import cv2
 import os
 import shutil
 
+
 def parse_args():
-    parser = argparse.ArgumentParser(description="convert a text colmap export to nerf format transforms.json; optionally convert video to images, and optionally run colmap in the first place")
+    parser = argparse.ArgumentParser(
+        description="convert a text colmap export to nerf format transforms.json; optionally convert video to images, and optionally run colmap in the first place")
 
     parser.add_argument("--video", default="", help="input path to the video")
-    parser.add_argument("--images", default="", help="input path to the images folder, ignored if --video is provided")
-    parser.add_argument("--run_colmap", action="store_true", help="run colmap first on the image folder")
+    parser.add_argument("--images", default="",
+                        help="input path to the images folder, ignored if --video is provided")
+    parser.add_argument("--run_colmap", action="store_true",
+                        help="run colmap first on the image folder")
 
-    parser.add_argument("--dynamic", action="store_true", help="for dynamic scene, extraly save time calculated from frame index.")
-    parser.add_argument("--estimate_affine_shape", action="store_true", help="colmap SiftExtraction option, may yield better results, yet can only be run on CPU.")
-    parser.add_argument('--hold', type=int, default=8, help="hold out for validation every $ images")
+    parser.add_argument("--dynamic", action="store_true",
+                        help="for dynamic scene, extraly save time calculated from frame index.")
+    parser.add_argument("--estimate_affine_shape", action="store_true",
+                        help="colmap SiftExtraction option, may yield better results, yet can only be run on CPU.")
+    parser.add_argument('--hold', type=int, default=8,
+                        help="hold out for validation every $ images")
 
-    parser.add_argument("--video_fps", default=3)
+    parser.add_argument("--video_fps", default=20)
     parser.add_argument("--time_slice", default="", help="time (in seconds) in the format t1,t2 within which the images should be generated from the video. eg: \"--time_slice '10,300'\" will generate images only from 10th second to 300th second of the video")
 
-    parser.add_argument("--colmap_matcher", default="exhaustive", choices=["exhaustive","sequential","spatial","transitive","vocab_tree"], help="select which matcher colmap should use. sequential for videos, exhaustive for adhoc images")
-    parser.add_argument("--skip_early", default=0, help="skip this many images from the start")
+    parser.add_argument("--colmap_matcher", default="exhaustive", choices=["exhaustive", "sequential", "spatial", "transitive",
+                        "vocab_tree"], help="select which matcher colmap should use. sequential for videos, exhaustive for adhoc images")
+    parser.add_argument("--skip_early", default=0,
+                        help="skip this many images from the start")
 
-    parser.add_argument("--colmap_text", default="colmap_text", help="input path to the colmap text files (set automatically if run_colmap is used)")
-    parser.add_argument("--colmap_db", default="colmap.db", help="colmap database filename")
+    parser.add_argument("--colmap_text", default="colmap_text",
+                        help="input path to the colmap text files (set automatically if run_colmap is used)")
+    parser.add_argument("--colmap_db", default="colmap.db",
+                        help="colmap database filename")
 
     args = parser.parse_args()
     return args
+
 
 def do_system(arg):
     print(f"==== running: {arg}")
@@ -50,14 +62,16 @@ def do_system(arg):
         print("FATAL: command failed")
         sys.exit(err)
 
+
 def run_ffmpeg(args):
     video = args.video
     images = args.images
     fps = float(args.video_fps) or 1.0
 
-    print(f"running ffmpeg with input video file={video}, output image folder={images}, fps={fps}.")
-    if (input(f"warning! folder '{images}' will be deleted/replaced. continue? (Y/n)").lower().strip()+"y")[:1] != "y":
-        sys.exit(1)
+    print(
+        f"running ffmpeg with input video file={video}, output image folder={images}, fps={fps}.")
+    # if (input(f"warning! folder '{images}' will be deleted/replaced. continue? (Y/n)").lower().strip()+"y")[:1] != "y":
+    #     sys.exit(1)
 
     try:
         shutil.rmtree(images)
@@ -72,46 +86,57 @@ def run_ffmpeg(args):
         start, end = time_slice.split(",")
         time_slice_value = f",select='between(t\,{start}\,{end})'"
 
-    do_system(f"ffmpeg -i {video} -qscale:v 1 -qmin 1 -vf \"fps={fps}{time_slice_value}\" {images}/%04d.jpg")
+    do_system(
+        f"ffmpeg -i {video} -qscale:v 1 -qmin 1 -vf \"fps={fps}{time_slice_value}\" {images}/%03d.jpg")
+
 
 def run_colmap(args):
     db = args.colmap_db
     images = args.images
     text = args.colmap_text
-    flag_EAS = int(args.estimate_affine_shape) # 0 / 1
+    flag_EAS = int(args.estimate_affine_shape)  # 0 / 1
 
     db_noext = str(Path(db).with_suffix(""))
     sparse = db_noext + "_sparse"
 
-    print(f"running colmap with:\n\tdb={db}\n\timages={images}\n\tsparse={sparse}\n\ttext={text}")
-    if (input(f"warning! folders '{sparse}' and '{text}' will be deleted/replaced. continue? (Y/n)").lower().strip()+"y")[:1] != "y":
-        sys.exit(1)
+    print(
+        f"running colmap with:\n\tdb={db}\n\timages={images}\n\tsparse={sparse}\n\ttext={text}")
+    # if (input(f"warning! folders '{sparse}' and '{text}' will be deleted/replaced. continue? (Y/n)").lower().strip()+"y")[:1] != "y":
+    #     sys.exit(1)
     if os.path.exists(db):
         os.remove(db)
-    do_system(f"colmap feature_extractor --ImageReader.camera_model OPENCV --SiftExtraction.estimate_affine_shape {flag_EAS} --SiftExtraction.domain_size_pooling {flag_EAS} --ImageReader.single_camera 1 --database_path {db} --image_path {images}")
-    do_system(f"colmap {args.colmap_matcher}_matcher --SiftMatching.guided_matching {flag_EAS} --database_path {db}")
+    do_system(
+        f"colmap feature_extractor --ImageReader.camera_model OPENCV --SiftExtraction.estimate_affine_shape {flag_EAS} --SiftExtraction.domain_size_pooling {flag_EAS} --ImageReader.single_camera 1 --SiftExtraction.max_num_features 100000 --database_path {db} --image_path {images}")
+    do_system(
+        f"colmap {args.colmap_matcher}_matcher --SiftMatching.guided_matching {flag_EAS} --SiftMatching.confidence 0.01 --database_path {db}")
     try:
         shutil.rmtree(sparse)
     except:
         pass
     do_system(f"mkdir {sparse}")
-    do_system(f"colmap mapper --database_path {db} --image_path {images} --output_path {sparse}")
-    do_system(f"colmap bundle_adjuster --input_path {sparse}/0 --output_path {sparse}/0 --BundleAdjustment.refine_principal_point 1")
+    do_system(
+        f"colmap mapper --database_path {db} --image_path {images} --output_path {sparse}")
+    do_system(
+        f"colmap bundle_adjuster --input_path {sparse}/0 --output_path {sparse}/0 --BundleAdjustment.refine_principal_point 1")
     try:
         shutil.rmtree(text)
     except:
         pass
     do_system(f"mkdir {text}")
-    do_system(f"colmap model_converter --input_path {sparse}/0 --output_path {text} --output_type TXT")
+    do_system(
+        f"colmap model_converter --input_path {sparse}/0 --output_path {text} --output_type TXT")
+
 
 def variance_of_laplacian(image):
     return cv2.Laplacian(image, cv2.CV_64F).var()
+
 
 def sharpness(imagePath):
     image = cv2.imread(imagePath)
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     fm = variance_of_laplacian(gray)
     return fm
+
 
 def qvec2rotmat(qvec):
     return np.array([
@@ -130,18 +155,21 @@ def qvec2rotmat(qvec):
         ]
     ])
 
-def rotmat(a, b):
-	a, b = a / np.linalg.norm(a), b / np.linalg.norm(b)
-	v = np.cross(a, b)
-	c = np.dot(a, b)
-	# handle exception for the opposite direction input
-	if c < -1 + 1e-10:
-		return rotmat(a + np.random.uniform(-1e-2, 1e-2, 3), b)
-	s = np.linalg.norm(v)
-	kmat = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
-	return np.eye(3) + kmat + kmat.dot(kmat) * ((1 - c) / (s ** 2 + 1e-10))
 
-def closest_point_2_lines(oa, da, ob, db): # returns point closest to both rays of form o+t*d, and a weight factor that goes to 0 if the lines are parallel
+def rotmat(a, b):
+    a, b = a / np.linalg.norm(a), b / np.linalg.norm(b)
+    v = np.cross(a, b)
+    c = np.dot(a, b)
+    # handle exception for the opposite direction input
+    if c < -1 + 1e-10:
+        return rotmat(a + np.random.uniform(-1e-2, 1e-2, 3), b)
+    s = np.linalg.norm(v)
+    kmat = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
+    return np.eye(3) + kmat + kmat.dot(kmat) * ((1 - c) / (s ** 2 + 1e-10))
+
+
+# returns point closest to both rays of form o+t*d, and a weight factor that goes to 0 if the lines are parallel
+def closest_point_2_lines(oa, da, ob, db):
     da = da / np.linalg.norm(da)
     db = db / np.linalg.norm(db)
     c = np.cross(da, db)
@@ -155,17 +183,20 @@ def closest_point_2_lines(oa, da, ob, db): # returns point closest to both rays 
         tb = 0
     return (oa+ta*da+ob+tb*db) * 0.5, denom
 
+
 if __name__ == "__main__":
     args = parse_args()
 
     if args.video != "":
         root_dir = os.path.dirname(args.video)
-        args.images = os.path.join(root_dir, "images") # override args.images
+        args.images = os.path.join(root_dir, "images")  # override args.images
         run_ffmpeg(args)
     else:
-        args.images = args.images[:-1] if args.images[-1] == '/' else args.images # remove trailing / (./a/b/ --> ./a/b)
+        # remove trailing / (./a/b/ --> ./a/b)
+        args.images = args.images[:-
+                                  1] if args.images[-1] == '/' else args.images
         root_dir = os.path.dirname(args.images)
-    
+
     args.colmap_db = os.path.join(root_dir, args.colmap_db)
     args.colmap_text = os.path.join(root_dir, args.colmap_text)
 
@@ -226,7 +257,8 @@ if __name__ == "__main__":
             fovx = angle_x * 180 / math.pi
             fovy = angle_y * 180 / math.pi
 
-    print(f"camera:\n\tres={w,h}\n\tcenter={cx,cy}\n\tfocal={fl_x,fl_y}\n\tfov={fovx,fovy}\n\tk={k1,k2} p={p1,p2} ")
+    print(
+        f"camera:\n\tres={w,h}\n\tcenter={cx,cy}\n\tfocal={fl_x,fl_y}\n\tfov={fovx,fovy}\n\tk={k1,k2} p={p1,p2} ")
 
     with open(os.path.join(TEXT_FOLDER, "images.txt"), "r") as f:
         i = 0
@@ -247,7 +279,8 @@ if __name__ == "__main__":
                 continue
 
             if i % 2 == 1:
-                elems = line.split(" ") # 1-4 is quat, 5-7 is trans, 9ff is filename (9, if filename contains no spaces)
+                # 1-4 is quat, 5-7 is trans, 9ff is filename (9, if filename contains no spaces)
+                elems = line.split(" ")
 
                 name = '_'.join(elems[9:])
                 full_name = os.path.join(args.images, name)
@@ -263,17 +296,17 @@ if __name__ == "__main__":
                 t = tvec.reshape([3, 1])
                 m = np.concatenate([np.concatenate([R, t], 1), bottom], 0)
                 c2w = np.linalg.inv(m)
-                
-                c2w[0:3, 2] *= -1 # flip the y and z axis
+
+                c2w[0:3, 2] *= -1  # flip the y and z axis
                 c2w[0:3, 1] *= -1
-                c2w = c2w[[1, 0, 2, 3],:] # swap y and z
-                c2w[2, :] *= -1 # flip whole world upside down
+                c2w = c2w[[1, 0, 2, 3], :]  # swap y and z
+                c2w[2, :] *= -1  # flip whole world upside down
 
                 up += c2w[0:3, 1]
 
                 frame = {
-                    "file_path": rel_name, 
-                    "sharpness": b, 
+                    "file_path": rel_name,
+                    "sharpness": b,
                     "transform_matrix": c2w
                 }
 
@@ -284,35 +317,37 @@ if __name__ == "__main__":
 
     print("[INFO] up vector was", up)
 
-    R = rotmat(up, [0, 0, 1]) # rotate up vector to [0,0,1]
+    R = rotmat(up, [0, 0, 1])  # rotate up vector to [0,0,1]
     R = np.pad(R, [0, 1])
     R[-1, -1] = 1
 
     for f in frames:
-        f["transform_matrix"] = np.matmul(R, f["transform_matrix"]) # rotate up to be the z axis
+        f["transform_matrix"] = np.matmul(
+            R, f["transform_matrix"])  # rotate up to be the z axis
 
     # find a central point they are all looking at
     print("[INFO] computing center of attention...")
     totw = 0.0
     totp = np.array([0.0, 0.0, 0.0])
     for f in frames:
-        mf = f["transform_matrix"][0:3,:]
+        mf = f["transform_matrix"][0:3, :]
         for g in frames:
-            mg = g["transform_matrix"][0:3,:]
-            p, weight = closest_point_2_lines(mf[:,3], mf[:,2], mg[:,3], mg[:,2])
+            mg = g["transform_matrix"][0:3, :]
+            p, weight = closest_point_2_lines(
+                mf[:, 3], mf[:, 2], mg[:, 3], mg[:, 2])
             if weight > 0.01:
                 totp += p * weight
                 totw += weight
     totp /= totw
     for f in frames:
-        f["transform_matrix"][0:3,3] -= totp
+        f["transform_matrix"][0:3, 3] -= totp
     avglen = 0.
     for f in frames:
-        avglen += np.linalg.norm(f["transform_matrix"][0:3,3])
+        avglen += np.linalg.norm(f["transform_matrix"][0:3, 3])
     avglen /= N
     print("[INFO] avg camera distance from origin", avglen)
     for f in frames:
-        f["transform_matrix"][0:3,3] *= 4.0 / avglen # scale to "nerf sized"
+        f["transform_matrix"][0:3, 3] *= 4.0 / avglen  # scale to "nerf sized"
 
     # sort frames by id
     frames.sort(key=lambda d: d['file_path'])
@@ -346,6 +381,15 @@ if __name__ == "__main__":
         }
 
         output_path = os.path.join(root_dir, filename)
+        # print("frames: {}".format(frames))
+        imgs = [v["file_path"] for v in frames]
+        folder = output_path.split("/")[-1].split(".")[0].split("_")[-1]
+        BASE = "/home/skhalid/Documents/datalake/dnerf/custom/"
+        print("folder: {}".format(folder))
+        for img in imgs:
+            cmd = "cp -pr " + BASE+img+" "+BASE+folder
+            print(cmd)
+            os.system(cmd)
         print(f"[INFO] writing {len(frames)} frames to {output_path}")
         with open(output_path, "w") as outfile:
             json.dump(out, outfile, indent=2)
@@ -354,7 +398,7 @@ if __name__ == "__main__":
     if args.hold <= 0:
 
         write_json('transforms.json', frames)
-        
+
     else:
         all_ids = np.arange(N)
         test_ids = all_ids[::args.hold]

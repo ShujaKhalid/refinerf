@@ -30,7 +30,7 @@ def extract_poses(im):
 
 def load_colmap_data(realdir):
 
-    camerasfile = os.path.join(realdir, 'sparse/0/cameras.bin')
+    camerasfile = os.path.join(realdir, 'colmap_sparse/0/cameras.bin')
     camdata = read_cameras_binary(camerasfile)
 
     list_of_keys = list(camdata.keys())
@@ -41,7 +41,7 @@ def load_colmap_data(realdir):
     # w, h, f = factor * w, factor * h, factor * f
     hwf = np.array([h, w, f]).reshape([3, 1])
 
-    imagesfile = os.path.join(realdir, 'sparse/0/images.bin')
+    imagesfile = os.path.join(realdir, 'colmap_sparse/0/images.bin')
     imdata = read_images_binary(imagesfile)
 
     w2c_mats = []
@@ -121,7 +121,7 @@ def motion_segmentation(basedir, threshold,
                         input_semantic_w=1024,
                         input_semantic_h=576):
 
-    points3dfile = os.path.join(basedir, 'sparse/0/points3D.bin')
+    points3dfile = os.path.join(basedir, 'colmap_sparse/0/points3D.bin')
     pts3d = read_points3d_binary(points3dfile)
 
     img_dir = glob.glob(basedir + '/images_colmap')[0]
@@ -165,7 +165,7 @@ def motion_segmentation(basedir, threshold,
     create_dir(save_mask_dir)
 
     print("num_frames: {}".format(num_frames))
-    for i in range(0, num_frames):
+    for i in range(0, num_frames-2):
         print("i: {}".format(i))
         im_prev = imdata[img_keys[perm[max(0, i - 1)]]]
         im_ref = imdata[img_keys[perm[i]]]
