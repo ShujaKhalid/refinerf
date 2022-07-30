@@ -23,7 +23,7 @@ def create_dir(dir):
 def load_image(imfile):
     img = np.array(Image.open(imfile)).astype(np.uint8)
     img = torch.from_numpy(img).permute(2, 0, 1).float()
-    img = img[:3,:,:] # sk_debug
+    img = img[:3, :, :]  # sk_debug
     print("img.shape: {}".format(img.shape))
     return img[None].to(DEVICE)
 
@@ -31,10 +31,11 @@ def load_image(imfile):
 def warp_flow(img, flow):
     h, w = flow.shape[:2]
     flow_new = flow.copy()
-    flow_new[:,:,0] += np.arange(w)
-    flow_new[:,:,1] += np.arange(h)[:,np.newaxis]
+    flow_new[:, :, 0] += np.arange(w)
+    flow_new[:, :, 1] += np.arange(h)[:, np.newaxis]
 
-    res = cv2.remap(img, flow_new, None, cv2.INTER_CUBIC, borderMode=cv2.BORDER_CONSTANT)
+    res = cv2.remap(img, flow_new, None, cv2.INTER_CUBIC,
+                    borderMode=cv2.BORDER_CONSTANT)
     return res
 
 
@@ -44,16 +45,17 @@ def compute_fwdbwd_mask(fwd_flow, bwd_flow):
 
     bwd2fwd_flow = warp_flow(bwd_flow, fwd_flow)
     fwd_lr_error = np.linalg.norm(fwd_flow + bwd2fwd_flow, axis=-1)
-    fwd_mask = fwd_lr_error < alpha_1  * (np.linalg.norm(fwd_flow, axis=-1) \
-                + np.linalg.norm(bwd2fwd_flow, axis=-1)) + alpha_2
+    fwd_mask = fwd_lr_error < alpha_1 * (np.linalg.norm(fwd_flow, axis=-1)
+                                         + np.linalg.norm(bwd2fwd_flow, axis=-1)) + alpha_2
 
     fwd2bwd_flow = warp_flow(fwd_flow, bwd_flow)
     bwd_lr_error = np.linalg.norm(bwd_flow + fwd2bwd_flow, axis=-1)
 
-    bwd_mask = bwd_lr_error < alpha_1  * (np.linalg.norm(bwd_flow, axis=-1) \
-                + np.linalg.norm(fwd2bwd_flow, axis=-1)) + alpha_2
+    bwd_mask = bwd_lr_error < alpha_1 * (np.linalg.norm(bwd_flow, axis=-1)
+                                         + np.linalg.norm(fwd2bwd_flow, axis=-1)) + alpha_2
 
     return fwd_mask, bwd_mask
+
 
 def run(args, input_path, output_path, output_img_path):
     model = torch.nn.DataParallel(RAFT(args))
@@ -62,21 +64,21 @@ def run(args, input_path, output_path, output_img_path):
     model = model.module
     model.to(DEVICE)
     model.eval()
-    
+
     with torch.no_grad():
         images = glob.glob(os.path.join(input_path, '*.png')) + \
-                 glob.glob(os.path.join(input_path, '*.jpg'))
+            glob.glob(os.path.join(input_path, '*.jpg'))
 
         images = sorted(images)
         print("images: {}".format(images))
         for i in range(len(images) - 1):
-            print(i)
-            print(images[i])
-            print(images[i+1])
+            # print(i)
+            # print(images[i])
+            # print(images[i+1])
             image1 = load_image(images[i])
             image2 = load_image(images[i + 1])
-            
-            print("img1.shp: {} - img2.shp: {}".format(image1.shape, image2.shape))
+
+            # print("img1.shp: {} - img2.shp: {}".format(image1.shape, image2.shape))
 
             padder = InputPadder(image1.shape)
             image1, image2 = padder.pad(image1, image2)
@@ -84,21 +86,29 @@ def run(args, input_path, output_path, output_img_path):
             _, flow_fwd = model(image1, image2, iters=20, test_mode=True)
             _, flow_bwd = model(image2, image1, iters=20, test_mode=True)
 
-            flow_fwd = padder.unpad(flow_fwd[0]).cpu().numpy().transpose(1, 2, 0)
-            flow_bwd = padder.unpad(flow_bwd[0]).cpu().numpy().transpose(1, 2, 0)
+            flow_fwd = padder.unpad(
+                flow_fwd[0]).cpu().numpy().transpose(1, 2, 0)
+            flow_bwd = padder.unpad(
+                flow_bwd[0]).cpu().numpy().transpose(1, 2, 0)
 
             mask_fwd, mask_bwd = compute_fwdbwd_mask(flow_fwd, flow_bwd)
 
             # Save flow
-            np.savez(os.path.join(output_path, '%03d_fwd.npz'%i), flow=flow_fwd, mask=mask_fwd)
-            np.savez(os.path.join(output_path, '%03d_bwd.npz'%(i + 1)), flow=flow_bwd, mask=mask_bwd)
+            np.savez(os.path.join(output_path, '%03d_fwd.npz' %
+                     i), flow=flow_fwd, mask=mask_fwd)
+            np.savez(os.path.join(output_path, '%03d_bwd.npz' %
+                     (i + 1)), flow=flow_bwd, mask=mask_bwd)
 
             # Save flow_img
-            Image.fromarray(flow_viz.flow_to_image(flow_fwd)).save(os.path.join(output_img_path, '%03d_fwd.png'%i))
-            Image.fromarray(flow_viz.flow_to_image(flow_bwd)).save(os.path.join(output_img_path, '%03d_bwd.png'%(i + 1)))
+            Image.fromarray(flow_viz.flow_to_image(flow_fwd)).save(
+                os.path.join(output_img_path, '%03d_fwd.png' % i))
+            Image.fromarray(flow_viz.flow_to_image(flow_bwd)).save(
+                os.path.join(output_img_path, '%03d_bwd.png' % (i + 1)))
 
-            Image.fromarray(mask_fwd).save(os.path.join(output_img_path, '%03d_fwd_mask.png'%i))
-            Image.fromarray(mask_bwd).save(os.path.join(output_img_path, '%03d_bwd_mask.png'%(i + 1)))
+            Image.fromarray(mask_fwd).save(os.path.join(
+                output_img_path, '%03d_fwd_mask.png' % i))
+            Image.fromarray(mask_bwd).save(os.path.join(
+                output_img_path, '%03d_bwd_mask.png' % (i + 1)))
 
 
 if __name__ == '__main__':
@@ -106,7 +116,8 @@ if __name__ == '__main__':
     parser.add_argument("--dataset_path", type=str, help='Dataset path')
     parser.add_argument('--model', help="restore RAFT checkpoint")
     parser.add_argument('--small', action='store_true', help='use small model')
-    parser.add_argument('--mixed_precision', action='store_true', help='use mixed precision')
+    parser.add_argument('--mixed_precision',
+                        action='store_true', help='use mixed precision')
     args = parser.parse_args()
 
     input_path = os.path.join(args.dataset_path, 'train')

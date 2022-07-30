@@ -45,8 +45,11 @@ class Trainer(_Trainer):
         rays_d = data['rays_d']  # [B, N, 3]
         time = data['time']  # [B, 1]
 
-        print("data: {}".format(data))
         print("data.keys(): {}".format(data.keys()))
+        print("data[masks]: {}".format(data["masks"].shape))
+
+        # TODO:
+        # Get masks here and
 
         # if there is no gt image, we train with CLIP loss.
         if 'images' not in data:
@@ -93,6 +96,18 @@ class Trainer(_Trainer):
                                     bg_color=bg_color, perturb=True, force_all_rays=False, **vars(self.opt))
 
         pred_rgb = outputs['image']
+
+        # TODO: Get outputs here
+        depth = outputs['depth']
+        image = outputs['image']
+        blend = outputs['blend']
+        sigmas_s = outputs['sigmas_s']
+        rgbs_s = outputs['rgbs_s']
+        sigmas_d = outputs['sigmas_d']
+        rgbs_d = outputs['rgbs_d']
+        deform_s = outputs['deform_s']
+        deform_d = outputs['deform_d']
+        sf = outputs['sf']
 
         # [B, N, 3] --> [B, N]
         loss = self.criterion(pred_rgb, gt_rgb).mean(-1)

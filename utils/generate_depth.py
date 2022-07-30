@@ -51,10 +51,12 @@ def run(input_path, output_path, output_img_path, model_path):
 
     # load network
     model = MidasNet(model_path, non_negative=True)
-    sh = cv2.imread(sorted(glob.glob(os.path.join(input_path, "*.png")))[0]).shape
+    print("input_path: {}".format(input_path))
+    sh = cv2.imread(
+        sorted(glob.glob(os.path.join(input_path, "*.jpg")))[0]).shape
     net_w, net_h = sh[1], sh[0]
 
-    resize_mode="upper_bound"
+    resize_mode = "upper_bound"
 
     transform = Compose(
         [
@@ -68,7 +70,7 @@ def run(input_path, output_path, output_img_path, model_path):
                 image_interpolation_method=cv2.INTER_CUBIC,
             ),
             NormalizeImage(mean=[0.485, 0.456, 0.406],
-                        std=[0.229, 0.224, 0.225]),
+                           std=[0.229, 0.224, 0.225]),
             PrepareForNet(),
         ]
     )
@@ -77,7 +79,7 @@ def run(input_path, output_path, output_img_path, model_path):
     model.to(device)
 
     # get input
-    img_names = sorted(glob.glob(os.path.join(input_path, "*.png")))
+    img_names = sorted(glob.glob(os.path.join(input_path, "*.jpg")))
     num_images = len(img_names)
 
     # create output folder
@@ -127,7 +129,8 @@ def run(input_path, output_path, output_img_path, model_path):
         else:
             out = np.zeros(prediction.shape, dtype=prediction.type)
 
-        cv2.imwrite(os.path.join(output_img_path, os.path.splitext(os.path.basename(img_name))[0] + '.png'), out.astype("uint16"))
+        cv2.imwrite(os.path.join(output_img_path, os.path.splitext(
+            os.path.basename(img_name))[0] + '.png'), out.astype("uint16"))
 
 
 if __name__ == "__main__":

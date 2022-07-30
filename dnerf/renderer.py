@@ -298,8 +298,8 @@ class NeRFRenderer(nn.Module):
         # return: image: [B, N, 3], depth: [B, N]
 
         # See what format the rays are in
-        print("rays_o.shape: {}".format(rays_o.shape))
-        print("rays_d.shape: {}".format(rays_d.shape))
+        # print("rays_o.shape: {}".format(rays_o.shape))
+        # print("rays_d.shape: {}".format(rays_d.shape))
 
         # TODO: If it's coordinates, find a way to split
         # the sets of xyz coordinates into `static` and `dynamic`
@@ -412,16 +412,16 @@ class NeRFRenderer(nn.Module):
             sceneflow_b = sf[..., :3]
             sceneflow_f = sf[..., 3:]
 
-            print()
-            print("sigmas_s.shape: {}".format(sigmas_s.shape))
-            print("rgbs_s.shape: {}".format(rgbs_s.shape))
-            print("sigmas_d.shape: {}".format(sigmas_d.shape))
-            print("rgbs_d.shape: {}".format(rgbs_d.shape))
-            print("deform_s.shape: {}".format(deform_s.shape))
-            print("deform_d.shape: {}".format(deform_d.shape))
-            print("deltas.shape: {}".format(deltas.shape))
-            print("blend.shape: {}".format(blend.shape))
-            print("sf.shape: {}".format(sf.shape))
+            # print()
+            # print("sigmas_s.shape: {}".format(sigmas_s.shape))
+            # print("rgbs_s.shape: {}".format(rgbs_s.shape))
+            # print("sigmas_d.shape: {}".format(sigmas_d.shape))
+            # print("rgbs_d.shape: {}".format(rgbs_d.shape))
+            # print("deform_s.shape: {}".format(deform_s.shape))
+            # print("deform_d.shape: {}".format(deform_d.shape))
+            # print("deltas.shape: {}".format(deltas.shape))
+            # print("blend.shape: {}".format(blend.shape))
+            # print("sf.shape: {}".format(sf.shape))
 
             # # Do all the required calculations here
             # sigmas = sigmas_s
@@ -488,6 +488,7 @@ class NeRFRenderer(nn.Module):
 
             results['deform'] = deform_s
 
+        # [Inference]
         else:
 
             # allocate outputs
@@ -524,34 +525,6 @@ class NeRFRenderer(nn.Module):
 
                 # TODO: Add condition here for alternating between static and dynamic based on no. of iterations...
                 #sigmas, rgbs, _ = self(xyzs, dirs, time, svd="static")
-                raw_noise_std = 0.0
-
-                lindisp = False
-                N_rays = N
-                N_samples = 13
-                near = 0
-                far = 1
-
-                # Decide where to sample along each ray. Under the logic, all rays will be sampled at
-                # the same times.
-                t_vals = torch.linspace(0., 1., steps=N_samples)
-                if not lindisp:
-                    # Space integration times linearly between 'near' and 'far'. Same
-                    # integration points will be used for all rays.
-                    z_vals = near * (1.-t_vals) + far * (t_vals)
-                else:
-                    # Sample linearly in inverse depth (disparity).
-                    z_vals = 1./(1./near * (1.-t_vals) + 1./far * (t_vals))
-                # FIXME: Figure out the details here
-                z_vals = z_vals.expand([N_rays, N_samples]).cuda()
-
-                # print("z_vals.shape: {}".format(z_vals.shape))
-                # print("rays_o.shape: {}".format(rays_o.shape))
-                # print("rays_d.shape: {}".format(rays_d.shape))
-
-                # Points in space to evaluate model at.
-                pts = rays_o[..., None, :] + rays_d[..., None, :] * \
-                    z_vals[..., :, None]  # [N_rays, N_samples, 3]
                 sigmas_s, rgbs_s, deform_s = self(
                     xyzs, dirs, time, svd="static")
                 sigmas_d, rgbs_d, deform_d, blend, sf = self(
@@ -579,6 +552,14 @@ class NeRFRenderer(nn.Module):
 
         results['depth'] = depth
         results['image'] = image
+        results['blend'] = blend
+        results['sigmas_s'] = sigmas_s
+        results['rgbs_s'] = rgbs_s
+        results['sigmas_d'] = sigmas_d
+        results['rgbs_d'] = rgbs_d
+        results['deform_s'] = deform_s
+        results['deform_d'] = deform_d
+        results['sf'] = sf
 
         return results
 
