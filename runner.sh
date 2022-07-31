@@ -27,14 +27,15 @@ then
 		FILENAME=$(basename "$2" .mp4)
 
 		mkdir -p $DATASET_PATH
-		#python ./utils/generate_data.py --videopath $2 --data_dir $DATASET_PATH
-		python scripts/colmap2nerf.py --video "$2" --run_colmap --dynamic
-
-		echo $FILENAME
 		mkdir -p $DATASET_PATH/train
 		mkdir -p $DATASET_PATH/val
 		mkdir -p $DATASET_PATH/test
 		mkdir -p $DATASET_PATH/images_colmap
+		
+		#python ./utils/generate_data.py --videopath $2 --data_dir $DATASET_PATH
+		python scripts/colmap2nerf.py --video "$2" --run_colmap --dynamic
+
+		echo $FILENAME
 		for i in $DATASET_PATH/images/*.png ; do convert "$i" "${i%.*}.jpg" ; done
 		# cp -pr $DATASET_PATH/images/*.jpg $DATASET_PATH/train
 		cp -pr $DATASET_PATH/images/*.jpg $DATASET_PATH/images_colmap
