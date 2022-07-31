@@ -98,16 +98,22 @@ class Trainer(_Trainer):
         pred_rgb = outputs['image']
 
         # TODO: Get outputs here
-        depth = outputs['depth']
-        image = outputs['image']
-        blend = outputs['blend']
+        depth_s = outputs['depth_s']
+        depth_d = outputs['depth_d']
+        image_s = outputs['image']
+        blend = outputs['blending']
         sigmas_s = outputs['sigmas_s']
-        rgbs_s = outputs['rgbs_s']
         sigmas_d = outputs['sigmas_d']
+        pts_f = outputs['raw_pts_f']
+        pts_b = outputs['raw_pts_b']
+        rgbs_s = outputs['rgbs_s']
         rgbs_d = outputs['rgbs_d']
         deform_s = outputs['deform_s']
         deform_d = outputs['deform_d']
-        sf = outputs['sf']
+        sceneflow_f = outputs['sceneflow_f']
+        sceneflow_b = outputs['sceneflow_b']
+        weights_sum_s = outputs['weights_sum_s']
+        weights_sum_d = outputs['weights_sum_d']
 
         # [B, N, 3] --> [B, N]
         loss = self.criterion(pred_rgb, gt_rgb).mean(-1)

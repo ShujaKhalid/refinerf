@@ -342,16 +342,19 @@ class NeRFRenderer(nn.Module):
             # Amazing visualization
             #plot_pointcloud(xyzs.reshape(-1, 3).detach().cpu().numpy())
 
+            # print("xyzs.shape: {}".format(xyzs.shape))
             sigmas_s, rgbs_s, deform_s = self(
                 xyzs, dirs, time, svd="static")
+            # print("xyzs.shape: {}".format(xyzs.shape))
             sigmas_d, rgbs_d, deform_d, blend, sf = self(
                 xyzs, dirs, time, svd="dynamic")
 
             sigmas_s = self.density_scale * sigmas_s
             sigmas_d = self.density_scale * sigmas_d
 
-            raw_s_rgba = torch.cat((rgbs_s, torch.unsqueeze(sigmas_s, -1)), -1)
-            raw_d_rgba = torch.cat((rgbs_d, torch.unsqueeze(sigmas_d, -1)), -1)
+            # TODO: remove?!?
+            # raw_s_rgba = torch.cat((rgbs_s, torch.unsqueeze(sigmas_s, -1)), -1)
+            # raw_d_rgba = torch.cat((rgbs_d, torch.unsqueeze(sigmas_d, -1)), -1)
 
             # We need the sceneflow from the dynamicNeRF.
             sceneflow_b = sf[..., :3]
@@ -367,26 +370,6 @@ class NeRFRenderer(nn.Module):
             # print("deltas.shape: {}".format(deltas.shape))
             # print("blend.shape: {}".format(blend.shape))
             # print("sf.shape: {}".format(sf.shape))
-
-            # sigmas = torch.unsqueeze(sigmas_s, 0)  # FIXME
-            # rgbs = torch.unsqueeze(rgbs_s, 0)  # FIXME
-            # special case for CCNeRF's residual learning
-            # if len(sigmas.shape) == 2:
-            #     K = sigmas.shape[0]
-            #     depths = []
-            #     images = []
-            #     for k in range(K):
-            #         weights_sum, depth, image = raymarching.composite_rays_train(
-            #             sigmas[k], rgbs[k], deltas, rays)
-            #         image = image + (1 - weights_sum).unsqueeze(-1) * bg_color
-            #         depth = torch.clamp(depth - nears, min=0) / (fars - nears)
-            #         images.append(image.view(*prefix, 3))
-            #         depths.append(depth.view(*prefix))
-
-            #     depth = torch.stack(depths, axis=0)  # [K, B, N]
-            #     image = torch.stack(images, axis=0)  # [K, B, N, 3]
-
-            # else:
 
             # === STATIC ===
             print("\nExecuting 1st pass...")
@@ -425,13 +408,17 @@ class NeRFRenderer(nn.Module):
             # dynamic prep -> frames 2 & 3
             pts_b = xyzs + sceneflow_b
             pts_f = xyzs + sceneflow_f
+            # results['raw_pts'] = xyzs  # FIXME ???
+            xyzs = 0  # Make way for other vars in GPU memory
 
             # 3rd pass
             print("\nExecuting 3rd pass...")
+            # print("pts_b.shape: {}".format(pts_b.shape))
             sigmas_d_b, rgbs_d_b, deform_d_b, blend_b, sf_b = self(
                 pts_b, dirs, time, svd="dynamic")
             sceneflow_b_b = sf_b[..., :3]
             sceneflow_b_f = sf_b[..., 3:]
+            print("raymarching.composite_rays_train 3rd pass...")
             weights_sum_d_b, depth_d_b, image_d_b = raymarching.composite_rays_train(
                 sigmas_d_b, rgbs_d_b, deltas, rays)
 
@@ -442,10 +429,12 @@ class NeRFRenderer(nn.Module):
 
             # 4th pass
             print("\nExecuting 4th pass...")
+            # print("pts_f.shape: {}".format(pts_f.shape))
             sigmas_d_f, rgbs_d_f, deform_d_f, blend_f, sf_f = self(
                 pts_f, dirs, time, svd="dynamic")
             sceneflow_f_b = sf_f[..., :3]
             sceneflow_f_f = sf_f[..., 3:]
+            print("raymarching.composite_rays_train 4th pass...")
             weights_sum_d_f, depth_d_f, image_d_f = raymarching.composite_rays_train(
                 sigmas_d_f, rgbs_d_f, deltas, rays)
 
@@ -470,7 +459,6 @@ class NeRFRenderer(nn.Module):
 
             # 6th pass
             print("\nExecuting 6th pass...")
-
             sigmas_d_f_f, rgbs_d_f_f, deform_d_f_f, blend_f_f, sf_f_f = self(
                 pts_f_f, dirs, time, svd="dynamic")
             weights_sum_d_f_f, depth_d_f_f, image_d_f_f = raymarching.composite_rays_train(
@@ -480,11 +468,10 @@ class NeRFRenderer(nn.Module):
             # All required outputs for calculating our losses
             results['depth_s'] = depth_s
             results['depth_d'] = depth_d
-            results['image'] = image
+            results['image'] = image_s
             results['blending'] = blend
             results['sigmas_s'] = sigmas_s
             results['sigmas_d'] = sigmas_d
-            results['raw_pts'] = xyzs  # FIXME ???
             results['raw_pts_f'] = pts_f
             results['raw_pts_b'] = pts_b
             results['rgbs_s'] = rgbs_s
@@ -495,8 +482,6 @@ class NeRFRenderer(nn.Module):
             results['sceneflow_b'] = sceneflow_b
             results['weights_sum_s'] = weights_sum_s
             results['weights_sum_d'] = weights_sum_d
-            results['sigmas_s'] = sigmas_s
-            results['sigmas_s'] = sigmas_s
 
         # [Inference]
         else:
@@ -533,8 +518,6 @@ class NeRFRenderer(nn.Module):
                 xyzs, dirs, deltas = raymarching.march_rays(n_alive, n_step, rays_alive, rays_t, rays_o, rays_d, self.bound,
                                                             self.density_bitfield[t], self.cascade, self.grid_size, nears, fars, 128, perturb, dt_gamma, max_steps)
 
-                # TODO: Add condition here for alternating between static and dynamic based on no. of iterations...
-                #sigmas, rgbs, _ = self(xyzs, dirs, time, svd="static")
                 sigmas_s, rgbs_s, deform_s = self(
                     xyzs, dirs, time, svd="static")
                 sigmas_d, rgbs_d, deform_d, blend, sf = self(
