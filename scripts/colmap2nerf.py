@@ -387,7 +387,7 @@ if __name__ == "__main__":
         BASE = "/home/skhalid/Documents/datalake/dnerf/custom/"
         print("folder: {}".format(folder))
         for img in imgs:
-            cmd = "cp -pr " + BASE+img+" "+BASE+folder
+            cmd = "cp -pr " + BASE+img+" "+BASE+folder+"/"+img.split("/")[-1]
             print(cmd)
             os.system(cmd)
         print(f"[INFO] writing {len(frames)} frames to {output_path}")
