@@ -45,8 +45,8 @@ class Trainer(_Trainer):
         rays_d = data['rays_d']  # [B, N, 3]
         time = data['time']  # [B, 1]
 
-        print("data.keys(): {}".format(data.keys()))
-        print("data[masks]: {}".format(data["masks"].shape))
+        # print("data.keys(): {}".format(data.keys()))
+        # print("data[masks]: {}".format(data["masks"].shape))
 
         # TODO:
         # Get masks here and

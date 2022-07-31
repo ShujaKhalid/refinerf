@@ -297,93 +297,94 @@ class NeRFDataset:
 
         # [debug] uncomment to view examples of randomly generated poses.
         # visualize_poses(rand_poses(100, self.device, radius=self.radius).cpu().numpy())
+        FLOW_FLAG = True
+        if (FLOW_FLAG):
+            # TODO: ADD the additional pre-reqs here
+            basedir = self.root_path
+            disp_dir = os.path.join(basedir, 'disp')
+            sh = image.shape[:2]
+            num_img = len(frames)  # FIXME
 
-        # TODO: ADD the additional pre-reqs here
-        basedir = self.root_path
-        disp_dir = os.path.join(basedir, 'disp')
-        sh = image.shape[:2]
-        num_img = len(frames)  # FIXME
+            dispfiles = [os.path.join(disp_dir, f)
+                         for f in sorted(os.listdir(disp_dir)) if f.endswith('npy')]
 
-        dispfiles = [os.path.join(disp_dir, f)
-                     for f in sorted(os.listdir(disp_dir)) if f.endswith('npy')]
+            disp = [cv2.resize(np.load(f),
+                               (sh[1], sh[0]),
+                               interpolation=cv2.INTER_NEAREST) for f in dispfiles]
+            disp = np.stack(disp, -1)
 
-        disp = [cv2.resize(np.load(f),
-                           (sh[1], sh[0]),
-                           interpolation=cv2.INTER_NEAREST) for f in dispfiles]
-        disp = np.stack(disp, -1)
+            mask_dir = os.path.join(basedir, 'motion_masks')
+            maskfiles = [os.path.join(mask_dir, f)
+                         for f in sorted(os.listdir(mask_dir)) if f.endswith('png')]
 
-        mask_dir = os.path.join(basedir, 'motion_masks')
-        maskfiles = [os.path.join(mask_dir, f)
-                     for f in sorted(os.listdir(mask_dir)) if f.endswith('png')]
+            masks = [cv2.resize(cv2.imread(f)/255., (sh[1], sh[0]),
+                                interpolation=cv2.INTER_NEAREST) for f in maskfiles]
+            masks = np.stack(masks, -1)
+            masks = np.float32(masks > 1e-3)
 
-        masks = [cv2.resize(cv2.imread(f)/255., (sh[1], sh[0]),
-                            interpolation=cv2.INTER_NEAREST) for f in maskfiles]
-        masks = np.stack(masks, -1)
-        masks = np.float32(masks > 1e-3)
+            flow_dir = os.path.join(basedir, 'flow')
+            flows_f = []
+            flow_masks_f = []
+            flows_b = []
+            flow_masks_b = []
+            for i in range(num_img):
+                if i == num_img - 1:
+                    fwd_flow, fwd_mask = np.zeros(
+                        (sh[0], sh[1], 2)), np.zeros((sh[0], sh[1]))
+                else:
+                    fwd_flow_path = os.path.join(flow_dir, '%03d_fwd.npz' % i)
+                    fwd_data = np.load(fwd_flow_path)
+                    fwd_flow, fwd_mask = fwd_data['flow'], fwd_data['mask']
+                    fwd_flow = resize_flow(fwd_flow, sh[0], sh[1])
+                    fwd_mask = np.float32(fwd_mask)
+                    fwd_mask = cv2.resize(fwd_mask, (sh[1], sh[0]),
+                                          interpolation=cv2.INTER_NEAREST)
+                flows_f.append(fwd_flow)
+                flow_masks_f.append(fwd_mask)
 
-        flow_dir = os.path.join(basedir, 'flow')
-        flows_f = []
-        flow_masks_f = []
-        flows_b = []
-        flow_masks_b = []
-        for i in range(num_img):
-            if i == num_img - 1:
-                fwd_flow, fwd_mask = np.zeros(
-                    (sh[0], sh[1], 2)), np.zeros((sh[0], sh[1]))
-            else:
-                fwd_flow_path = os.path.join(flow_dir, '%03d_fwd.npz' % i)
-                fwd_data = np.load(fwd_flow_path)
-                fwd_flow, fwd_mask = fwd_data['flow'], fwd_data['mask']
-                fwd_flow = resize_flow(fwd_flow, sh[0], sh[1])
-                fwd_mask = np.float32(fwd_mask)
-                fwd_mask = cv2.resize(fwd_mask, (sh[1], sh[0]),
-                                      interpolation=cv2.INTER_NEAREST)
-            flows_f.append(fwd_flow)
-            flow_masks_f.append(fwd_mask)
+                if i == 0:
+                    bwd_flow, bwd_mask = np.zeros(
+                        (sh[0], sh[1], 2)), np.zeros((sh[0], sh[1]))
+                else:
+                    bwd_flow_path = os.path.join(flow_dir, '%03d_bwd.npz' % i)
+                    bwd_data = np.load(bwd_flow_path)
+                    bwd_flow, bwd_mask = bwd_data['flow'], bwd_data['mask']
+                    bwd_flow = resize_flow(bwd_flow, sh[0], sh[1])
+                    bwd_mask = np.float32(bwd_mask)
+                    bwd_mask = cv2.resize(bwd_mask, (sh[1], sh[0]),
+                                          interpolation=cv2.INTER_NEAREST)
+                flows_b.append(bwd_flow)
+                flow_masks_b.append(bwd_mask)
 
-            if i == 0:
-                bwd_flow, bwd_mask = np.zeros(
-                    (sh[0], sh[1], 2)), np.zeros((sh[0], sh[1]))
-            else:
-                bwd_flow_path = os.path.join(flow_dir, '%03d_bwd.npz' % i)
-                bwd_data = np.load(bwd_flow_path)
-                bwd_flow, bwd_mask = bwd_data['flow'], bwd_data['mask']
-                bwd_flow = resize_flow(bwd_flow, sh[0], sh[1])
-                bwd_mask = np.float32(bwd_mask)
-                bwd_mask = cv2.resize(bwd_mask, (sh[1], sh[0]),
-                                      interpolation=cv2.INTER_NEAREST)
-            flows_b.append(bwd_flow)
-            flow_masks_b.append(bwd_mask)
+            flows_f = np.stack(flows_f, -1)
+            flow_masks_f = np.stack(flow_masks_f, -1)
+            flows_b = np.stack(flows_b, -1)
+            flow_masks_b = np.stack(flow_masks_b, -1)
 
-        flows_f = np.stack(flows_f, -1)
-        flow_masks_f = np.stack(flow_masks_f, -1)
-        flows_b = np.stack(flows_b, -1)
-        flow_masks_b = np.stack(flow_masks_b, -1)
+            imgs = self.images  # sk_debug
 
-        imgs = self.images  # sk_debug
+            # print("imgs.shape: {}".format(imgs.shape))
+            # print("disp.shape: {}".format(disp.shape))
+            # print("masks.shape: {}".format(masks.shape))
+            # print("flows_f.shape: {}".format(flows_f.shape))
+            # print("flow_masks_f.shape: {}".format(flow_masks_f.shape))
+            # print("flows_b.shape: {}".format(flows_b.shape))
+            # print("flow_masks_b.shape: {}".format(flow_masks_b.shape))
 
-        print("imgs.shape: {}".format(imgs.shape))
-        print("disp.shape: {}".format(disp.shape))
-        print("masks.shape: {}".format(masks.shape))
-        print("flows_f.shape: {}".format(flows_f.shape))
-        print("flow_masks_f.shape: {}".format(flow_masks_f.shape))
-        print("flows_b.shape: {}".format(flows_b.shape))
-        print("flow_masks_b.shape: {}".format(flow_masks_b.shape))
+            self.flows_f = flows_f
+            self.flow_masks_f = flow_masks_f
+            self.flows_b = flows_b
+            self.flow_masks_b = flow_masks_b
+            self.masks = masks
+            self.disp = disp
 
-        self.flows_f = flows_f
-        self.flow_masks_f = flow_masks_f
-        self.flows_b = flows_b
-        self.flow_masks_b = flow_masks_b
-        self.masks = masks
-        self.disp = disp
-
-        # FIXME: sk_debug
-        # assert(imgs.shape[0] == disp.shape[-1])
-        # assert(imgs.shape[0] == masks.shape[-1])
-        # assert(imgs.shape[0] == flows_f.shape[-1])
-        # assert(imgs.shape[0] == flow_masks_f.shape[-1])
-        # assert(imgs.shape[1] == disp.shape[-1])
-        # assert(imgs.shape[1] == masks.shape[-1])
+            # FIXME: sk_debug
+            # assert(imgs.shape[0] == disp.shape[-1])
+            # assert(imgs.shape[0] == masks.shape[-1])
+            # assert(imgs.shape[0] == flows_f.shape[-1])
+            # assert(imgs.shape[0] == flow_masks_f.shape[-1])
+            # assert(imgs.shape[1] == disp.shape[-1])
+            # assert(imgs.shape[1] == masks.shape[-1])
 
         if self.preload:
             self.poses = self.poses.to(self.device)

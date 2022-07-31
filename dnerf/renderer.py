@@ -342,61 +342,6 @@ class NeRFRenderer(nn.Module):
             # Amazing visualization
             #plot_pointcloud(xyzs.reshape(-1, 3).detach().cpu().numpy())
 
-            # print()
-            # print("xyzs.shape: {}".format(xyzs.shape))
-            # print("dirs.shape: {}".format(dirs.shape))
-            # print("rays.shape: {}".format(rays.shape))
-            # print("rays_o.shape: {}".format(rays_o.shape))
-            # print("rays_d.shape: {}".format(rays_d.shape))
-
-            # TODO: Add condition here for alternating between static and dynamic based on no. of iterations...
-            # svd = "static"
-            # if (svd == "static"):
-            #     sigmas, rgbs, deform = self(xyzs, dirs, time, svd=svd)
-            # elif (svd == "dynamic"):
-            #     sigmas_s, rgbs_s, deform_s = self(xyzs, dirs, time, svd=svd)
-            #     sigmas, rgbs, deform, blend, sf = self(
-            #         xyzs, dirs, time, svd=svd)
-            # else:
-            #     raise Exception(
-            #         "Run NeRF in either `static` or `dynamic` mode")
-
-            # # Add the time dimension to xyz.
-            # raw_noise_std = 0.0
-
-            # lindisp = False
-            # N_rays = N
-            # N_samples = 13
-            # near = 0
-            # far = 1
-
-            # # Decide where to sample along each ray. Under the logic, all rays will be sampled at
-            # # the same times.
-            # t_vals = torch.linspace(0., 1., steps=N_samples)
-            # if not lindisp:
-            #     # Space integration times linearly between 'near' and 'far'. Same
-            #     # integration points will be used for all rays.
-            #     z_vals = near * (1.-t_vals) + far * (t_vals)
-            # else:
-            #     # Sample linearly in inverse depth (disparity).
-            #     z_vals = 1./(1./near * (1.-t_vals) + 1./far * (t_vals))
-            # # FIXME: Figure out the details here
-            # z_vals = z_vals.expand([N_rays, N_samples]).cuda()
-
-            # # print(z_vals.shape)
-            # # print(rays_o.shape)
-            # # print(rays_d.shape)
-
-            # # Points in space to evaluate model at.
-            # pts = rays_o[..., None, :] + rays_d[..., None, :] * \
-            #     z_vals[..., :, None]  # [N_rays, N_samples, 3]
-            # pts_ref = torch.cat([pts, torch.ones_like(pts[..., 0:1]) * t], -1)
-
-            # # print(pts.shape)
-            # # print(pts_ref.shape)
-            # # print(dirs.shape)
-            # # print(time.shape)
-
             sigmas_s, rgbs_s, deform_s = self(
                 xyzs, dirs, time, svd="static")
             sigmas_d, rgbs_d, deform_d, blend, sf = self(
@@ -423,10 +368,6 @@ class NeRFRenderer(nn.Module):
             # print("blend.shape: {}".format(blend.shape))
             # print("sf.shape: {}".format(sf.shape))
 
-            # # Do all the required calculations here
-            # sigmas = sigmas_s
-            # rgbs = rgbs_s
-
             # sigmas = torch.unsqueeze(sigmas_s, 0)  # FIXME
             # rgbs = torch.unsqueeze(rgbs_s, 0)  # FIXME
             # special case for CCNeRF's residual learning
@@ -448,6 +389,7 @@ class NeRFRenderer(nn.Module):
             # else:
 
             # === STATIC ===
+            print("\nExecuting 1st pass...")
             weights_sum_s, depth_s, image_s = raymarching.composite_rays_train(
                 sigmas_s, rgbs_s, deltas, rays)
             image_s = image_s + (1 - weights_sum_s).unsqueeze(-1) * bg_color
@@ -456,6 +398,7 @@ class NeRFRenderer(nn.Module):
             depth_s = depth_s.view(*prefix)
 
             # === DYNAMIC ===
+            print("\nExecuting 2nd pass...")
             weights_sum_d, depth_d, image_d = raymarching.composite_rays_train(
                 sigmas_d, rgbs_d, deltas, rays)
             image_d = image_d + (1 - weights_sum_d).unsqueeze(-1) * bg_color
@@ -479,14 +422,81 @@ class NeRFRenderer(nn.Module):
             #          - weights_full
             #          - dynamicness_map
 
-            # Assign props here
-            image = image_d
-            depth = depth_d
+            # dynamic prep -> frames 2 & 3
+            pts_b = xyzs + sceneflow_b
+            pts_f = xyzs + sceneflow_f
 
-            # print(image.shape)
-            # print(depth.shape)
+            # 3rd pass
+            print("\nExecuting 3rd pass...")
+            sigmas_d_b, rgbs_d_b, deform_d_b, blend_b, sf_b = self(
+                pts_b, dirs, time, svd="dynamic")
+            sceneflow_b_b = sf_b[..., :3]
+            sceneflow_b_f = sf_b[..., 3:]
+            weights_sum_d_b, depth_d_b, image_d_b = raymarching.composite_rays_train(
+                sigmas_d_b, rgbs_d_b, deltas, rays)
 
-            results['deform'] = deform_s
+            results['sceneflow_b_f'] = sceneflow_b_f
+            results['rgb_map_d_b'] = image_d_b
+            results['acc_map_d_b'] = torch.abs(
+                torch.sum(weights_sum_d_b - weights_sum_d, -1))
+
+            # 4th pass
+            print("\nExecuting 4th pass...")
+            sigmas_d_f, rgbs_d_f, deform_d_f, blend_f, sf_f = self(
+                pts_f, dirs, time, svd="dynamic")
+            sceneflow_f_b = sf_f[..., :3]
+            sceneflow_f_f = sf_f[..., 3:]
+            weights_sum_d_f, depth_d_f, image_d_f = raymarching.composite_rays_train(
+                sigmas_d_f, rgbs_d_f, deltas, rays)
+
+            results['sceneflow_f_b'] = sceneflow_f_b
+            results['rgb_map_d_f'] = rgbs_d_f
+            results['acc_map_d_f'] = torch.abs(
+                torch.sum(weights_sum_d_f - weights_sum_d, -1))
+
+            # dynamic prep -> frames 4 & 5
+            pts_b_b = pts_b + sceneflow_b_b
+            pts_f_f = pts_f + sceneflow_f_f
+            results['raw_pts_b_b'] = pts_b_b
+            results['raw_pts_f_f'] = pts_f_f
+
+            # 5th pass
+            print("\nExecuting 5th pass...")
+            sigmas_d_b_b, rgbs_d_b_b, deform_d_b_b, blend_b_b, sf_b_b = self(
+                pts_b_b, dirs, time, svd="dynamic")
+            weights_sum_d_b_b, depth_d_b_b, image_d_b_b = raymarching.composite_rays_train(
+                sigmas_d_b_b, rgbs_d_b_b, deltas, rays)
+            results['rgb_map_d_b_b'] = image_d_b_b
+
+            # 6th pass
+            print("\nExecuting 6th pass...")
+
+            sigmas_d_f_f, rgbs_d_f_f, deform_d_f_f, blend_f_f, sf_f_f = self(
+                pts_f_f, dirs, time, svd="dynamic")
+            weights_sum_d_f_f, depth_d_f_f, image_d_f_f = raymarching.composite_rays_train(
+                sigmas_d_f_f, rgbs_d_f_f, deltas, rays)
+            results['rgb_map_d_f_f'] = image_d_f_f
+
+            # All required outputs for calculating our losses
+            results['depth_s'] = depth_s
+            results['depth_d'] = depth_d
+            results['image'] = image
+            results['blending'] = blend
+            results['sigmas_s'] = sigmas_s
+            results['sigmas_d'] = sigmas_d
+            results['raw_pts'] = xyzs  # FIXME ???
+            results['raw_pts_f'] = pts_f
+            results['raw_pts_b'] = pts_b
+            results['rgbs_s'] = rgbs_s
+            results['rgbs_d'] = rgbs_d
+            results['deform_s'] = deform_s
+            results['deform_d'] = deform_d
+            results['sceneflow_f'] = sceneflow_f
+            results['sceneflow_b'] = sceneflow_b
+            results['weights_sum_s'] = weights_sum_s
+            results['weights_sum_d'] = weights_sum_d
+            results['sigmas_s'] = sigmas_s
+            results['sigmas_s'] = sigmas_s
 
         # [Inference]
         else:
@@ -550,16 +560,14 @@ class NeRFRenderer(nn.Module):
             image = image.view(*prefix, 3)
             depth = depth.view(*prefix)
 
-        results['depth'] = depth
-        results['image'] = image
-        results['blend'] = blend
-        results['sigmas_s'] = sigmas_s
-        results['rgbs_s'] = rgbs_s
-        results['sigmas_d'] = sigmas_d
-        results['rgbs_d'] = rgbs_d
-        results['deform_s'] = deform_s
-        results['deform_d'] = deform_d
-        results['sf'] = sf
+            # Only run during inference
+            results['image'] = image
+            results['depth'] = depth
+
+        # FIXME: Assign props here
+        # FIXME: Assign props here
+        # FIXME: Assign props here
+        results['deform'] = deform_s
 
         return results
 
