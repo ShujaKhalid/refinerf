@@ -409,7 +409,7 @@ class NeRFRenderer(nn.Module):
             pts_b = xyzs + sceneflow_b
             pts_f = xyzs + sceneflow_f
             # results['raw_pts'] = xyzs  # FIXME ???
-            xyzs = 0  # Make way for other vars in GPU memory
+            # xyzs = 0  # Make way for other vars in GPU memory
 
             # 3rd pass
             print("\nExecuting 3rd pass...")

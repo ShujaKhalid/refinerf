@@ -31,7 +31,7 @@ then
 		mkdir -p $DATASET_PATH/val
 		mkdir -p $DATASET_PATH/test
 		mkdir -p $DATASET_PATH/images_colmap
-		
+
 		#python ./utils/generate_data.py --videopath $2 --data_dir $DATASET_PATH
 		python scripts/colmap2nerf.py --video "$2" --run_colmap --dynamic
 
@@ -69,6 +69,7 @@ then
 	fi
 
 
+	python utils/generate_pose.py --dataset_path $DATASET_PATH$CASE
 	python utils/generate_depth.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_MIDAS
 	python utils/generate_flow.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_RAFT 
 	python utils/generate_motion_mask.py --dataset_path $DATASET_PATH
