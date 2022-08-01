@@ -265,7 +265,7 @@ class NeRFDataset:
 
                 self.poses.append(pose)
                 self.images.append(image)
-                print("image.shape: {}".format(image.shape))
+                # print("image.shape: {}".format(image.shape))
                 self.times.append(time)
 
         self.poses = torch.from_numpy(

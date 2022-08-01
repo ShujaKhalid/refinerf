@@ -133,7 +133,7 @@ class Trainer(_Trainer):
         decay_iteration = 25  # FIXME
         batch_invdepth = data['disp']
         # FIXME - 0 index probs
-        batch_mask = data['mask']
+        batch_mask = data['masks']
         print("batch_mask.shape: {}".format(batch_mask.shape))
         Temp = 1. / (10 ** (1 // (decay_iteration * 1000)))  # FIXME
         focal = data['intrinsics'][0]  # FIXME
