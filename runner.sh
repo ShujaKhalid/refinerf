@@ -69,7 +69,7 @@ then
 	fi
 
 
-	python utils/generate_pose.py --dataset_path $DATASET_PATH$CASE
+	# python utils/generate_pose.py --dataset_path $DATASET_PATH$CASE
 	python utils/generate_depth.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_MIDAS
 	python utils/generate_flow.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_RAFT 
 	python utils/generate_motion_mask.py --dataset_path $DATASET_PATH

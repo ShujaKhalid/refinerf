@@ -373,18 +373,20 @@ class NeRFRenderer(nn.Module):
 
             # === STATIC ===
             print("\nExecuting 1st pass...")
-            weights_sum_s, depth_s, image_s = raymarching.composite_rays_train(
+            weights_sum_s, depth_s, image_s_orig = raymarching.composite_rays_train(
                 sigmas_s, rgbs_s, deltas, rays)
-            image_s = image_s + (1 - weights_sum_s).unsqueeze(-1) * bg_color
+            image_s = image_s_orig + \
+                (1 - weights_sum_s).unsqueeze(-1) * bg_color
             depth_s = torch.clamp(depth_s - nears, min=0) / (fars - nears)
             image_s = image_s.view(*prefix, 3)
             depth_s = depth_s.view(*prefix)
 
             # === DYNAMIC ===
             print("\nExecuting 2nd pass...")
-            weights_sum_d, depth_d, image_d = raymarching.composite_rays_train(
+            weights_sum_d, depth_d, image_d_orig = raymarching.composite_rays_train(
                 sigmas_d, rgbs_d, deltas, rays)
-            image_d = image_d + (1 - weights_sum_d).unsqueeze(-1) * bg_color
+            image_d = image_d_orig + \
+                (1 - weights_sum_d).unsqueeze(-1) * bg_color
             depth_d = torch.clamp(depth_d - nears, min=0) / (fars - nears)
             image_d = image_d.view(*prefix, 3)
             depth_d = depth_d.view(*prefix)
@@ -408,7 +410,7 @@ class NeRFRenderer(nn.Module):
             # dynamic prep -> frames 2 & 3
             pts_b = xyzs + sceneflow_b
             pts_f = xyzs + sceneflow_f
-            # results['raw_pts'] = xyzs  # FIXME ???
+            results['raw_pts'] = xyzs  # FIXME ???
             # xyzs = 0  # Make way for other vars in GPU memory
 
             # 3rd pass
@@ -439,7 +441,7 @@ class NeRFRenderer(nn.Module):
                 sigmas_d_f, rgbs_d_f, deltas, rays)
 
             results['sceneflow_f_b'] = sceneflow_f_b
-            results['rgb_map_d_f'] = rgbs_d_f
+            results['rgb_map_d_f'] = image_d_f
             results['acc_map_d_f'] = torch.abs(
                 torch.sum(weights_sum_d_f - weights_sum_d, -1))
 
@@ -466,22 +468,25 @@ class NeRFRenderer(nn.Module):
             results['rgb_map_d_f_f'] = image_d_f_f
 
             # All required outputs for calculating our losses
-            results['depth_s'] = depth_s
-            results['depth_d'] = depth_d
+            results['depth_map_s'] = depth_s
+            results['depth_map_d'] = depth_d
             results['image'] = image_s
             results['blending'] = blend
             results['sigmas_s'] = sigmas_s
             results['sigmas_d'] = sigmas_d
             results['raw_pts_f'] = pts_f
             results['raw_pts_b'] = pts_b
+            results['rgb_map_full'] = image_s
+            results['rgb_map_s'] = image_s_orig
+            results['rgb_map_d'] = image_d_orig
             results['rgbs_s'] = rgbs_s
             results['rgbs_d'] = rgbs_d
             results['deform_s'] = deform_s
             results['deform_d'] = deform_d
             results['sceneflow_f'] = sceneflow_f
             results['sceneflow_b'] = sceneflow_b
-            results['weights_sum_s'] = weights_sum_s
-            results['weights_sum_d'] = weights_sum_d
+            results['weights_s'] = weights_sum_s
+            results['weights_d'] = weights_sum_d
 
         # [Inference]
         else:

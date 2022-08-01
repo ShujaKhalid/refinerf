@@ -265,6 +265,7 @@ class NeRFDataset:
 
                 self.poses.append(pose)
                 self.images.append(image)
+                print("image.shape: {}".format(image.shape))
                 self.times.append(time)
 
         self.poses = torch.from_numpy(
@@ -464,19 +465,32 @@ class NeRFDataset:
             'W': self.W,
             'rays_o': rays['rays_o'],
             'rays_d': rays['rays_d'],
-            'masks': self.masks,
             'poses': self.poses,
-            'disp': self.disp,
-            'masks': self.masks
+            'intrinsics': self.intrinsics
         }
 
         if self.images is not None:
             images = self.images[index].to(self.device)  # [B, H, W, 3/4]
+            masks = torch.Tensor(self.masks[:, :, :, index]).to(
+                self.device).permute(-1, 0, 1, 2)  # [B, H, W, 3/4]
+            disp = torch.Tensor(self.disp[:, :, index]).to(
+                self.device).permute(-1, 0, 1)  # [B, H, W, 3/4]
+            # print("masks.shape: {}".format(masks.shape))
+            # print("disp.shape: {}".format(disp.shape))
+            # print("images.shape: {}".format(images.shape))
+            # print("rays['inds'].shape: {}".format(rays['inds'].shape))
+            # print("disp.view(B, -1, 1).shape: {}".format(disp.view(1, -1, 1).shape))
             if self.training:
                 C = images.shape[-1]
                 images = torch.gather(images.view(
                     B, -1, C), 1, torch.stack(C * [rays['inds']], -1))  # [B, N, 3/4]
+                masks = torch.gather(masks.view(
+                    B, -1, C), 1, torch.stack(C * [rays['inds']], -1))  # [B, N, 3/4]
+                disp = torch.gather(disp.view(
+                    B, -1, 1), 1, torch.stack(1 * [rays['inds']], -1))  # [B, N, 3/4]
             results['images'] = images
+            results['disp'] = disp
+            results['masks'] = masks
 
         # need inds to update error_map
         if error_map is not None:

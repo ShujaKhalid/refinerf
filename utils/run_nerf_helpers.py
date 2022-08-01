@@ -41,14 +41,15 @@ def entropy(x):
     return -torch.sum(x * torch.log(x + 1e-19)) / x.shape[0]
 
 
-def mse2psnr(x): return -10. * torch.log(x) / torch.log(torch.Tensor([10.]))
+def mse2psnr(x): return -10. * torch.log(x) / \
+    torch.log(torch.Tensor([10.]).cuda())
 
 
 def to8b(x): return (255 * np.clip(x, 0, 1)).astype(np.uint8)
 
 
 # Ray helpers
-def get_rays(H, W, focal, c2w):
+def get_rays_new(H, W, focal, c2w):
     """Get ray origins, directions from a pinhole camera."""
     i, j = torch.meshgrid(torch.linspace(
         0, W-1, W), torch.linspace(0, H-1, H))  # pytorch's meshgrid has indexing='ij'
