@@ -46,7 +46,7 @@ class Trainer(_Trainer):
         rays_d = data['rays_d']  # [B, N, 3]
         time = data['time']  # [B, 1]
 
-        # print("data.keys(): {}".format(data.keys()))
+        print("data.keys(): {}".format(data.keys()))
         # print("data[masks]: {}".format(data["masks"].shape))
 
         # TODO:
@@ -131,6 +131,7 @@ class Trainer(_Trainer):
         loss = 0
         loss_dict = {}
         decay_iteration = 25  # FIXME
+        i = data['index']
         batch_invdepth = data['disp']
         # FIXME - 0 index probs
         batch_mask = data['masks']
@@ -152,15 +153,12 @@ class Trainer(_Trainer):
             'sparse_loss_lambda': 0.001
         }
 
-        print("gt_rgb.shape: {}".format(gt_rgb.shape))
-        print("ret[rgb_map_full].shape: {}".format(ret['rgb_map_full'].shape))
         img_loss = img2mse(ret['rgb_map_full'], gt_rgb)
         psnr = mse2psnr(img_loss)
         loss_dict['psnr'] = psnr
         loss_dict['img_loss'] = img_loss
         loss += args['full_loss_lambda'] * loss_dict['img_loss']
 
-        print("ret[rgb_map_s].shape: {}".format(ret['rgb_map_s'].shape))
         # Compute MSE loss between rgb_s and true RGB.
         img_s_loss = img2mse(ret['rgb_map_s'], gt_rgb)
         psnr_s = mse2psnr(img_s_loss)
@@ -243,12 +241,13 @@ class Trainer(_Trainer):
         loss_dict['consistency_loss'] = consistency_loss
         loss += args['consistency_loss_lambda'] * loss_dict['consistency_loss']
 
-        # FIXME: Mask loss.
+        # FIXME: Blending has incorrect dimensions
+        # Mask loss.
         # mask_loss = L1(ret['blending'][batch_mask[:, 0].type(torch.bool)]) + \
         #     img2mae(ret['dynamicness_map'][..., None], 1 - batch_mask)
         # loss_dict['mask_loss'] = mask_loss
         # if i < decay_iteration * 1000:
-        # loss += args['mask_loss_lambda'] * loss_dict['mask_loss']
+        #     loss += args['mask_loss_lambda'] * loss_dict['mask_loss']
 
         # Sparsity loss.
         sparse_loss = entropy(ret['weights_d']) + entropy(ret['blending'])
@@ -262,8 +261,8 @@ class Trainer(_Trainer):
         loss += args['depth_loss_lambda'] * Temp * loss_dict['depth_loss']
 
         # FIXME: Order loss
-        # order_loss = torch.mean(torch.square(ret['depth_map_d'][batch_mask[:, 0].type(torch.bool)] -
-        #                                      ret['depth_map_s'].detach()[batch_mask[:, 0].type(torch.bool)]))
+        # order_loss = torch.mean(torch.square(ret['depth_map_d'][batch_mask[0].type(torch.bool)] -
+        #                                      ret['depth_map_s'].detach()[batch_mask[0].type(torch.bool)]))
         # loss_dict['order_loss'] = order_loss
         # loss += args['order_loss_lambda'] * loss_dict['order_loss']
 
@@ -322,9 +321,10 @@ class Trainer(_Trainer):
 
         loss = loss.mean()
 
+        # FIXME: NEW!!!
         # deform regularization
-        if 'deform' in outputs and outputs['deform'] is not None:
-            loss = loss + 1e-3 * outputs['deform'].abs().mean()
+        if 'deform' in ret and ret['deform'] is not None:
+            loss = loss + 1e-3 * ret['deform'].abs().mean()
 
         return pred_rgb, gt_rgb, loss
 

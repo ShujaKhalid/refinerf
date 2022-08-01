@@ -493,8 +493,8 @@ class NeRFDataset:
             results['masks'] = masks
 
         # need inds to update error_map
+        results['index'] = index
         if error_map is not None:
-            results['index'] = index
             results['inds_coarse'] = rays['inds_coarse']
 
         return results
