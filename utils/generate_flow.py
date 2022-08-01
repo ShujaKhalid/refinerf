@@ -120,7 +120,7 @@ if __name__ == '__main__':
                         action='store_true', help='use mixed precision')
     args = parser.parse_args()
 
-    input_path = os.path.join(args.dataset_path, 'train')
+    input_path = os.path.join(args.dataset_path, 'images_colmap')
     output_path = os.path.join(args.dataset_path, 'flow')
     output_img_path = os.path.join(args.dataset_path, 'flow_png')
     create_dir(output_path)

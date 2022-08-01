@@ -139,7 +139,7 @@ if __name__ == "__main__":
     parser.add_argument('--model', help="restore midas checkpoint")
     args = parser.parse_args()
 
-    input_path = os.path.join(args.dataset_path, 'train')
+    input_path = os.path.join(args.dataset_path, 'images_colmap')
     output_path = os.path.join(args.dataset_path, 'disp')
     output_img_path = os.path.join(args.dataset_path, 'disp_png')
     create_dir(output_path)

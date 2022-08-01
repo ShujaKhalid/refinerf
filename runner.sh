@@ -36,7 +36,7 @@ then
 		python scripts/colmap2nerf.py --video "$2" --run_colmap --dynamic
 
 		echo $FILENAME
-		for i in $DATASET_PATH/images/*.png ; do convert "$i" "${i%.*}.jpg" ; done
+		# for i in $DATASET_PATH/images/*.png ; do convert "$i" "${i%.*}.jpg" ; done
 		# cp -pr $DATASET_PATH/images/*.jpg $DATASET_PATH/train
 		cp -pr $DATASET_PATH/images/*.jpg $DATASET_PATH/images_colmap
 	else
