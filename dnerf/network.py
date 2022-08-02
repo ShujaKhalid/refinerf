@@ -145,9 +145,10 @@ class NeRFNetwork(NeRFRenderer):
         # ==================
 
         # Added for dynamic NeRF ============================================
+        print("\n\n\nINITIALIZING DYNAMIC MODEL!!!\n\n\n")
         self.input_ch = 3
-        self.D = 1  # FIXME: used to be 8!
-        self.W = 8  # FIXME: used to be 256!
+        self.D = 2  # FIXME: used to be 8!
+        self.W = 32  # FIXME: used to be 256!
         self.skips = [4]
         self.pts_linears = nn.ModuleList(
             [nn.Linear(self.input_ch, self.W)] + [nn.Linear(self.W, self.W) if i not in self.skips else nn.Linear(self.W + self.input_ch, self.W) for i in range(self.D-1)])
@@ -319,6 +320,7 @@ class NeRFNetwork(NeRFRenderer):
 
         # sigmoid activation for rgb
         rgbs = torch.sigmoid(h)
+        h, x, d, t = 0, 0, 0, 0
 
         return sigma, rgbs, deform
 
@@ -337,6 +339,7 @@ class NeRFNetwork(NeRFRenderer):
 
         sf = torch.tanh(self.sf_net(h))
         blending = torch.sigmoid(self.blend_net(h))
+        h, x, d, t = 0, 0, 0, 0
 
         return sigma, rgbs, deform, blending, sf
 
