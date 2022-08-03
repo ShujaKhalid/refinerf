@@ -5,6 +5,7 @@ export CXX=/usr/bin/g++-10
 export CUDA_ROOT=/usr/local/cuda
 
 DATASET_PATH="../datalake/dnerf/custom"
+#DATASET_PATH="../datalake/dnerf/bouncingballs"
 NM_WEIGHTS="/home/skhalid/Documents/datalake/neural_motion_weights/"
 WEIGHTS_MIDAS=$NM_WEIGHTS"midas_v21-f6b98070.pt"
 WEIGHTS_RAFT=$NM_WEIGHTS"raft-things.pth"

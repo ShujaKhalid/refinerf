@@ -345,7 +345,7 @@ class NeRFRenderer(nn.Module):
                 rays_o, rays_d, self.bound, self.density_bitfield[t], self.cascade, self.grid_size, nears, fars, counter, self.mean_count, perturb, 128, force_all_rays, dt_gamma, max_steps)
 
             # Amazing visualization
-            #plot_pointcloud(xyzs.reshape(-1, 3).detach().cpu().numpy())
+            # plot_pointcloud(xyzs.reshape(-1, 3).detach().cpu().numpy())
 
             # print("xyzs.shape: {}".format(xyzs.shape))
             sigmas_s, rgbs_s, deform_s = self(
@@ -379,7 +379,7 @@ class NeRFRenderer(nn.Module):
             # print("sf.shape: {}".format(sf.shape))
 
             # === STATIC ===
-            print("\nExecuting 1st pass...")
+            # print("\nExecuting 1st pass...")
             weights_sum_s, depth_s, image_s_orig = raymarching.composite_rays_train(
                 sigmas_s, rgbs_s, deltas, rays)
             image_s = image_s_orig + \
@@ -389,7 +389,7 @@ class NeRFRenderer(nn.Module):
             depth_s = depth_s.view(*prefix)
 
             # === DYNAMIC ===
-            print("\nExecuting 2nd pass...")
+            # print("\nExecuting 2nd pass...")
             weights_sum_d, depth_d, image_d_orig = raymarching.composite_rays_train(
                 sigmas_d, rgbs_d, deltas, rays)
             image_d = image_d_orig + \
@@ -436,13 +436,13 @@ class NeRFRenderer(nn.Module):
             torch.cuda.empty_cache()
 
             # 3rd pass
-            print("\nExecuting 3rd pass...")
+            # print("\nExecuting 3rd pass...")
             sigmas_d_b, rgbs_d_b, _, _, sf_b = self(
                 pts_b, dirs, time, svd="dynamic")
             sceneflow_b_b = sf_b[..., :3]
             sceneflow_b_f = sf_b[..., 3:]
             results['raw_pts_b'] = pts_b.to("cpu")
-            print("raymarching.composite_rays_train 3rd pass...")
+            # print("raymarching.composite_rays_train 3rd pass...")
             weights_sum_d_b, _, image_d_b = raymarching.composite_rays_train(
                 sigmas_d_b, rgbs_d_b, deltas, rays)
 
@@ -462,14 +462,14 @@ class NeRFRenderer(nn.Module):
             torch.cuda.empty_cache()
 
             # 4th pass
-            print("\nExecuting 4th pass...")
+            # print("\nExecuting 4th pass...")
             # print("pts_f.shape: {}".format(pts_f.shape))
             sigmas_d_f, rgbs_d_f, _, _, sf_f = self(
                 pts_f, dirs, time, svd="dynamic")
             sceneflow_f_b = sf_f[..., :3]
             sceneflow_f_f = sf_f[..., 3:]
             results['raw_pts_f'] = pts_f
-            print("raymarching.composite_rays_train 4th pass...")
+            # print("raymarching.composite_rays_train 4th pass...")
             weights_sum_d_f, _, image_d_f = raymarching.composite_rays_train(
                 sigmas_d_f, rgbs_d_f, deltas, rays)
 
@@ -489,7 +489,7 @@ class NeRFRenderer(nn.Module):
             torch.cuda.empty_cache()
 
             # 5th pass
-            print("\nExecuting 5th pass...")
+            # print("\nExecuting 5th pass...")
             sigmas_d_b_b, rgbs_d_b_b, _, _, _ = self(
                 pts_b_b, dirs, time, svd="dynamic")
             _, _, image_d_b_b = raymarching.composite_rays_train(
@@ -497,7 +497,7 @@ class NeRFRenderer(nn.Module):
             results['rgb_map_d_b_b'] = image_d_b_b.to("cpu")
 
             # 6th pass
-            print("\nExecuting 6th pass...")
+            # print("\nExecuting 6th pass...")
             sigmas_d_f_f, rgbs_d_f_f, _, _, _ = self(
                 pts_f_f, dirs, time, svd="dynamic")
             _, _, image_d_f_f = raymarching.composite_rays_train(

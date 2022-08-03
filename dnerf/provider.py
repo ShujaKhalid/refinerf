@@ -298,7 +298,7 @@ class NeRFDataset:
 
         # [debug] uncomment to view examples of randomly generated poses.
         # visualize_poses(rand_poses(100, self.device, radius=self.radius).cpu().numpy())
-        FLOW_FLAG = True
+        FLOW_FLAG = False
         if (FLOW_FLAG):
             # TODO: ADD the additional pre-reqs here
             basedir = self.root_path
@@ -471,26 +471,32 @@ class NeRFDataset:
 
         if self.images is not None:
             images = self.images[index].to(self.device)  # [B, H, W, 3/4]
-            masks = torch.Tensor(self.masks[:, :, :, index]).to(
-                self.device).permute(-1, 0, 1, 2)  # [B, H, W, 3/4]
-            disp = torch.Tensor(self.disp[:, :, index]).to(
-                self.device).permute(-1, 0, 1)  # [B, H, W, 3/4]
-            # print("masks.shape: {}".format(masks.shape))
-            # print("disp.shape: {}".format(disp.shape))
-            # print("images.shape: {}".format(images.shape))
-            # print("rays['inds'].shape: {}".format(rays['inds'].shape))
-            # print("disp.view(B, -1, 1).shape: {}".format(disp.view(1, -1, 1).shape))
+
             if self.training:
                 C = images.shape[-1]
                 images = torch.gather(images.view(
                     B, -1, C), 1, torch.stack(C * [rays['inds']], -1))  # [B, N, 3/4]
-                masks = torch.gather(masks.view(
-                    B, -1, C), 1, torch.stack(C * [rays['inds']], -1))  # [B, N, 3/4]
-                disp = torch.gather(disp.view(
-                    B, -1, 1), 1, torch.stack(1 * [rays['inds']], -1))  # [B, N, 3/4]
             results['images'] = images
-            results['disp'] = disp
-            results['masks'] = masks
+
+        FLOW_FLAG = False
+        if (FLOW_FLAG):
+            if self.masks is not None:
+                masks = torch.Tensor(self.masks[:, :, :, index]).to(
+                    self.device).permute(-1, 0, 1, 2)  # [B, H, W, 3/4]
+                disp = torch.Tensor(self.disp[:, :, index]).to(
+                    self.device).permute(-1, 0, 1)  # [B, H, W, 3/4]
+                # print("masks.shape: {}".format(masks.shape))
+                # print("disp.shape: {}".format(disp.shape))
+                # print("images.shape: {}".format(images.shape))
+                # print("rays['inds'].shape: {}".format(rays['inds'].shape))
+                # print("disp.view(B, -1, 1).shape: {}".format(disp.view(1, -1, 1).shape))
+                if self.training:
+                    masks = torch.gather(masks.view(
+                        B, -1, 3), 1, torch.stack(3 * [rays['inds']], -1))  # [B, N, 3/4]
+                    disp = torch.gather(disp.view(
+                        B, -1, 1), 1, torch.stack(1 * [rays['inds']], -1))  # [B, N, 3/4]
+                results['disp'] = disp
+                results['masks'] = masks
 
         # need inds to update error_map
         results['index'] = index
