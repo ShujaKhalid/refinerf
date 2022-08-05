@@ -298,7 +298,7 @@ class NeRFDataset:
 
         # [debug] uncomment to view examples of randomly generated poses.
         # visualize_poses(rand_poses(100, self.device, radius=self.radius).cpu().numpy())
-        FLOW_FLAG = False
+        FLOW_FLAG = True
         if (FLOW_FLAG):
             # TODO: ADD the additional pre-reqs here
             basedir = self.root_path
@@ -314,7 +314,8 @@ class NeRFDataset:
                                interpolation=cv2.INTER_NEAREST) for f in dispfiles]
             disp = np.stack(disp, -1)
 
-            mask_dir = os.path.join(basedir, 'motion_masks')
+            # sk_debug: used to be `motion_masks`
+            mask_dir = os.path.join(basedir, 'semantic_mask')
             maskfiles = [os.path.join(mask_dir, f)
                          for f in sorted(os.listdir(mask_dir)) if f.endswith('png')]
 
@@ -478,7 +479,7 @@ class NeRFDataset:
                     B, -1, C), 1, torch.stack(C * [rays['inds']], -1))  # [B, N, 3/4]
             results['images'] = images
 
-        FLOW_FLAG = False
+        FLOW_FLAG = True
         if (FLOW_FLAG):
             if self.masks is not None:
                 masks = torch.Tensor(self.masks[:, :, :, index]).to(
@@ -500,6 +501,7 @@ class NeRFDataset:
 
         # need inds to update error_map
         results['index'] = index
+        results['num_img'] = len(self.images)
         if error_map is not None:
             results['inds_coarse'] = rays['inds_coarse']
 

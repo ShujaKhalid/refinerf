@@ -125,18 +125,19 @@ class Trainer(_Trainer):
         # raw_pts_f_f = outputs['raw_pts_f_f']
         # image_d_b_b = outputs['rgb_map_d_b_b']
         # rgb_map_d_f_f = outputs['rgb_map_d_f_f']
-        FLOW_FLAG = False
+        FLOW_FLAG = True
         if (FLOW_FLAG):
             # Calculate losses here
             chain_5frames = True  # FIXME: Make conditionally appropriate
             loss = 0
             loss_dict = {}
             decay_iteration = 25  # FIXME
-            i = data['index']
+            num_img = data['num_img']
+            img_i = data['index']
             batch_invdepth = data['disp']
             # FIXME - 0 index probs
             batch_mask = data['masks']
-            print("batch_mask.shape: {}".format(batch_mask.shape))
+            # print("batch_mask.shape: {}".format(batch_mask.shape))
             Temp = 1. / (10 ** (1 // (decay_iteration * 1000)))  # FIXME
             focal = data['intrinsics'][0]  # FIXME
             H, W = data['H'], data['W']
@@ -154,18 +155,18 @@ class Trainer(_Trainer):
                 'sparse_loss_lambda': 0.001
             }
 
-            img_loss = img2mse(ret['rgb_map_full'], gt_rgb)
-            psnr = mse2psnr(img_loss)
-            loss_dict['psnr'] = psnr
-            loss_dict['img_loss'] = img_loss
-            loss += args['full_loss_lambda'] * loss_dict['img_loss']
+            # img_loss = img2mse(ret['rgb_map_full'], gt_rgb)
+            # psnr = mse2psnr(img_loss)
+            # loss_dict['psnr'] = psnr
+            # loss_dict['img_loss'] = img_loss
+            # loss += args['full_loss_lambda'] * loss_dict['img_loss']
 
-            # Compute MSE loss between rgb_s and true RGB.
-            img_s_loss = img2mse(ret['rgb_map_s'], gt_rgb)
-            psnr_s = mse2psnr(img_s_loss)
-            loss_dict['psnr_s'] = psnr_s
-            loss_dict['img_s_loss'] = img_s_loss
-            loss += args['static_loss_lambda'] * loss_dict['img_s_loss']
+            # # Compute MSE loss between rgb_s and true RGB.
+            # img_s_loss = img2mse(ret['rgb_map_s'], gt_rgb)
+            # psnr_s = mse2psnr(img_s_loss)
+            # loss_dict['psnr_s'] = psnr_s
+            # loss_dict['img_s_loss'] = img_s_loss
+            # loss += args['static_loss_lambda'] * loss_dict['img_s_loss']
 
             # Compute MSE loss between rgb_d and true RGB.
             img_d_loss = img2mse(ret['rgb_map_d'], gt_rgb)
@@ -174,19 +175,19 @@ class Trainer(_Trainer):
             loss_dict['img_d_loss'] = img_d_loss
             loss += args['dynamic_loss_lambda'] * loss_dict['img_d_loss']
 
-            # Compute MSE loss between rgb_d_f and true RGB.
-            img_d_f_loss = img2mse(ret['rgb_map_d_f'].cuda(), gt_rgb)
-            psnr_d_f = mse2psnr(img_d_f_loss)
-            loss_dict['psnr_d_f'] = psnr_d_f
-            loss_dict['img_d_f_loss'] = img_d_f_loss
-            loss += args['dynamic_loss_lambda'] * loss_dict['img_d_f_loss']
+            # # Compute MSE loss between rgb_d_f and true RGB.
+            # img_d_f_loss = img2mse(ret['rgb_map_d_f'].cuda(), gt_rgb)
+            # psnr_d_f = mse2psnr(img_d_f_loss)
+            # loss_dict['psnr_d_f'] = psnr_d_f
+            # loss_dict['img_d_f_loss'] = img_d_f_loss
+            # loss += args['dynamic_loss_lambda'] * loss_dict['img_d_f_loss']
 
-            # Compute MSE loss between rgb_d_b and true RGB.
-            img_d_b_loss = img2mse(ret['rgb_map_d_b'].cuda(), gt_rgb)
-            psnr_d_b = mse2psnr(img_d_b_loss)
-            loss_dict['psnr_d_b'] = psnr_d_b
-            loss_dict['img_d_b_loss'] = img_d_b_loss
-            loss += args['dynamic_loss_lambda'] * loss_dict['img_d_b_loss']
+            # # Compute MSE loss between rgb_d_b and true RGB.
+            # img_d_b_loss = img2mse(ret['rgb_map_d_b'].cuda(), gt_rgb)
+            # psnr_d_b = mse2psnr(img_d_b_loss)
+            # loss_dict['psnr_d_b'] = psnr_d_b
+            # loss_dict['img_d_b_loss'] = img_d_b_loss
+            # loss += args['dynamic_loss_lambda'] * loss_dict['img_d_b_loss']
 
             # Motion loss.
             # FIXME: No idea...
@@ -216,33 +217,33 @@ class Trainer(_Trainer):
             # loss_dict['flow_b_loss'] = flow_b_loss
             # loss += args.flow_loss_lambda * Temp * loss_dict['flow_b_loss']
 
-            # Slow scene flow. The forward and backward sceneflow should be small.
-            slow_loss = L1(ret['sceneflow_b'].cuda()) + \
-                L1(ret['sceneflow_f'].cuda())
-            loss_dict['slow_loss'] = slow_loss
-            loss += args['slow_loss_lambda'] * loss_dict['slow_loss']
+            # # Slow scene flow. The forward and backward sceneflow should be small.
+            # slow_loss = L1(ret['sceneflow_b'].cuda()) + \
+            #     L1(ret['sceneflow_f'].cuda())
+            # loss_dict['slow_loss'] = slow_loss
+            # loss += args['slow_loss_lambda'] * loss_dict['slow_loss']
 
-            # Smooth scene flow. The summation of the forward and backward sceneflow should be small.
-            smooth_loss = compute_sf_smooth_loss(ret['raw_pts'].cpu(),
-                                                 ret['raw_pts_f'].cpu(),
-                                                 ret['raw_pts_b'].cpu(),
-                                                 H, W, focal)
-            loss_dict['smooth_loss'] = smooth_loss
-            loss += args['smooth_loss_lambda'] * loss_dict['smooth_loss']
+            # # Smooth scene flow. The summation of the forward and backward sceneflow should be small.
+            # smooth_loss = compute_sf_smooth_loss(ret['raw_pts'].cpu(),
+            #                                      ret['raw_pts_f'].cpu(),
+            #                                      ret['raw_pts_b'].cpu(),
+            #                                      H, W, focal)
+            # loss_dict['smooth_loss'] = smooth_loss
+            # loss += args['smooth_loss_lambda'] * loss_dict['smooth_loss']
 
-            # Spatial smooth scene flow. (loss adapted from NSFF)
-            sp_smooth_loss = compute_sf_smooth_s_loss(ret['raw_pts'].cpu(), ret['raw_pts_f'].cpu(), H, W, focal) \
-                + compute_sf_smooth_s_loss(ret['raw_pts'].cpu(),
-                                           ret['raw_pts_b'].cpu(), H, W, focal)
-            loss_dict['sp_smooth_loss'] = sp_smooth_loss
-            loss += args['smooth_loss_lambda'] * loss_dict['sp_smooth_loss']
+            # # Spatial smooth scene flow. (loss adapted from NSFF)
+            # sp_smooth_loss = compute_sf_smooth_s_loss(ret['raw_pts'].cpu(), ret['raw_pts_f'].cpu(), H, W, focal) \
+            #     + compute_sf_smooth_s_loss(ret['raw_pts'].cpu(),
+            #                                ret['raw_pts_b'].cpu(), H, W, focal)
+            # loss_dict['sp_smooth_loss'] = sp_smooth_loss
+            # loss += args['smooth_loss_lambda'] * loss_dict['sp_smooth_loss']
 
-            # Consistency loss.
-            consistency_loss = L1(ret['sceneflow_f'].cuda() + ret['sceneflow_f_b'].cuda()) + \
-                L1(ret['sceneflow_b'].cuda() + ret['sceneflow_b_f'].cuda())
-            loss_dict['consistency_loss'] = consistency_loss
-            loss += args['consistency_loss_lambda'] * \
-                loss_dict['consistency_loss']
+            # # Consistency loss.
+            # consistency_loss = L1(ret['sceneflow_f'].cuda() + ret['sceneflow_f_b'].cuda()) + \
+            #     L1(ret['sceneflow_b'].cuda() + ret['sceneflow_b_f'].cuda())
+            # loss_dict['consistency_loss'] = consistency_loss
+            # loss += args['consistency_loss_lambda'] * \
+            #     loss_dict['consistency_loss']
 
             # FIXME: Blending has incorrect dimensions
             # Mask loss.
@@ -253,16 +254,16 @@ class Trainer(_Trainer):
             #     loss += args['mask_loss_lambda'] * loss_dict['mask_loss']
 
             # Sparsity loss.
-            sparse_loss = entropy(ret['weights_d']) + entropy(ret['blending'])
-            loss_dict['sparse_loss'] = sparse_loss
-            loss += args['sparse_loss_lambda'] * loss_dict['sparse_loss']
+            # sparse_loss = entropy(ret['weights_d']) + entropy(ret['blending'])
+            # loss_dict['sparse_loss'] = sparse_loss
+            # loss += args['sparse_loss_lambda'] * loss_dict['sparse_loss']
 
             # Depth constraint
             # Depth in NDC space equals to negative disparity in Euclidean space.
-            depth_loss = compute_depth_loss(
-                ret['depth_map_d'], -batch_invdepth)
-            loss_dict['depth_loss'] = depth_loss
-            loss += args['depth_loss_lambda'] * Temp * loss_dict['depth_loss']
+            # depth_loss = compute_depth_loss(
+            #     ret['depth_map_d'], -batch_invdepth)
+            # loss_dict['depth_loss'] = depth_loss
+            # loss += args['depth_loss_lambda'] * Temp * loss_dict['depth_loss']
 
             # FIXME: Order loss
             # order_loss = torch.mean(torch.square(ret['depth_map_d'][batch_mask[0].type(torch.bool)] -
@@ -270,27 +271,27 @@ class Trainer(_Trainer):
             # loss_dict['order_loss'] = order_loss
             # loss += args['order_loss_lambda'] * loss_dict['order_loss']
 
-            sf_smooth_loss = compute_sf_smooth_loss(ret['raw_pts_b'].cpu(),
-                                                    ret['raw_pts'].cpu(),
-                                                    ret['raw_pts_b_b'].cpu(),
-                                                    H, W, focal) + \
-                compute_sf_smooth_loss(ret['raw_pts_f'].cpu(),
-                                       ret['raw_pts_f_f'].cpu(),
-                                       ret['raw_pts'].cpu(),
-                                       H, W, focal)
-            loss_dict['sf_smooth_loss'] = sf_smooth_loss
-            loss += args['smooth_loss_lambda'] * loss_dict['sf_smooth_loss']
+            # sf_smooth_loss = compute_sf_smooth_loss(ret['raw_pts_b'].cpu(),
+            #                                         ret['raw_pts'].cpu(),
+            #                                         ret['raw_pts_b_b'].cpu(),
+            #                                         H, W, focal) + \
+            #     compute_sf_smooth_loss(ret['raw_pts_f'].cpu(),
+            #                            ret['raw_pts_f_f'].cpu(),
+            #                            ret['raw_pts'].cpu(),
+            #                            H, W, focal)
+            # loss_dict['sf_smooth_loss'] = sf_smooth_loss
+            # loss += args['smooth_loss_lambda'] * loss_dict['sf_smooth_loss']
 
-            if chain_5frames:
-                img_d_b_b_loss = img2mse(ret['rgb_map_d_b_b'].cuda(), gt_rgb)
-                loss_dict['img_d_b_b_loss'] = img_d_b_b_loss
-                loss += args['dynamic_loss_lambda'] * \
-                    loss_dict['img_d_b_b_loss']
+            # if chain_5frames:
+            #     img_d_b_b_loss = img2mse(ret['rgb_map_d_b_b'].cuda(), gt_rgb)
+            #     loss_dict['img_d_b_b_loss'] = img_d_b_b_loss
+            #     loss += args['dynamic_loss_lambda'] * \
+            #         loss_dict['img_d_b_b_loss']
 
-                img_d_f_f_loss = img2mse(ret['rgb_map_d_f_f'].cuda(), gt_rgb)
-                loss_dict['img_d_f_f_loss'] = img_d_f_f_loss
-                loss += args['dynamic_loss_lambda'] * \
-                    loss_dict['img_d_f_f_loss']
+            #     img_d_f_f_loss = img2mse(ret['rgb_map_d_f_f'].cuda(), gt_rgb)
+            #     loss_dict['img_d_f_f_loss'] = img_d_f_f_loss
+            #     loss += args['dynamic_loss_lambda'] * \
+            #         loss_dict['img_d_f_f_loss']
 
         else:
             # [B, N, 3] --> [B, N]

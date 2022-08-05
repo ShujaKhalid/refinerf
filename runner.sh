@@ -4,8 +4,8 @@ export CC=/usr/bin/gcc-10
 export CXX=/usr/bin/g++-10
 export CUDA_ROOT=/usr/local/cuda
 
-DATASET_PATH="../datalake/dnerf/custom"
-#DATASET_PATH="../datalake/dnerf/bouncingballs"
+# DATASET_PATH="../datalake/dnerf/custom"
+DATASET_PATH="../datalake/dnerf/bouncingballs"
 NM_WEIGHTS="/home/skhalid/Documents/datalake/neural_motion_weights/"
 WEIGHTS_MIDAS=$NM_WEIGHTS"midas_v21-f6b98070.pt"
 WEIGHTS_RAFT=$NM_WEIGHTS"raft-things.pth"
@@ -45,11 +45,13 @@ then
 		for i in $DATASET_PATH/train/*.png ; do convert "$i" "${i%.*}.jpg" ; done
 		cp -pr $DATASET_PATH/train/*.jpg $DATASET_PATH/images_colmap
 
+		# python scripts/colmap2nerf.py --images $DATASET_PATH/images_colmap --run_colmap --dynamic
+
 		colmap feature_extractor \
 		--database_path $DATASET_PATH/database.db \
 		--image_path $DATASET_PATH/images_colmap \
 		--ImageReader.mask_path $DATASET_PATH/background_mask \
-		--ImageReader.camera_model "SIMPLE_RADIAL" \
+		--ImageReader.camera_model "SIMPLE_PINHOLE" \
 		--SiftExtraction.max_num_features 100000
 		# --ImageReader.single_camera 1
 
@@ -58,11 +60,11 @@ then
 		--SiftMatching.confidence 0.01
 		# --SiftMatching.max_num_matches 100
 
-		mkdir $DATASET_PATH/sparse
+		mkdir $DATASET_PATH/colmap_sparse
 		colmap mapper \
 		--database_path $DATASET_PATH/database.db \
 		--image_path $DATASET_PATH/images_colmap \
-		--output_path $DATASET_PATH/sparse \
+		--output_path $DATASET_PATH/colmap_sparse \
 		--Mapper.num_threads 16 \
 		--Mapper.init_min_tri_angle 6 \
 		--Mapper.multiple_models 0 \

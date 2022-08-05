@@ -508,8 +508,8 @@ class NeRFRenderer(nn.Module):
             results['image'] = image_s
             results['blending'] = blend
             results['rgb_map_full'] = image_s
-            results['rgb_map_s'] = image_s_orig
-            results['rgb_map_d'] = image_d_orig
+            results['rgb_map_s'] = image_s
+            results['rgb_map_d'] = image_d
             results['weights_s'] = weights_sum_s
             results['weights_d'] = weights_sum_d
 
