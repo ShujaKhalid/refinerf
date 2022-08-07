@@ -179,8 +179,8 @@ def motion_segmentation(basedir, threshold,
 
         T_ref2prev = np.dot(T_prev_G, np.linalg.inv(T_ref_G))
         T_ref2post = np.dot(T_post_G, np.linalg.inv(T_ref_G))
-        # load optical flow
 
+        # load optical flow
         if i == 0:
             fwd_flow, _ = read_optical_flow(basedir,
                                             im_ref.name,

@@ -94,21 +94,21 @@ def run(args, input_path, output_path, output_img_path):
             mask_fwd, mask_bwd = compute_fwdbwd_mask(flow_fwd, flow_bwd)
 
             # Save flow
-            np.savez(os.path.join(output_path, '%03d_fwd.npz' %
+            np.savez(os.path.join(output_path, '%05d_fwd.npz' %
                      i), flow=flow_fwd, mask=mask_fwd)
-            np.savez(os.path.join(output_path, '%03d_bwd.npz' %
+            np.savez(os.path.join(output_path, '%05d_bwd.npz' %
                      (i + 1)), flow=flow_bwd, mask=mask_bwd)
 
             # Save flow_img
             Image.fromarray(flow_viz.flow_to_image(flow_fwd)).save(
-                os.path.join(output_img_path, '%03d_fwd.png' % i))
+                os.path.join(output_img_path, '%05d_fwd.png' % i))
             Image.fromarray(flow_viz.flow_to_image(flow_bwd)).save(
-                os.path.join(output_img_path, '%03d_bwd.png' % (i + 1)))
+                os.path.join(output_img_path, '%05d_bwd.png' % (i + 1)))
 
             Image.fromarray(mask_fwd).save(os.path.join(
-                output_img_path, '%03d_fwd_mask.png' % i))
+                output_img_path, '%05d_fwd_mask.png' % i))
             Image.fromarray(mask_bwd).save(os.path.join(
-                output_img_path, '%03d_bwd_mask.png' % (i + 1)))
+                output_img_path, '%05d_bwd_mask.png' % (i + 1)))
 
 
 if __name__ == '__main__':

@@ -445,8 +445,9 @@ class NeRFRenderer(nn.Module):
             # print("raymarching.composite_rays_train 3rd pass...")
             weights_sum_d_b, _, image_d_b = raymarching.composite_rays_train(
                 sigmas_d_b, rgbs_d_b, deltas, rays)
-
             results['sceneflow_b_f'] = sceneflow_b_f.to("cpu")
+            image_d_b = image_d_b + \
+                (1 - weights_sum_d_b).unsqueeze(-1) * bg_color
             results['rgb_map_d_b'] = image_d_b.to("cpu")
             results['acc_map_d_b'] = torch.abs(
                 torch.sum(weights_sum_d_b - weights_sum_d, -1))
@@ -472,7 +473,8 @@ class NeRFRenderer(nn.Module):
             # print("raymarching.composite_rays_train 4th pass...")
             weights_sum_d_f, _, image_d_f = raymarching.composite_rays_train(
                 sigmas_d_f, rgbs_d_f, deltas, rays)
-
+            image_d_f = image_d_f + \
+                (1 - weights_sum_d_f).unsqueeze(-1) * bg_color
             results['sceneflow_f_b'] = sceneflow_f_b.to("cpu")
             results['rgb_map_d_f'] = image_d_f.to("cpu")
             results['acc_map_d_f'] = torch.abs(
@@ -492,26 +494,32 @@ class NeRFRenderer(nn.Module):
             # print("\nExecuting 5th pass...")
             sigmas_d_b_b, rgbs_d_b_b, _, _, _ = self(
                 pts_b_b, dirs, time, svd="dynamic")
-            _, _, image_d_b_b = raymarching.composite_rays_train(
+            weights_sum_d_b_b, _, image_d_b_b = raymarching.composite_rays_train(
                 sigmas_d_b_b, rgbs_d_b_b, deltas, rays)
+            image_d_b_b = image_d_b_b + \
+                (1 - weights_sum_d_b_b).unsqueeze(-1) * bg_color
             results['rgb_map_d_b_b'] = image_d_b_b.to("cpu")
 
             # 6th pass
             # print("\nExecuting 6th pass...")
             sigmas_d_f_f, rgbs_d_f_f, _, _, _ = self(
                 pts_f_f, dirs, time, svd="dynamic")
-            _, _, image_d_f_f = raymarching.composite_rays_train(
+            weights_sum_d_f_f, _, image_d_f_f = raymarching.composite_rays_train(
                 sigmas_d_f_f, rgbs_d_f_f, deltas, rays)
+            image_d_f_f = image_d_f_f + \
+                (1 - weights_sum_d_f_f).unsqueeze(-1) * bg_color
             results['rgb_map_d_f_f'] = image_d_f_f.to("cpu")
 
             # All required outputs for calculating our losses
             results['image'] = image_s
             results['blending'] = blend
+            # TODO: blend the static and dynamic models here
             results['rgb_map_full'] = image_s
             results['rgb_map_s'] = image_s
             results['rgb_map_d'] = image_d
             results['weights_s'] = weights_sum_s
             results['weights_d'] = weights_sum_d
+            # results['dynamicness_map'] = torch.sum(weights_full * blending, -1)
 
         # [Inference]
         else:

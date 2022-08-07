@@ -135,8 +135,10 @@ class Trainer(_Trainer):
             num_img = data['num_img']
             img_i = data['index']
             batch_invdepth = data['disp']
+            poses = data['all_poses']
             # FIXME - 0 index probs
             batch_mask = data['masks']
+            batch_grid = data['grids']
             # print("batch_mask.shape: {}".format(batch_mask.shape))
             Temp = 1. / (10 ** (1 // (decay_iteration * 1000)))  # FIXME
             focal = data['intrinsics'][0]  # FIXME
@@ -155,11 +157,13 @@ class Trainer(_Trainer):
                 'sparse_loss_lambda': 0.001
             }
 
-            # img_loss = img2mse(ret['rgb_map_full'], gt_rgb)
-            # psnr = mse2psnr(img_loss)
-            # loss_dict['psnr'] = psnr
-            # loss_dict['img_loss'] = img_loss
-            # loss += args['full_loss_lambda'] * loss_dict['img_loss']
+            img_loss = img2mse(ret['rgb_map_full'], gt_rgb)
+            psnr = mse2psnr(img_loss)
+            loss_dict['psnr'] = psnr
+            loss_dict['img_loss'] = img_loss
+            loss += args['full_loss_lambda'] * loss_dict['img_loss']
+
+            print("psnr: {}".format(psnr))
 
             # # Compute MSE loss between rgb_s and true RGB.
             # img_s_loss = img2mse(ret['rgb_map_s'], gt_rgb)
@@ -168,12 +172,12 @@ class Trainer(_Trainer):
             # loss_dict['img_s_loss'] = img_s_loss
             # loss += args['static_loss_lambda'] * loss_dict['img_s_loss']
 
-            # Compute MSE loss between rgb_d and true RGB.
-            img_d_loss = img2mse(ret['rgb_map_d'], gt_rgb)
-            psnr_d = mse2psnr(img_d_loss)
-            loss_dict['psnr_d'] = psnr_d
-            loss_dict['img_d_loss'] = img_d_loss
-            loss += args['dynamic_loss_lambda'] * loss_dict['img_d_loss']
+            # # Compute MSE loss between rgb_d and true RGB.
+            # img_d_loss = img2mse(ret['rgb_map_d'], gt_rgb)
+            # psnr_d = mse2psnr(img_d_loss)
+            # loss_dict['psnr_d'] = psnr_d
+            # loss_dict['img_d_loss'] = img_d_loss
+            # loss += args['dynamic_loss_lambda'] * loss_dict['img_d_loss']
 
             # # Compute MSE loss between rgb_d_f and true RGB.
             # img_d_f_loss = img2mse(ret['rgb_map_d_f'].cuda(), gt_rgb)
@@ -189,39 +193,42 @@ class Trainer(_Trainer):
             # loss_dict['img_d_b_loss'] = img_d_b_loss
             # loss += args['dynamic_loss_lambda'] * loss_dict['img_d_b_loss']
 
-            # Motion loss.
-            # FIXME: No idea...
-            # Compuate EPE between induced flow and true flow (forward flow).
-            # The last frame does not have forward flow.
+            # # Motion loss.
+            # # FIXME: No idea...
+            # # Compuate EPE between induced flow and true flow (forward flow).
+            # # The last frame does not have forward flow.
+            # print("ret['weights_d']: {}".format(ret['weights_d'].shape))
+            # print("ret['raw_pts_f'].shape: {}".format(ret['raw_pts_f'].shape))
             # if img_i < num_img - 1:
             #     pts_f = ret['raw_pts_f']
             #     weight = ret['weights_d']
-            #     pose_f = self.poses[img_i + 1, :3, :4]
+            #     pose_f = poses[img_i + 1, :3, :4]
             #     induced_flow_f = induce_flow(
-            #         H, W, focal, pose_f, weight, pts_f, batch_grid[..., :2])
+            #         H, W, focal, pose_f, weight, pts_f, batch_grid[img_i, :, :, :2])
             #     flow_f_loss = img2mae(
-            #         induced_flow_f, batch_grid[:, 2:4], batch_grid[:, 4:5])
+            #         induced_flow_f, batch_grid[img_i, :, :, 2:4], batch_grid[img_i, :, :, 4:5])
             #     loss_dict['flow_f_loss'] = flow_f_loss
-            #     loss += args.flow_loss_lambda * Temp * loss_dict['flow_f_loss']
+            #     loss += args['flow_loss_lambda'] * \
+            #         Temp * loss_dict['flow_f_loss']
 
-            # Compuate EPE between induced flow and true flow (backward flow).
-            # The first frame does not have backward flow.
-            # FIXME: No idea...
+            # # Compuate EPE between induced flow and true flow (backward flow).
+            # # The first frame does not have backward flow.
+            # # FIXME: No idea...
             # pts_b = ret['raw_pts_b']
             # weight = ret['weights_d']
-            # pose_b = self.poses[img_i - 1, :3, :4]
+            # pose_b = poses[img_i - 1, :3, :4]
             # induced_flow_b = induce_flow(
-            #     H, W, focal, pose_b, weight, pts_b, batch_grid[..., :2])
+            #     H, W, focal, pose_b, weight, pts_b, batch_grid[img_i, :, :, :2])
             # flow_b_loss = img2mae(
-            #     induced_flow_b, batch_grid[:, 5:7], batch_grid[:, 7:8])
+            #     induced_flow_b, batch_grid[img_i, :, :, 5:7], batch_grid[img_i, :, :, 7:8])
             # loss_dict['flow_b_loss'] = flow_b_loss
-            # loss += args.flow_loss_lambda * Temp * loss_dict['flow_b_loss']
+            # loss += args['flow_loss_lambda'] * Temp * loss_dict['flow_b_loss']
 
-            # # Slow scene flow. The forward and backward sceneflow should be small.
-            # slow_loss = L1(ret['sceneflow_b'].cuda()) + \
-            #     L1(ret['sceneflow_f'].cuda())
-            # loss_dict['slow_loss'] = slow_loss
-            # loss += args['slow_loss_lambda'] * loss_dict['slow_loss']
+            # Slow scene flow. The forward and backward sceneflow should be small.
+            slow_loss = L1(ret['sceneflow_b'].cuda()) + \
+                L1(ret['sceneflow_f'].cuda())
+            loss_dict['slow_loss'] = slow_loss
+            loss += args['slow_loss_lambda'] * loss_dict['slow_loss']
 
             # # Smooth scene flow. The summation of the forward and backward sceneflow should be small.
             # smooth_loss = compute_sf_smooth_loss(ret['raw_pts'].cpu(),

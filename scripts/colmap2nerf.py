@@ -50,6 +50,8 @@ def parse_args():
                         help="input path to the colmap text files (set automatically if run_colmap is used)")
     parser.add_argument("--colmap_db", default="colmap.db",
                         help="colmap database filename")
+    parser.add_argument("--base", default=".",
+                        help="colmap database filename")
 
     args = parser.parse_args()
     return args
@@ -385,10 +387,11 @@ if __name__ == "__main__":
         # print("frames: {}".format(frames))
         imgs = [v["file_path"] for v in frames]
         folder = output_path.split("/")[-1].split(".")[0].split("_")[-1]
-        BASE = "/home/skhalid/Documents/datalake/dnerf/custom/"
+        BASE = args.images.split("images_")[0]
         print("folder: {}".format(folder))
         for img in imgs:
-            cmd = "cp -pr " + BASE+img+" "+BASE+folder+"/"+img.split("/")[-1]
+            cmd = "cp -pr " + BASE+"/"+img+" " + \
+                BASE+"/"+folder+"/"+img.split("/")[-1]
             print(cmd)
             os.system(cmd)
         print(f"[INFO] writing {len(frames)} frames to {output_path}")

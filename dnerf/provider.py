@@ -315,7 +315,7 @@ class NeRFDataset:
             disp = np.stack(disp, -1)
 
             # sk_debug: used to be `motion_masks`
-            mask_dir = os.path.join(basedir, 'semantic_mask')
+            mask_dir = os.path.join(basedir, 'motion_masks')
             maskfiles = [os.path.join(mask_dir, f)
                          for f in sorted(os.listdir(mask_dir)) if f.endswith('png')]
 
@@ -334,7 +334,7 @@ class NeRFDataset:
                     fwd_flow, fwd_mask = np.zeros(
                         (sh[0], sh[1], 2)), np.zeros((sh[0], sh[1]))
                 else:
-                    fwd_flow_path = os.path.join(flow_dir, '%03d_fwd.npz' % i)
+                    fwd_flow_path = os.path.join(flow_dir, '%05d_fwd.npz' % i)
                     fwd_data = np.load(fwd_flow_path)
                     fwd_flow, fwd_mask = fwd_data['flow'], fwd_data['mask']
                     fwd_flow = resize_flow(fwd_flow, sh[0], sh[1])
@@ -348,7 +348,7 @@ class NeRFDataset:
                     bwd_flow, bwd_mask = np.zeros(
                         (sh[0], sh[1], 2)), np.zeros((sh[0], sh[1]))
                 else:
-                    bwd_flow_path = os.path.join(flow_dir, '%03d_bwd.npz' % i)
+                    bwd_flow_path = os.path.join(flow_dir, '%05d_bwd.npz' % i)
                     bwd_data = np.load(bwd_flow_path)
                     bwd_flow, bwd_mask = bwd_data['flow'], bwd_data['mask']
                     bwd_flow = resize_flow(bwd_flow, sh[0], sh[1])
@@ -365,6 +365,33 @@ class NeRFDataset:
 
             imgs = self.images  # sk_debug
 
+            # Get grid
+            i, j = np.meshgrid(np.arange(self.W, dtype=np.float32),
+                               np.arange(self.H, dtype=np.float32), indexing='xy')
+
+            # print("i.shape: {}".format(i.shape))
+            # print("j.shape: {}".format(j.shape))
+            # print("flows_b.shape: {}".format(flows_b.shape))
+            # print("flows_f.shape: {}".format(flows_f.shape))
+            # print("flow_masks_b.shape: {}".format(flow_masks_b.shape))
+            # print("flow_masks_f.shape: {}".format(flow_masks_f.shape))
+
+            self.grid = np.empty((0, self.H, self.W, 8), np.float32)
+            for idx in range(num_img):
+                self.grid = np.concatenate((self.grid, np.stack([i,
+                                                                 j,
+                                                                 flows_f[:,
+                                                                         :, 0, idx],
+                                                                 flows_f[:,
+                                                                         :, 1, idx],
+                                                                 flow_masks_f[:,
+                                                                              :, idx],
+                                                                 flows_b[:,
+                                                                         :, 0, idx],
+                                                                 flows_b[:,
+                                                                         :, 1, idx],
+                                                                 flow_masks_b[:, :, idx]], -1)[None, ...]))
+
             # print("imgs.shape: {}".format(imgs.shape))
             # print("disp.shape: {}".format(disp.shape))
             # print("masks.shape: {}".format(masks.shape))
@@ -377,7 +404,7 @@ class NeRFDataset:
             self.flow_masks_f = flow_masks_f
             self.flows_b = flows_b
             self.flow_masks_b = flow_masks_b
-            self.masks = masks
+            self.masks = torch.Tensor(masks).to(self.device)
             self.disp = disp
 
             # FIXME: sk_debug
@@ -453,21 +480,31 @@ class NeRFDataset:
             }
 
         poses = self.poses[index].to(self.device)  # [B, 4, 4]
+        masks = torch.reshape(self.masks, (-1, self.masks.shape[2], self.masks.shape[3]))[
+            :, :, index].to(self.device)  # [B, N]
         times = self.times[index].to(self.device)  # [B, 1]
 
         error_map = None if self.error_map is None else self.error_map[index]
 
         rays = get_rays(poses, self.intrinsics, self.H,
-                        self.W, self.num_rays, error_map)
+                        self.W, masks, self.num_rays, error_map)  # sk_debug - added masks
+
+        indices = rays["inds"]
+        grid = torch.Tensor(self.grid)
+        grid = torch.reshape(
+            grid, (grid.shape[0], -1, grid.shape[-1]))
+        grid = grid[:, indices, :]
 
         results = {
-            'time': times,
             'H': self.H,
             'W': self.W,
+            'grids': grid,
+            'intrinsics': self.intrinsics,
+            'all_poses': self.poses,
             'rays_o': rays['rays_o'],
             'rays_d': rays['rays_d'],
-            'poses': self.poses,
-            'intrinsics': self.intrinsics
+            'time': times,
+            'poses': poses
         }
 
         if self.images is not None:
@@ -482,10 +519,14 @@ class NeRFDataset:
         FLOW_FLAG = True
         if (FLOW_FLAG):
             if self.masks is not None:
-                masks = torch.Tensor(self.masks[:, :, :, index]).to(
-                    self.device).permute(-1, 0, 1, 2)  # [B, H, W, 3/4]
+                index = index[0]
+                print(index)
+                # [B, H, W, 3/4]
+                print(self.masks[:, :, :, index].shape)
+                print(self.disp[:, :, index].shape)
+                masks = self.masks[:, :, :, index]
                 disp = torch.Tensor(self.disp[:, :, index]).to(
-                    self.device).permute(-1, 0, 1)  # [B, H, W, 3/4]
+                    self.device)  # [B, H, W, 3/4]
                 # print("masks.shape: {}".format(masks.shape))
                 # print("disp.shape: {}".format(disp.shape))
                 # print("images.shape: {}".format(images.shape))
