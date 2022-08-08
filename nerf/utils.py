@@ -14,6 +14,8 @@ from datetime import datetime
 
 import cv2
 import matplotlib.pyplot as plt
+from skimage.metrics import structural_similarity
+import lpips
 
 import torch
 import torch.nn as nn
@@ -229,10 +231,18 @@ def extract_geometry(bound_min, bound_max, resolution, threshold, query_func):
 class PSNRMeter:
     def __init__(self):
         self.V = 0
+        self.SSIM = 0
+        self.LPIPS = 0
         self.N = 0
+        self.lpips_loss = lpips.LPIPS(net='alex')
+
+    def im2tensor(self, img):
+        return torch.Tensor(img.transpose(2, 0, 1) / 127.5 - 1.0)[None, ...]
 
     def clear(self):
         self.V = 0
+        self.SSIM = 0
+        self.LPIPS = 0
         self.N = 0
 
     def prepare_inputs(self, *inputs):
@@ -247,22 +257,38 @@ class PSNRMeter:
     def update(self, preds, truths):
         # [B, N, 3] or [B, H, W, 3], range[0, 1]
         preds, truths = self.prepare_inputs(preds, truths)
-
+        ssim = structural_similarity(np.squeeze(
+            truths), np.squeeze(preds), multichannel=True)
+        lpips = self.lpips_loss.forward(
+            self.im2tensor(np.squeeze(truths)), self.im2tensor(np.squeeze(preds))).item()
         # simplified since max_pixel_value is 1 here.
         psnr = -10 * np.log10(np.mean((preds - truths) ** 2))
 
         self.V += psnr
+        self.SSIM += ssim
+        self.LPIPS += lpips
         self.N += 1
 
-    def measure(self):
+    def measure_psnr(self):
         return self.V / self.N
+
+    def measure_ssim(self):
+        return self.SSIM / self.N
+
+    def measure_lpips(self):
+        return self.LPIPS / self.N
 
     def write(self, writer, global_step, prefix=""):
         writer.add_scalar(os.path.join(prefix, "PSNR"),
-                          self.measure(), global_step)
+                          self.measure_psnr(), global_step)
+        writer.add_scalar(os.path.join(prefix, "SSIM"),
+                          self.measure_ssim(), global_step)
+        writer.add_scalar(os.path.join(prefix, "LPIPS"),
+                          self.measure_lpips(), global_step)
 
     def report(self):
-        return f'PSNR = {self.measure():.6f}'
+
+        return f'PSNR = {self.measure_psnr():.6f} - SSIM = {self.measure_ssim():.6f} - LPIPS = {self.measure_lpips():.6f}'
 
 
 class Trainer(object):

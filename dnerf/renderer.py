@@ -8,7 +8,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 import raymarching
-from .utils import custom_meshgrid, raw2outputs, raw2outputs_d
+from .utils import custom_meshgrid
 sys.path.append("..")  # Adds higher directory to python modules path.
 
 

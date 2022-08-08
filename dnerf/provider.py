@@ -489,7 +489,7 @@ class NeRFDataset:
         rays = get_rays(poses, self.intrinsics, self.H,
                         self.W, masks, self.num_rays, error_map)  # sk_debug - added masks
 
-        indices = rays["inds"]
+        indices = rays["inds"] if self.training else -1
         grid = torch.Tensor(self.grid)
         grid = torch.reshape(
             grid, (grid.shape[0], -1, grid.shape[-1]))

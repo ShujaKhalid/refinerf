@@ -163,7 +163,7 @@ class Trainer(_Trainer):
             loss_dict['img_loss'] = img_loss
             loss += args['full_loss_lambda'] * loss_dict['img_loss']
 
-            print("psnr: {}".format(psnr))
+            # print("psnr: {}".format(psnr))
 
             # Compute MSE loss between rgb_s and true RGB.
             img_s_loss = img2mse(ret['rgb_map_s'], gt_rgb)
@@ -224,11 +224,11 @@ class Trainer(_Trainer):
             # loss_dict['flow_b_loss'] = flow_b_loss
             # loss += args['flow_loss_lambda'] * Temp * loss_dict['flow_b_loss']
 
-            # Slow scene flow. The forward and backward sceneflow should be small.
-            slow_loss = L1(ret['sceneflow_b'].cuda()) + \
-                L1(ret['sceneflow_f'].cuda())
-            loss_dict['slow_loss'] = slow_loss
-            loss += args['slow_loss_lambda'] * loss_dict['slow_loss']
+            # # Slow scene flow. The forward and backward sceneflow should be small.
+            # slow_loss = L1(ret['sceneflow_b'].cuda()) + \
+            #     L1(ret['sceneflow_f'].cuda())
+            # loss_dict['slow_loss'] = slow_loss
+            # loss += args['slow_loss_lambda'] * loss_dict['slow_loss']
 
             # # Smooth scene flow. The summation of the forward and backward sceneflow should be small.
             # smooth_loss = compute_sf_smooth_loss(ret['raw_pts'].cpu(),
@@ -261,16 +261,16 @@ class Trainer(_Trainer):
             #     loss += args['mask_loss_lambda'] * loss_dict['mask_loss']
 
             # Sparsity loss.
-            # sparse_loss = entropy(ret['weights_d']) + entropy(ret['blending'])
-            # loss_dict['sparse_loss'] = sparse_loss
-            # loss += args['sparse_loss_lambda'] * loss_dict['sparse_loss']
+            sparse_loss = entropy(ret['weights_d']) + entropy(ret['blending'])
+            loss_dict['sparse_loss'] = sparse_loss
+            loss += args['sparse_loss_lambda'] * loss_dict['sparse_loss']
 
             # Depth constraint
             # Depth in NDC space equals to negative disparity in Euclidean space.
-            # depth_loss = compute_depth_loss(
-            #     ret['depth_map_d'], -batch_invdepth)
-            # loss_dict['depth_loss'] = depth_loss
-            # loss += args['depth_loss_lambda'] * Temp * loss_dict['depth_loss']
+            depth_loss = compute_depth_loss(
+                ret['depth_map_d'], -batch_invdepth)
+            loss_dict['depth_loss'] = depth_loss
+            loss += args['depth_loss_lambda'] * Temp * loss_dict['depth_loss']
 
             # FIXME: Order loss
             # order_loss = torch.mean(torch.square(ret['depth_map_d'][batch_mask[0].type(torch.bool)] -
@@ -278,13 +278,13 @@ class Trainer(_Trainer):
             # loss_dict['order_loss'] = order_loss
             # loss += args['order_loss_lambda'] * loss_dict['order_loss']
 
-            # sf_smooth_loss = compute_sf_smooth_loss(ret['raw_pts_b'].cpu(),
-            #                                         ret['raw_pts'].cpu(),
-            #                                         ret['raw_pts_b_b'].cpu(),
+            # sf_smooth_loss = compute_sf_smooth_loss(ret['raw_pts_b'].cuda(),
+            #                                         ret['raw_pts'].cuda(),
+            #                                         ret['raw_pts_b_b'].cuda(),
             #                                         H, W, focal) + \
-            #     compute_sf_smooth_loss(ret['raw_pts_f'].cpu(),
-            #                            ret['raw_pts_f_f'].cpu(),
-            #                            ret['raw_pts'].cpu(),
+            #     compute_sf_smooth_loss(ret['raw_pts_f'].cuda(),
+            #                            ret['raw_pts_f_f'].cuda(),
+            #                            ret['raw_pts'].cuda(),
             #                            H, W, focal)
             # loss_dict['sf_smooth_loss'] = sf_smooth_loss
             # loss += args['smooth_loss_lambda'] * loss_dict['sf_smooth_loss']
@@ -369,6 +369,13 @@ class Trainer(_Trainer):
 
         pred_rgb = outputs['image'].reshape(B, H, W, 3)
         pred_depth = outputs['depth'].reshape(B, H, W)
+
+        # Save image to results folder for further analysis
+        print("self.root_path: {}".format(self.workspace))
+        print("self.images: {}".format(data["images"].shape))
+        indx = data['index']
+        print("indx: {}".format(indx))
+        # cv2.imwrite()
 
         loss = self.criterion(pred_rgb, gt_rgb).mean()
 
@@ -477,152 +484,3 @@ class Trainer(_Trainer):
         mesh.export(save_path)
 
         self.log(f"==> Finished saving mesh.")
-
-
-def raw2outputs(raw_s,
-                raw_d,
-                blending,
-                z_vals,
-                rays_d,
-                raw_noise_std):
-    """Transforms model's predictions to semantically meaningful values.
-
-    Args:
-      raw_d: [num_rays, num_samples along ray, 4]. Prediction from Dynamic model.
-      raw_s: [num_rays, num_samples along ray, 4]. Prediction from Static model.
-      z_vals: [num_rays, num_samples along ray]. Integration time.
-      rays_d: [num_rays, 3]. Direction of each ray.
-
-    Returns:
-      rgb_map: [num_rays, 3]. Estimated RGB color of a ray.
-      disp_map: [num_rays]. Disparity map. Inverse of depth map.
-      acc_map: [num_rays]. Sum of weights along each ray.
-      weights: [num_rays, num_samples]. Weights assigned to each sampled color.
-      depth_map: [num_rays]. Estimated distance to object.
-    """
-    # Function for computing density from model prediction. This value is
-    # strictly between [0, 1].
-    def raw2alpha(raw, dists, act_fn=F.relu): return 1.0 - \
-        torch.exp(-act_fn(raw) * dists)
-
-    # Compute 'distance' (in time) between each integration time along a ray.
-    dists = z_vals[..., 1:] - z_vals[..., :-1]
-
-    # The 'distance' from the last integration time is infinity.
-    dists = torch.cat(
-        [dists, torch.Tensor([1e10]).expand(dists[..., :1].shape).cuda()],
-        -1)  # [N_rays, N_samples]
-
-    # Multiply each distance by the norm of its corresponding direction ray
-    # to convert to real world distance (accounts for non-unit directions).
-    dists = dists * torch.norm(rays_d[..., None, :], dim=-1)
-
-    # Extract RGB of each sample position along each ray.
-    rgb_d = torch.sigmoid(raw_d[..., :3])  # [N_rays, N_samples, 3]
-    rgb_s = torch.sigmoid(raw_s[..., :3])  # [N_rays, N_samples, 3]
-
-    # Add noise to model's predictions for density. Can be used to
-    # regularize network during training (prevents floater artifacts).
-    noise = 0.
-    if raw_noise_std > 0.:
-        noise = torch.randn(raw_d[..., 3].shape) * raw_noise_std
-
-    # Predict density of each sample along each ray. Higher values imply
-    # higher likelihood of being absorbed at this point.
-    alpha_d = raw2alpha(raw_d[..., 3] + noise,
-                        dists).cuda()  # [N_rays, N_samples]
-    alpha_s = raw2alpha(raw_s[..., 3] + noise,
-                        dists).cuda()  # [N_rays, N_samples]
-    alphas = 1. - (1. - alpha_s) * (1. - alpha_d)  # [N_rays, N_samples]
-
-    T_d = torch.cumprod(torch.cat(
-        [torch.ones((alpha_d.shape[0], 1)).cuda(), 1. - alpha_d + 1e-10], -1), -1)[:, :-1]
-    T_s = torch.cumprod(torch.cat(
-        [torch.ones((alpha_s.shape[0], 1)).cuda(), 1. - alpha_s + 1e-10], -1), -1)[:, :-1]
-
-    blending = torch.squeeze(blending)
-    T_full = torch.cumprod(torch.cat([torch.ones((alpha_d.shape[0], 1)).cuda(), (
-        1. - alpha_d * blending).cuda() * (1. - alpha_s * (1. - blending)).cuda() + 1e-10], -1), -1)[:, :-1]
-    # T_full = torch.cumprod(torch.cat([torch.ones((alpha_d.shape[0], 1)), torch.pow(1. - alpha_d + 1e-10, blending) * torch.pow(1. - alpha_s + 1e-10, 1. - blending)], -1), -1)[:, :-1]
-    # T_full = torch.cumprod(torch.cat([torch.ones((alpha_d.shape[0], 1)), (1. - alpha_d) * (1. - alpha_s) + 1e-10], -1), -1)[:, :-1]
-
-    # Compute weight for RGB of each sample along each ray.  A cumprod() is
-    # used to express the idea of the ray not having reflected up to this
-    # sample yet.
-    weights_d = alpha_d * T_d
-    weights_s = alpha_s * T_s
-    weights_full = (alpha_d * blending + alpha_s * (1. - blending)) * T_full
-    # weights_full = alphas * T_full
-
-    # Computed weighted color of each sample along each ray.
-    rgb_map_d = torch.sum(weights_d[..., None] * rgb_d, -2)
-    rgb_map_s = torch.sum(weights_s[..., None] * rgb_s, -2)
-    rgb_map_full = torch.sum(
-        (T_full * alpha_d * blending)[..., None] * rgb_d +
-        (T_full * alpha_s * (1. - blending))[..., None] * rgb_s, -2)
-
-    # Estimated depth map is expected distance.
-    depth_map_d = torch.sum(weights_d * z_vals, -1)
-    depth_map_s = torch.sum(weights_s * z_vals, -1)
-    depth_map_full = torch.sum(weights_full * z_vals, -1)
-
-    # Sum of weights along each ray. This value is in [0, 1] up to numerical error.
-    acc_map_d = torch.sum(weights_d, -1)
-    acc_map_s = torch.sum(weights_s, -1)
-    acc_map_full = torch.sum(weights_full, -1)
-
-    # Computed dynamicness
-    dynamicness_map = torch.sum(weights_full * blending, -1)
-    # dynamicness_map = 1 - T_d[..., -1]
-
-    return rgb_map_full, depth_map_full, acc_map_full, weights_full, \
-        rgb_map_s, depth_map_s, acc_map_s, weights_s, \
-        rgb_map_d, depth_map_d, acc_map_d, weights_d, dynamicness_map
-
-
-def raw2outputs_d(raw_d,
-                  z_vals,
-                  rays_d,
-                  raw_noise_std):
-
-    # Function for computing density from model prediction. This value is
-    # strictly between [0, 1].
-    def raw2alpha(raw, dists, act_fn=F.relu): return 1.0 - \
-        torch.exp(-act_fn(raw) * dists)
-
-    # Compute 'distance' (in time) between each integration time along a ray.
-    dists = z_vals[..., 1:] - z_vals[..., :-1]
-
-    # The 'distance' from the last integration time is infinity.
-    dists = torch.cat(
-        [dists, torch.Tensor([1e10]).expand(dists[..., :1].shape)],
-        -1)  # [N_rays, N_samples]
-
-    # Multiply each distance by the norm of its corresponding direction ray
-    # to convert to real world distance (accounts for non-unit directions).
-    dists = dists * torch.norm(rays_d[..., None, :], dim=-1)
-
-    # Extract RGB of each sample position along each ray.
-    rgb_d = torch.sigmoid(raw_d[..., :3])  # [N_rays, N_samples, 3]
-
-    # Add noise to model's predictions for density. Can be used to
-    # regularize network during training (prevents floater artifacts).
-    noise = 0.
-    if raw_noise_std > 0.:
-        noise = torch.randn(raw_d[..., 3].shape) * raw_noise_std
-
-    # Predict density of each sample along each ray. Higher values imply
-    # higher likelihood of being absorbed at this point.
-    alpha_d = raw2alpha(raw_d[..., 3] + noise, dists)  # [N_rays, N_samples]
-
-    T_d = torch.cumprod(torch.cat(
-        [torch.ones((alpha_d.shape[0], 1)), 1. - alpha_d + 1e-10], -1), -1)[:, :-1]
-    # Compute weight for RGB of each sample along each ray.  A cumprod() is
-    # used to express the idea of the ray not having reflected up to this
-    # sample yet.
-    weights_d = alpha_d * T_d
-
-    # Computed weighted color of each sample along each ray.
-    rgb_map_d = torch.sum(weights_d[..., None] * rgb_d, -2)
-
-    return rgb_map_d, weights_d

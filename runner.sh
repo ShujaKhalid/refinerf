@@ -6,14 +6,15 @@ export CUDA_ROOT=/usr/local/cuda
 
 # DATASET_PATH="../datalake/dnerf/custom"
 # DATASET_PATH="../datalake/dnerf/bouncingballs"
-# DATASET_PATH="/home/skhalid/Documents/datalake/dynamic_scene_data_full/nvidia_data_full/Playground/dense"
-# DATASET_PATH="/home/skhalid/Documents/datalake/dynamic_scene_data_full/nvidia_data_full/Truck-2/dense"
-# DATASET_PATH="/home/skhalid/Documents/datalake/dynamic_scene_data_full/nvidia_data_full/Umbrella/dense"
-DATASET_PATH="/home/skhalid/Documents/datalake/dynamic_scene_data_full/nvidia_data_full/DynamicFace-2/dense"
-# DATASET_PATH="/home/skhalid/Documents/datalake/dynamic_scene_data_full/nvidia_data_full/Jumping/dense"
-# DATASET_PATH="/home/skhalid/Documents/datalake/dynamic_scene_data_full/nvidia_data_full/Balloon1-2/dense"
-# DATASET_PATH="/home/skhalid/Documents/datalake/dynamic_scene_data_full/nvidia_data_full/Balloon2-2/dense"
-# DATASET_PATH="/home/skhalid/Documents/datalake/dynamic_scene_data_full/nvidia_data_full/Skating-2/dense"
+# SCENE="DynamicFace-2"
+# SCENE="Playground"
+# SCENE="Truck-2"
+# SCENE="Umbrella"
+SCENE="Jumping"
+SCENE="Balloon1-2"
+SCENE="Balloon2-2"
+SCENE="Skating-2"
+DATASET_PATH="/home/skhalid/Documents/datalake/dynamic_scene_data_full/nvidia_data_full/$SCENE/dense"
 NM_WEIGHTS="/home/skhalid/Documents/datalake/neural_motion_weights/"
 WEIGHTS_MIDAS=$NM_WEIGHTS"midas_v21-f6b98070.pt"
 WEIGHTS_RAFT=$NM_WEIGHTS"raft-things.pth"
@@ -106,5 +107,5 @@ fi
 
 if [[ "$1" == "--run" || "$2" == "--run" || "$3" == "--run"  ]]
 then
-	python main_dnerf.py $DATASET_PATH --workspace trial_nerf --fp16 --cuda_ray $GUIFLAG
+	python main_dnerf.py $DATASET_PATH --workspace $SCENE --fp16 --cuda_ray $GUIFLAG
 fi
