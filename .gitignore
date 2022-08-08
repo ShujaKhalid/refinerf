@@ -13,6 +13,11 @@ trial*/
 .vs/
 results/
 
+*.png
+*.jpg
+*/*/*.png
+*/*/*.jpg
+
 volsdf/
 **volsdf*
 tensorf/

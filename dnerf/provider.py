@@ -480,6 +480,12 @@ class NeRFDataset:
             }
 
         poses = self.poses[index].to(self.device)  # [B, 4, 4]
+        print(self.masks)
+        print(self.masks.shape)
+        print(self.poses.shape)
+        print(index)
+        print("self.masks.shape[2]: {}".format(self.masks.shape[2]))
+        print("self.masks.shape[3]: {}".format(self.masks.shape[3]))
         masks = torch.reshape(self.masks, (-1, self.masks.shape[2], self.masks.shape[3]))[
             :, :, index].to(self.device)  # [B, N]
         times = self.times[index].to(self.device)  # [B, 1]

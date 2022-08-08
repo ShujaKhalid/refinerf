@@ -165,7 +165,7 @@ def motion_segmentation(basedir, threshold,
     create_dir(save_mask_dir)
 
     print("num_frames: {}".format(num_frames))
-    for i in range(0, num_frames-2):
+    for i in range(0, num_frames):
         print("i: {}".format(i))
         im_prev = imdata[img_keys[perm[max(0, i - 1)]]]
         im_ref = imdata[img_keys[perm[i]]]
