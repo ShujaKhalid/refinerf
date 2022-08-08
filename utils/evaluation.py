@@ -51,9 +51,9 @@ def calculate_metrics(data_dir, sequence, methods, lpips_loss):
 
             img = readimage(data_dir, sequence, time, method)
             PSNR = cv2.PSNR(img_true, img)
+            SSIM = structural_similarity(img_true, img, multichannel=True)
             print("img_true.shape: {}".format(img_true.shape))
             print("img.shape: {}".format(img.shape))
-            SSIM = structural_similarity(img_true, img, multichannel=True)
             LPIPS = lpips_loss.forward(
                 im2tensor(img_true), im2tensor(img)).item()
 

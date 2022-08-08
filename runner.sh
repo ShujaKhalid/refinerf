@@ -6,14 +6,14 @@ export CUDA_ROOT=/usr/local/cuda
 
 # DATASET_PATH="../datalake/dnerf/custom"
 # DATASET_PATH="../datalake/dnerf/bouncingballs"
-# SCENE="DynamicFace-2"
+SCENE="DynamicFace-2"
 # SCENE="Playground"
 # SCENE="Truck-2"
 # SCENE="Umbrella"
-SCENE="Jumping"
-SCENE="Balloon1-2"
-SCENE="Balloon2-2"
-SCENE="Skating-2"
+# SCENE="Jumping"
+# SCENE="Balloon1-2"
+# SCENE="Balloon2-2"
+# SCENE="Skating-2"
 DATASET_PATH="/home/skhalid/Documents/datalake/dynamic_scene_data_full/nvidia_data_full/$SCENE/dense"
 NM_WEIGHTS="/home/skhalid/Documents/datalake/neural_motion_weights/"
 WEIGHTS_MIDAS=$NM_WEIGHTS"midas_v21-f6b98070.pt"
@@ -57,15 +57,16 @@ then
 			echo "\\n\\n COLMAP2NERF \\n\\n"
 			# IMAGE_PTH="images_573x288" # Playground
 			# IMAGE_PTH="images_543x288" # Umbrella
-			# IMAGE_PTH="images_547x288" # DynamicFace-2
+			IMAGE_PTH="images" # DynamicFace-2
 			# IMAGE_PTH="images_540x288" # Balloon1-2
 			# IMAGE_PTH="images_545x288" # Balloon2-2
-			IMAGE_PTH="images_541x288" # Skating-2
+			# IMAGE_PTH="images_541x288" # Skating-2
 			# IMAGE_PTH="images_540x288" # Jumping
 			# IMAGE_PTH="images_542x288" # Truck-2
-			python scripts/colmap2nerf.py --images $DATASET_PATH/$IMAGE_PTH --run_colmap --dynamic
-			for i in $DATASET_PATH/$IMAGE_PTH/*.png ; do convert "$i" "${i%.*}.jpg" ; done
-			cp -pr $DATASET_PATH/$IMAGE_PTH/*.jpg $DATASET_PATH/images_colmap
+			# python scripts/colmap2nerf.py --images $DATASET_PATH/$IMAGE_PTH --run_colmap --dynamic --dataset nvidia --mode train
+			python scripts/colmap2nerf.py --images $DATASET_PATH/$IMAGE_PTH --run_colmap --dynamic --dataset nvidia --mode val
+			# for i in $DATASET_PATH/$IMAGE_PTH/*.png ; do convert "$i" "${i%.*}.jpg" ; done
+			# cp -pr $DATASET_PATH/$IMAGE_PTH/*.jpg $DATASET_PATH/images_colmap
 		else
 			mkdir -p $DATASET_PATH/images_colmap
 			for i in $DATASET_PATH/train/*.png ; do convert "$i" "${i%.*}.jpg" ; done
@@ -100,9 +101,9 @@ then
 
 
 	# python utils/generate_pose.py --dataset_path $DATASET_PATH$CASE
-	python utils/generate_depth.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_MIDAS
-	python utils/generate_flow.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_RAFT 
-	python utils/generate_motion_mask.py --dataset_path $DATASET_PATH
+	# python utils/generate_depth.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_MIDAS
+	# python utils/generate_flow.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_RAFT 
+	# python utils/generate_motion_mask.py --dataset_path $DATASET_PATH
 fi
 
 if [[ "$1" == "--run" || "$2" == "--run" || "$3" == "--run"  ]]

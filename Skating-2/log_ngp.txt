@@ -205,3 +205,12 @@ PSNR = 22.735739 - SSIM = 0.819271 - LPIPS = 0.000064
 [INFO] New best result: 0.005393223837018013 --> 0.005326306913048029
 ==> Start Training Epoch 27, lr=0.009590 ...
 ==> Finished Epoch 27.
+[INFO] Trainer: ngp | 2022-08-08_09-54-03 | cuda | fp16 | Skating-2
+[INFO] #parameters: 12855591
+[INFO] Loading latest checkpoint ...
+[INFO] Latest checkpoint is Skating-2/checkpoints/ngp_ep0026.pth
+[INFO] loaded model.
+[INFO] load at epoch 26, global step 546
+[INFO] loaded optimizer.
+[INFO] loaded scheduler.
+[INFO] loaded scaler.

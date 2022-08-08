@@ -520,10 +520,10 @@ class NeRFDataset:
         if (FLOW_FLAG):
             if self.masks is not None:
                 index = index[0]
-                print(index)
+                # print(index)
                 # [B, H, W, 3/4]
-                print(self.masks[:, :, :, index].shape)
-                print(self.disp[:, :, index].shape)
+                # print(self.masks[:, :, :, index].shape)
+                # print(self.disp[:, :, index].shape)
                 masks = self.masks[:, :, :, index]
                 disp = torch.Tensor(self.disp[:, :, index]).to(
                     self.device)  # [B, H, W, 3/4]

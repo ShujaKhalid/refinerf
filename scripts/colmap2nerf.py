@@ -19,6 +19,7 @@ import math
 import cv2
 import os
 import shutil
+import glob
 
 
 def parse_args():
@@ -52,7 +53,14 @@ def parse_args():
                         help="colmap database filename")
     parser.add_argument("--base", default=".",
                         help="colmap database filename")
-
+    parser.add_argument("--dataset", default="nvidia",
+                        help="dataset")
+    parser.add_argument("--mode", default="val",
+                        help="mode")
+    parser.add_argument("--W", type=int, default=570,
+                        help="Rescale width")
+    parser.add_argument("--H", type=int, default=288,
+                        help="Rescale height")
     args = parser.parse_args()
     return args
 
@@ -90,6 +98,38 @@ def run_ffmpeg(args):
 
     do_system(
         f"ffmpeg -i {video} -qscale:v 1 -qmin 1 -vf \"fps={fps}{time_slice_value}\" {images}/%03d.jpg")
+
+
+def run_ffmpeg_images(args):
+
+    base = args.images.split("images")[0]
+    if (args.mode == "train"):
+        new_loc = base + "images_scaled"
+        os.system("mkdir -p "+new_loc)
+        for img in glob.glob(args.images+"/*.jpg"):
+            fn = img.split("/")[-1]
+            out = new_loc+"/"+fn
+            cmd = "ffmpeg -i "+img+" -vf scale=" + \
+                str(args.W)+":"+str(args.H) + " " + out
+            print(cmd)
+            os.system(cmd)
+        args.images = new_loc
+    else:
+        new_loc = base + args.mode + "/"
+        query_loc = base + "mv_images"
+        os.system("mkdir -p "+new_loc)
+        folders = glob.glob(query_loc+"/*")
+        folders.sort()
+        for indx, folder in enumerate(folders):
+            files = glob.glob(folder+"/*.jpg")
+            files.sort()
+            file = files[0]
+            fn = "v000t0"+str(indx).zfill(2)+".jpg"
+            cmd = "ffmpeg -i "+file+" -vf scale=" + \
+                str(args.W)+":"+str(args.H) + " " + new_loc+fn
+            print("cmd: {}".format(cmd))
+            os.system(cmd)
+        args.images = new_loc
 
 
 def run_colmap(args):
@@ -199,6 +239,7 @@ if __name__ == "__main__":
         args.images = args.images[:-
                                   1] if args.images[-1] == '/' else args.images
         root_dir = os.path.dirname(args.images)
+        run_ffmpeg_images(args)
 
     args.colmap_db = os.path.join(root_dir, args.colmap_db)
     args.colmap_text = os.path.join(root_dir, args.colmap_text)
@@ -385,18 +426,32 @@ if __name__ == "__main__":
 
         output_path = os.path.join(root_dir, filename)
         # print("frames: {}".format(frames))
-        imgs = [v["file_path"] for v in frames]
-        folder = output_path.split("/")[-1].split(".")[0].split("_")[-1]
-        BASE = args.images.split("images_")[0]
-        print("folder: {}".format(folder))
-        for img in imgs:
-            cmd = "cp -pr " + BASE+"/"+img+" " + \
-                BASE+"/"+folder+"/"+img.split("/")[-1]
-            print(cmd)
-            os.system(cmd)
-        print(f"[INFO] writing {len(frames)} frames to {output_path}")
-        with open(output_path, "w") as outfile:
-            json.dump(out, outfile, indent=2)
+        if (args.dataset == "nvidia"):
+            BASE = args.images.split("images_")[0]
+            imgs = frames
+            #folder = output_path.split("/")[-1].split(".")[0].split("_")[-1]
+            #print("folder: {}".format(folder))
+            for img in imgs:
+                cmd = "cp -pr " + img + " " + \
+                    BASE+"/"+args.mode+"/"+img.split("/")[-1]
+                print(cmd)
+                os.system(cmd)
+            print(f"[INFO] writing {len(frames)} frames to {output_path}")
+            with open(output_path, "w") as outfile:
+                json.dump(out, outfile, indent=2)
+        else:
+            imgs = frames
+            #folder = output_path.split("/")[-1].split(".")[0].split("_")[-1]
+            BASE = args.images.split("images_")[0]
+            # print("folder: {}".format(folder))
+            for img in imgs:
+                cmd = "cp -pr " + "/"+img+" " + \
+                    BASE+"/"+args.mode+"/"+img.split("/")[-1]
+                print(cmd)
+                os.system(cmd)
+            print(f"[INFO] writing {len(frames)} frames to {output_path}")
+            with open(output_path, "w") as outfile:
+                json.dump(out, outfile, indent=2)
 
     # just one transforms.json, don't do data split
     if args.hold <= 0:
@@ -407,10 +462,18 @@ if __name__ == "__main__":
         all_ids = np.arange(N)
         test_ids = all_ids[::args.hold]
         train_ids = np.array([i for i in all_ids if i not in test_ids])
+        W = args.W
+        H = args.H
 
-        frames_train = [f for i, f in enumerate(frames) if i in train_ids]
-        frames_test = [f for i, f in enumerate(frames) if i in test_ids]
+        if (args.dataset == "nvidia"):
+            frames_all = glob.glob(args.images+"/*.jpg")
+            print(frames_all)
+            write_json('transforms_'+args.mode+'.json', frames_all)
 
-        write_json('transforms_train.json', frames_train)
-        write_json('transforms_val.json', frames_test[::10])
-        write_json('transforms_test.json', frames_test)
+        else:
+            frames_train = [f for i, f in enumerate(frames) if i in train_ids]
+            frames_test = [f for i, f in enumerate(frames) if i in test_ids]
+
+            write_json('transforms_train.json', frames_train)
+            write_json('transforms_val.json', frames_test[::10])
+            write_json('transforms_test.json', frames_test)

@@ -372,9 +372,9 @@ class Trainer(_Trainer):
 
         # Save image to results folder for further analysis
         print("self.root_path: {}".format(self.workspace))
-        print("self.images: {}".format(data["images"].shape))
+        #print("self.images: {}".format(data["images"].shape))
         indx = data['index']
-        print("indx: {}".format(indx))
+        #print("indx: {}".format(indx))
         # cv2.imwrite()
 
         loss = self.criterion(pred_rgb, gt_rgb).mean()

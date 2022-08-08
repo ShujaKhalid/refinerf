@@ -108,8 +108,8 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None):
             # print("coords_s.shape: {}".format(coords_s.shape))
             coords_d = coords_d[inds_d]
             coords_s = coords_s[inds_s]
-            #inds_s = inds.expand([B, N//2])
-            #inds_d = inds.expand([B, N//2])
+            # inds_s = inds.expand([B, N//2])
+            # inds_d = inds.expand([B, N//2])
             inds = torch.cat([coords_s, coords_d], 0)
             inds = inds.expand([B, N])
         else:
@@ -163,8 +163,8 @@ def seed_everything(seed):
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
-    #torch.backends.cudnn.deterministic = True
-    #torch.backends.cudnn.benchmark = True
+    # torch.backends.cudnn.deterministic = True
+    # torch.backends.cudnn.benchmark = True
 
 
 def torch_vis_2d(x, renormalize=False):
@@ -213,10 +213,10 @@ def extract_fields(bound_min, bound_max, resolution, query_func, S=128):
 
 
 def extract_geometry(bound_min, bound_max, resolution, threshold, query_func):
-    #print('threshold: {}'.format(threshold))
+    # print('threshold: {}'.format(threshold))
     u = extract_fields(bound_min, bound_max, resolution, query_func)
 
-    #print(u.shape, u.max(), u.min(), np.percentile(u, 50))
+    # print(u.shape, u.max(), u.min(), np.percentile(u, 50))
 
     vertices, triangles = mcubes.marching_cubes(u, threshold)
 
@@ -238,6 +238,7 @@ class PSNRMeter:
 
     def im2tensor(self, img):
         return torch.Tensor(img.transpose(2, 0, 1) / 127.5 - 1.0)[None, ...]
+        # return torch.Tensor(img / 127.5 - 1.0)[None, ...]
 
     def clear(self):
         self.V = 0
@@ -257,10 +258,15 @@ class PSNRMeter:
     def update(self, preds, truths):
         # [B, N, 3] or [B, H, W, 3], range[0, 1]
         preds, truths = self.prepare_inputs(preds, truths)
-        ssim = structural_similarity(np.squeeze(
-            truths), np.squeeze(preds), multichannel=True)
+        preds = np.squeeze(preds)
+        truths = np.squeeze(truths)
+        ssim = structural_similarity(truths, preds, multichannel=True)
+        print("truths.shape: {}".format(truths.shape))
+        print("preds.shape: {}".format(preds.shape))
         lpips = self.lpips_loss.forward(
-            self.im2tensor(np.squeeze(truths)), self.im2tensor(np.squeeze(preds))).item()
+            self.im2tensor(truths), self.im2tensor(preds)).item()
+        print("lpips: {}".format(lpips))
+
         # simplified since max_pixel_value is 1 here.
         psnr = -10 * np.log10(np.mean((preds - truths) ** 2))
 
@@ -672,7 +678,7 @@ class Trainer(object):
                 path_depth = os.path.join(
                     save_path, f'{name}_{i:04d}_depth.png')
 
-                #self.log(f"[INFO] saving test image to {path}")
+                # self.log(f"[INFO] saving test image to {path}")
 
                 if self.opt.color_space == 'linear':
                     preds = linear_to_srgb(preds)
@@ -959,9 +965,10 @@ class Trainer(object):
                         self.workspace, 'validation', f'{name}_{self.local_step:04d}.png')
                     save_path_depth = os.path.join(
                         self.workspace, 'validation', f'{name}_{self.local_step:04d}_depth.png')
-                    #save_path_gt = os.path.join(self.workspace, 'validation', f'{name}_{self.local_step:04d}_gt.png')
+                    save_path_gt = os.path.join(
+                        self.workspace, 'validation', f'{name}_{self.local_step:04d}_gt.png')
 
-                    #self.log(f"==> Saving validation image to {save_path}")
+                    # self.log(f"==> Saving validation image to {save_path}")
                     os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
                     if self.opt.color_space == 'linear':
@@ -969,12 +976,39 @@ class Trainer(object):
 
                     pred = preds[0].detach().cpu().numpy()
                     pred_depth = preds_depth[0].detach().cpu().numpy()
+                    truth = truths[0].detach().cpu().numpy()
 
                     cv2.imwrite(save_path, cv2.cvtColor(
                         (pred * 255).astype(np.uint8), cv2.COLOR_RGB2BGR))
                     cv2.imwrite(save_path_depth,
                                 (pred_depth * 255).astype(np.uint8))
-                    #cv2.imwrite(save_path_gt, cv2.cvtColor((linear_to_srgb(truths[0].detach().cpu().numpy()) * 255).astype(np.uint8), cv2.COLOR_RGB2BGR))
+                    cv2.imwrite(save_path_gt, cv2.cvtColor(
+                        (truth * 255).astype(np.uint8), cv2.COLOR_RGB2BGR))
+
+                    # Save for overall calcs
+                    # save image
+                    print("len(preds): {}".format(len(preds)))
+                    for i in range(len(preds)):
+                        save_path = os.path.join(
+                            "results", 'Ours', self.workspace, f'v{0:03d}_t{i:03d}.png')
+                        save_path_gt = os.path.join(
+                            "results", 'gt', self.workspace, f'v{0:03d}_t{i:03d}.png')
+
+                        # self.log(f"==> Saving validation image to {save_path}")
+                        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+                        os.makedirs(os.path.dirname(
+                            save_path_gt), exist_ok=True)
+
+                        if self.opt.color_space == 'linear':
+                            preds = linear_to_srgb(preds)
+
+                        pred = preds[0].detach().cpu().numpy()
+                        truth = truths[0].detach().cpu().numpy()
+
+                        cv2.imwrite(save_path, cv2.cvtColor(
+                            (pred * 255).astype(np.uint8), cv2.COLOR_RGB2BGR))
+                        cv2.imwrite(save_path_gt, cv2.cvtColor(
+                            (truth * 255).astype(np.uint8), cv2.COLOR_RGB2BGR))
 
                     pbar.set_description(
                         f"loss={loss_val:.4f} ({total_loss/self.local_step:.4f})")
