@@ -32,7 +32,7 @@ if __name__ == '__main__':
                         help="num rays sampled per image for each training step")
     parser.add_argument('--cuda_ray', action='store_true',
                         help="use CUDA raymarching instead of pytorch")
-    parser.add_argument('--max_steps', type=int, default=512,  # sk_debug: used to be 1024
+    parser.add_argument('--max_steps', type=int, default=256,  # sk_debug: used to be 1024
                         help="max num steps sampled per ray (only valid when using --cuda_ray)")
     parser.add_argument('--update_extra_interval', type=int, default=100,
                         help="iter interval to update extra status (only valid when using --cuda_ray)")
