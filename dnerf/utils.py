@@ -371,7 +371,7 @@ class Trainer(_Trainer):
         pred_depth = outputs['depth'].reshape(B, H, W)
 
         # Save image to results folder for further analysis
-        print("self.root_path: {}".format(self.workspace))
+        # print("self.root_path: {}".format(self.workspace))
         #print("self.images: {}".format(data["images"].shape))
         indx = data['index']
         #print("indx: {}".format(indx))

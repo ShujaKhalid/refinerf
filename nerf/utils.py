@@ -261,11 +261,8 @@ class PSNRMeter:
         preds = np.squeeze(preds)
         truths = np.squeeze(truths)
         ssim = structural_similarity(truths, preds, multichannel=True)
-        print("truths.shape: {}".format(truths.shape))
-        print("preds.shape: {}".format(preds.shape))
         lpips = self.lpips_loss.forward(
             self.im2tensor(truths), self.im2tensor(preds)).item()
-        print("lpips: {}".format(lpips))
 
         # simplified since max_pixel_value is 1 here.
         psnr = -10 * np.log10(np.mean((preds - truths) ** 2))
@@ -987,7 +984,6 @@ class Trainer(object):
 
                     # Save for overall calcs
                     # save image
-                    print("len(preds): {}".format(len(preds)))
                     for i in range(len(preds)):
                         save_path = os.path.join(
                             "results", 'Ours', self.workspace, f'v{0:03d}_t{i:03d}.png')
