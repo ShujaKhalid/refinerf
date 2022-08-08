@@ -63,10 +63,10 @@ then
 			# IMAGE_PTH="images_541x288" # Skating-2
 			# IMAGE_PTH="images_540x288" # Jumping
 			# IMAGE_PTH="images_542x288" # Truck-2
-			# python scripts/colmap2nerf.py --images $DATASET_PATH/$IMAGE_PTH --run_colmap --dynamic --dataset nvidia --mode train
+			python scripts/colmap2nerf.py --images $DATASET_PATH/$IMAGE_PTH --run_colmap --dynamic --dataset nvidia --mode train
 			python scripts/colmap2nerf.py --images $DATASET_PATH/$IMAGE_PTH --run_colmap --dynamic --dataset nvidia --mode val
 			# for i in $DATASET_PATH/$IMAGE_PTH/*.png ; do convert "$i" "${i%.*}.jpg" ; done
-			# cp -pr $DATASET_PATH/$IMAGE_PTH/*.jpg $DATASET_PATH/images_colmap
+			cp -pr $DATASET_PATH/images_scaled/*.jpg $DATASET_PATH/images_colmap
 		else
 			mkdir -p $DATASET_PATH/images_colmap
 			for i in $DATASET_PATH/train/*.png ; do convert "$i" "${i%.*}.jpg" ; done
@@ -100,10 +100,10 @@ then
 	fi
 
 
-	# python utils/generate_pose.py --dataset_path $DATASET_PATH$CASE
-	# python utils/generate_depth.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_MIDAS
-	# python utils/generate_flow.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_RAFT 
-	# python utils/generate_motion_mask.py --dataset_path $DATASET_PATH
+	### python utils/generate_pose.py --dataset_path $DATASET_PATH$CASE
+	python utils/generate_depth.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_MIDAS
+	python utils/generate_flow.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_RAFT 
+	python utils/generate_motion_mask.py --dataset_path $DATASET_PATH
 fi
 
 if [[ "$1" == "--run" || "$2" == "--run" || "$3" == "--run"  ]]

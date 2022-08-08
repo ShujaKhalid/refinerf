@@ -124,7 +124,9 @@ def run_ffmpeg_images(args):
             files = glob.glob(folder+"/*.jpg")
             files.sort()
             file = files[0]
-            fn = "v000t0"+str(indx).zfill(2)+".jpg"
+            # fn = "v000t0"+str(indx).zfill(2)+".jpg"
+            fn = "000"+str(indx).zfill(2)+".jpg"
+            # fn = file.split("/")[-1]
             cmd = "ffmpeg -i "+file+" -vf scale=" + \
                 str(args.W)+":"+str(args.H) + " " + new_loc+fn
             print("cmd: {}".format(cmd))
@@ -244,7 +246,7 @@ if __name__ == "__main__":
     args.colmap_db = os.path.join(root_dir, args.colmap_db)
     args.colmap_text = os.path.join(root_dir, args.colmap_text)
 
-    if args.run_colmap:
+    if args.run_colmap and args.mode != "val":
         run_colmap(args)
 
     SKIP_EARLY = int(args.skip_early)
@@ -428,19 +430,19 @@ if __name__ == "__main__":
         # print("frames: {}".format(frames))
         if (args.dataset == "nvidia"):
             BASE = args.images.split("images_")[0]
-            imgs = frames
+            imgs = [v["file_path"] for v in frames]
             #folder = output_path.split("/")[-1].split(".")[0].split("_")[-1]
             #print("folder: {}".format(folder))
-            for img in imgs:
-                cmd = "cp -pr " + img + " " + \
-                    BASE+"/"+args.mode+"/"+img.split("/")[-1]
-                print(cmd)
-                os.system(cmd)
+            # for img in imgs:
+            #     cmd = "cp -pr " + img + " " + \
+            #         BASE+"/"+args.mode+"/"+img.split("/")[-1]
+            #     print(cmd)
+            #     os.system(cmd)
             print(f"[INFO] writing {len(frames)} frames to {output_path}")
             with open(output_path, "w") as outfile:
                 json.dump(out, outfile, indent=2)
         else:
-            imgs = frames
+            imgs = [v["file_path"] for v in frames]
             #folder = output_path.split("/")[-1].split(".")[0].split("_")[-1]
             BASE = args.images.split("images_")[0]
             # print("folder: {}".format(folder))
@@ -466,7 +468,8 @@ if __name__ == "__main__":
         H = args.H
 
         if (args.dataset == "nvidia"):
-            frames_all = glob.glob(args.images+"/*.jpg")
+            frames_all = [f for i, f in enumerate(frames) if i in all_ids]
+            # frames_all = glob.glob(args.images+"/*.jpg")
             print(frames_all)
             write_json('transforms_'+args.mode+'.json', frames_all)
 
