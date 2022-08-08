@@ -260,7 +260,7 @@ class PSNRMeter:
         preds, truths = self.prepare_inputs(preds, truths)
         preds = np.squeeze(preds)
         truths = np.squeeze(truths)
-        ssim = structural_similarity(truths, preds, multichannel=True)
+        ssim = structural_similarity(truths, preds, channel_axis=2)
         lpips = self.lpips_loss.forward(
             self.im2tensor(truths), self.im2tensor(preds)).item()
 
