@@ -314,6 +314,7 @@ if __name__ == "__main__":
         frames = []
 
         up = np.zeros(3)
+
         for line in f:
             line = line.strip()
 
@@ -405,6 +406,12 @@ if __name__ == "__main__":
 
     for f in frames:
         f["transform_matrix"] = f["transform_matrix"].tolist()
+
+    if (args.mode == "val"):
+        # Save first pose for validation
+        tm = frames[0]["transform_matrix"]
+        for f in frames:
+            f["transform_matrix"] = tm
 
     # construct frames
 
