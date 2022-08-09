@@ -9,8 +9,8 @@ export CUDA_ROOT=/usr/local/cuda
 # SCENE="DynamicFace-2"
 # SCENE="Playground"
 # SCENE="Truck-2"
-SCENE="Umbrella"
-# SCENE="Jumping"
+# SCENE="Umbrella"
+SCENE="Jumping"
 # SCENE="Balloon1-2"
 # SCENE="Balloon2-2"
 # SCENE="Skating-2"
@@ -65,7 +65,6 @@ then
 			# IMAGE_PTH="images_542x288" # Truck-2
 			python scripts/colmap2nerf.py --images $DATASET_PATH/$IMAGE_PTH --run_colmap --dynamic --dataset nvidia --mode train
 			python scripts/colmap2nerf.py --images $DATASET_PATH/$IMAGE_PTH --run_colmap --dynamic --dataset nvidia --mode val
-			# for i in $DATASET_PATH/$IMAGE_PTH/*.png ; do convert "$i" "${i%.*}.jpg" ; done
 			cp -pr $DATASET_PATH/images_scaled/*.jpg $DATASET_PATH/images_colmap
 		else
 			mkdir -p $DATASET_PATH/images_colmap
@@ -100,7 +99,6 @@ then
 	fi
 
 
-	### python utils/generate_pose.py --dataset_path $DATASET_PATH$CASE
 	python utils/generate_depth.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_MIDAS
 	python utils/generate_flow.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_RAFT 
 	python utils/generate_motion_mask.py --dataset_path $DATASET_PATH

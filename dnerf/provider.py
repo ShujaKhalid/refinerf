@@ -298,8 +298,8 @@ class NeRFDataset:
 
         # [debug] uncomment to view examples of randomly generated poses.
         # visualize_poses(rand_poses(100, self.device, radius=self.radius).cpu().numpy())
-        FLOW_FLAG = True
-        if (FLOW_FLAG):
+        self.FLOW_FLAG = False
+        if (self.FLOW_FLAG):
             # TODO: ADD the additional pre-reqs here
             basedir = self.root_path
             disp_dir = os.path.join(basedir, 'disp')
@@ -480,20 +480,25 @@ class NeRFDataset:
             }
 
         poses = self.poses[index].to(self.device)  # [B, 4, 4]
-        masks = torch.reshape(self.masks, (-1, self.masks.shape[2], self.masks.shape[3]))[
-            :, :, index].to(self.device)  # [B, N]
         times = self.times[index].to(self.device)  # [B, 1]
 
         error_map = None if self.error_map is None else self.error_map[index]
+
+        if (self.FLOW_FLAG):
+            masks = torch.reshape(self.masks, (-1, self.masks.shape[2], self.masks.shape[3]))[
+                :, :, index].to(self.device)  # [B, N]
+            grid = torch.Tensor(self.grid)
+            grid = torch.reshape(
+                grid, (grid.shape[0], -1, grid.shape[-1]))
+            grid = grid[:, indices, :]
+        else:
+            masks = None
+            grid = None
 
         rays = get_rays(poses, self.intrinsics, self.H,
                         self.W, masks, self.num_rays, error_map)  # sk_debug - added masks
 
         indices = rays["inds"] if self.training else -1
-        grid = torch.Tensor(self.grid)
-        grid = torch.reshape(
-            grid, (grid.shape[0], -1, grid.shape[-1]))
-        grid = grid[:, indices, :]
 
         results = {
             'H': self.H,
@@ -504,7 +509,8 @@ class NeRFDataset:
             'rays_o': rays['rays_o'],
             'rays_d': rays['rays_d'],
             'time': times,
-            'poses': poses
+            'poses': poses,
+            'FLOW_FLAG': self.FLOW_FLAG
         }
 
         if self.images is not None:
@@ -516,8 +522,8 @@ class NeRFDataset:
                     B, -1, C), 1, torch.stack(C * [rays['inds']], -1))  # [B, N, 3/4]
             results['images'] = images
 
-        FLOW_FLAG = True
-        if (FLOW_FLAG):
+        # FLOW_FLAG = False
+        if (self.FLOW_FLAG):
             if self.masks is not None:
                 index = index[0]
                 # print(index)

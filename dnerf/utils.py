@@ -125,8 +125,8 @@ class Trainer(_Trainer):
         # raw_pts_f_f = outputs['raw_pts_f_f']
         # image_d_b_b = outputs['rgb_map_d_b_b']
         # rgb_map_d_f_f = outputs['rgb_map_d_f_f']
-        FLOW_FLAG = True
-        if (FLOW_FLAG):
+        # FLOW_FLAG = False
+        if (data["FLOW_FLAG"]):
             # Calculate losses here
             chain_5frames = True  # FIXME: Make conditionally appropriate
             loss = 0

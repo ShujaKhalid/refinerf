@@ -51,7 +51,7 @@ def calculate_metrics(data_dir, sequence, methods, lpips_loss):
 
             img = readimage(data_dir, sequence, time, method)
             PSNR = cv2.PSNR(img_true, img)
-            SSIM = structural_similarity(img_true, img, multichannel=True)
+            SSIM = structural_similarity(img_true, img, channel_axis=2)
             LPIPS = lpips_loss.forward(
                 im2tensor(img_true), im2tensor(img)).item()
 
@@ -72,9 +72,9 @@ if __name__ == '__main__':
     data_dir = '../results'
     # sequences = ['Balloon1', 'Balloon2', 'Jumping',
     #              'Playground', 'Skating', 'Truck', 'Umbrella']
-    sequences = ['Balloon1']
-    # methods = ['NeRF', 'NeRF_t', 'Yoon', 'NR', 'NSFF', 'Ours']
-    methods = ['NeRF', 'NeRF_t', 'NR', 'NSFF', 'dnerf']
+    sequences = ['Umbrella', 'Jumping']
+    methods = ['NeRF', 'NeRF_t', 'Yoon', 'NR', 'NSFF', 'Ours']
+    # methods = ['NeRF', 'NeRF_t', 'NR', 'NSFF', 'dnerf']
 
     PSNRs_total = np.zeros((len(methods)))
     SSIMs_total = np.zeros((len(methods)))
@@ -94,7 +94,7 @@ if __name__ == '__main__':
     PSNRs_total = PSNRs_total / len(sequences)
     SSIMs_total = SSIMs_total / len(sequences)
     LPIPSs_total = LPIPSs_total / len(sequences)
-    print('Avg.')
+    print('=======> Avg. <=======')
     for method_idx, method in enumerate(methods):
         print(method.ljust(7) + '%.2f' % (PSNRs_total[method_idx]) + ' / %.4f' % (
             SSIMs_total[method_idx]) + ' / %.3f' % (LPIPSs_total[method_idx]))

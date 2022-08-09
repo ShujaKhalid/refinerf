@@ -79,38 +79,28 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None):
 
         if error_map is None:
             e = 0  # buffer
-            mask = masks[e:masks.shape[0]-e, 0].to(device)
-            # print("i.max.shape: {}".format(i.max()))
-            # print("j.max.shape: {}".format(j.max()))
-            # print("poses.shape: {}".format(poses.shape))
-            # print("masks.shape: {}".format(masks.shape))
-            # print("masks.min(): {}".format(masks.min()))
-            # print("masks.max(): {}".format(masks.max()))
-            # print("masks.mean(): {}".format(masks.mean()))
-            # print("intrinsics.shape: {}".format(intrinsics.shape))
-            # sk_debug - Random from anaywhere on grid
-            inds = torch.randint(
-                0, H*W, size=[N], device=device)  # may duplicate
-            # print("inds: {}".format(inds))
-            # print("inds.min: {}".format(inds.min()))
-            # print("inds.max: {}".format(inds.max()))
-            coords_d = torch.where(mask < 0.5)[0]
-            coords_s = torch.where(mask >= 0.5)[0]
-            # print("coords_d: {}".format(coords_d))
-            # print("coords_s: {}".format(coords_s))
-            inds_s = torch.randint(
-                0, coords_s.shape[-1]-1, size=[N//2], device=device)  # may duplicate
-            inds_d = torch.randint(
-                0, coords_d.shape[-1]-1, size=[N//2], device=device)  # may duplicate
-            # print("inds_s.shape: {}".format(inds_s))
-            # print("inds_d.shape: {}".format(inds_d))
-            # print("coords_d.shape: {}".format(coords_d.shape))
-            # print("coords_s.shape: {}".format(coords_s.shape))
-            coords_d = coords_d[inds_d]
-            coords_s = coords_s[inds_s]
-            # inds_s = inds.expand([B, N//2])
-            # inds_d = inds.expand([B, N//2])
-            inds = torch.cat([coords_s, coords_d], 0)
+
+            if (masks != None):
+                mask = masks[e:masks.shape[0]-e, 0].to(device)
+
+                coords_d = torch.where(mask < 0.5)[0]
+                coords_s = torch.where(mask >= 0.5)[0]
+
+                inds_s = torch.randint(
+                    0, coords_s.shape[-1]-1, size=[N//2], device=device)  # may duplicate
+                inds_d = torch.randint(
+                    0, coords_d.shape[-1]-1, size=[N//2], device=device)  # may duplicate
+
+                coords_d = coords_d[inds_d]
+                coords_s = coords_s[inds_s]
+
+                inds = torch.cat([coords_s, coords_d], 0)
+
+            else:
+                # sk_debug - Random from anaywhere on grid
+                inds = torch.randint(
+                    0, H*W, size=[N], device=device)  # may duplicate
+
             inds = inds.expand([B, N])
         else:
 
@@ -984,26 +974,28 @@ class Trainer(object):
 
                     # Save for overall calcs ========================================
                     # save image
-                    save_path = os.path.join(
-                        "results", 'Ours', self.workspace, f'v{0:03d}_t{self.local_step:03d}.png')
-                    save_path_gt = os.path.join(
-                        "results", 'gt', self.workspace, f'v{0:03d}_t{self.local_step:03d}.png')
+                    EVAL_FLAG = True
+                    if (EVAL_FLAG):
+                        save_path = os.path.join(
+                            "results", 'Ours', self.workspace, f'v{0:03d}_t{self.local_step:03d}.png')
+                        # save_path_gt = os.path.join(
+                        #     "results", 'gt', self.workspace, f'v{0:03d}_t{self.local_step:03d}.png')
 
-                    # self.log(f"==> Saving validation image to {save_path}")
-                    os.makedirs(os.path.dirname(save_path), exist_ok=True)
-                    os.makedirs(os.path.dirname(
-                        save_path_gt), exist_ok=True)
+                        # self.log(f"==> Saving validation image to {save_path}")
+                        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+                        # os.makedirs(os.path.dirname(
+                        #     save_path_gt), exist_ok=True)
 
-                    if self.opt.color_space == 'linear':
-                        preds = linear_to_srgb(preds)
+                        if self.opt.color_space == 'linear':
+                            preds = linear_to_srgb(preds)
 
-                    pred = preds[0].detach().cpu().numpy()
-                    truth = truths[0].detach().cpu().numpy()
+                        pred = preds[0].detach().cpu().numpy()
+                        # truth = truths[0].detach().cpu().numpy()
 
-                    cv2.imwrite(save_path, cv2.cvtColor(
-                        (pred * 255).astype(np.uint8), cv2.COLOR_RGB2BGR))
-                    cv2.imwrite(save_path_gt, cv2.cvtColor(
-                        (truth * 255).astype(np.uint8), cv2.COLOR_RGB2BGR))
+                        cv2.imwrite(save_path, cv2.cvtColor(
+                            (pred * 255).astype(np.uint8), cv2.COLOR_RGB2BGR))
+                        # cv2.imwrite(save_path_gt, cv2.cvtColor(
+                        #     (truth * 255).astype(np.uint8), cv2.COLOR_RGB2BGR))
 
                     # ===============================================================
 

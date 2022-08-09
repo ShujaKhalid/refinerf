@@ -214,3 +214,13 @@ PSNR = 22.735739 - SSIM = 0.819271 - LPIPS = 0.000064
 [INFO] loaded optimizer.
 [INFO] loaded scheduler.
 [INFO] loaded scaler.
+[INFO] Trainer: ngp | 2022-08-09_14-59-09 | cuda | fp16 | Skating-2
+[INFO] #parameters: 12855591
+[INFO] Loading latest checkpoint ...
+[INFO] Latest checkpoint is Skating-2/checkpoints/ngp_ep0026.pth
+[INFO] loaded model.
+[INFO] load at epoch 26, global step 546
+[INFO] loaded optimizer.
+[INFO] loaded scheduler.
+[INFO] loaded scaler.
+==> Start Training Epoch 27, lr=0.009590 ...
