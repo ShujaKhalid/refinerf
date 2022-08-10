@@ -347,7 +347,7 @@ class NeRFRenderer(nn.Module):
             # Amazing visualization (POINT-CLOUDS)
             # plot_pointcloud(xyzs.reshape(-1, 3).detach().cpu().numpy())
 
-            # print("xyzs.shape: {}".format(xyzs.shape))
+            # print("time: {}".format(time))
             sigmas_s, rgbs_s = self(
                 xyzs, dirs, time, svd="static")
             sigmas_s = self.density_scale * sigmas_s
@@ -439,7 +439,7 @@ class NeRFRenderer(nn.Module):
             results['sceneflow_b'] = sceneflow_b
             sceneflow_b, sceneflow_f, sf = 0, 0, 0
 
-            results['raw_pts'] = xyzs.cpu()
+            results['raw_pts'] = xyzs
             xyzs = 0
             torch.cuda.empty_cache()
 
@@ -449,14 +449,14 @@ class NeRFRenderer(nn.Module):
                 pts_b, dirs, time, svd="dynamic")
             sceneflow_b_b = sf_b[..., :3]
             sceneflow_b_f = sf_b[..., 3:]
-            results['raw_pts_b'] = pts_b.to("cpu")
+            results['raw_pts_b'] = pts_b
             # print("raymarching.composite_rays_train 3rd pass...")
             weights_sum_d_b, _, image_d_b = raymarching.composite_rays_train(
                 sigmas_d_b, rgbs_d_b, deltas, rays)
-            results['sceneflow_b_f'] = sceneflow_b_f.to("cpu")
+            results['sceneflow_b_f'] = sceneflow_b_f
             image_d_b = image_d_b + \
                 (1 - weights_sum_d_b).unsqueeze(-1) * bg_color
-            results['rgb_map_d_b'] = image_d_b.to("cpu")
+            results['rgb_map_d_b'] = image_d_b
             results['acc_map_d_b'] = torch.abs(
                 torch.sum(weights_sum_d_b - weights_sum_d, -1))
 
@@ -466,7 +466,7 @@ class NeRFRenderer(nn.Module):
             # dynamic prep -> frames 4 & 5
             pts_b_b = pts_b + sceneflow_b_b
             sceneflow_b_b = 0
-            results['raw_pts_b_b'] = pts_b_b.to("cpu")
+            results['raw_pts_b_b'] = pts_b_b
             sf_b, pts_b = 0, 0
             torch.cuda.empty_cache()
 
@@ -483,8 +483,8 @@ class NeRFRenderer(nn.Module):
                 sigmas_d_f, rgbs_d_f, deltas, rays)
             image_d_f = image_d_f + \
                 (1 - weights_sum_d_f).unsqueeze(-1) * bg_color
-            results['sceneflow_f_b'] = sceneflow_f_b.to("cpu")
-            results['rgb_map_d_f'] = image_d_f.to("cpu")
+            results['sceneflow_f_b'] = sceneflow_f_b
+            results['rgb_map_d_f'] = image_d_f
             results['acc_map_d_f'] = torch.abs(
                 torch.sum(weights_sum_d_f - weights_sum_d, -1))
 
@@ -494,7 +494,7 @@ class NeRFRenderer(nn.Module):
             # dynamic prep -> frames 4 & 5
             pts_f_f = pts_f + sceneflow_f_f
             sceneflow_f_f = 0
-            results['raw_pts_f_f'] = pts_f_f.to("cpu")
+            results['raw_pts_f_f'] = pts_f_f
             sf_f, pts_f,  = 0, 0
             torch.cuda.empty_cache()
 
@@ -506,7 +506,7 @@ class NeRFRenderer(nn.Module):
                 sigmas_d_b_b, rgbs_d_b_b, deltas, rays)
             image_d_b_b = image_d_b_b + \
                 (1 - weights_sum_d_b_b).unsqueeze(-1) * bg_color
-            results['rgb_map_d_b_b'] = image_d_b_b.to("cpu")
+            results['rgb_map_d_b_b'] = image_d_b_b
 
             # 6th pass
             # print("\nExecuting 6th pass...")
@@ -516,7 +516,7 @@ class NeRFRenderer(nn.Module):
                 sigmas_d_f_f, rgbs_d_f_f, deltas, rays)
             image_d_f_f = image_d_f_f + \
                 (1 - weights_sum_d_f_f).unsqueeze(-1) * bg_color
-            results['rgb_map_d_f_f'] = image_d_f_f.to("cpu")
+            results['rgb_map_d_f_f'] = image_d_f_f
 
             # All required outputs for calculating our losses
             results['image'] = image_d
