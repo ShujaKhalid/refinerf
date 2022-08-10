@@ -224,7 +224,7 @@ class PSNRMeter:
         self.SSIM = 0
         self.LPIPS = 0
         self.N = 0
-        self.lpips_loss = lpips.LPIPS(net='alex')
+        #self.lpips_loss = lpips.LPIPS(net='alex')
 
     def im2tensor(self, img):
         return torch.Tensor(img.transpose(2, 0, 1) / 127.5 - 1.0)[None, ...]
@@ -250,9 +250,11 @@ class PSNRMeter:
         preds, truths = self.prepare_inputs(preds, truths)
         preds = np.squeeze(preds)
         truths = np.squeeze(truths)
-        ssim = structural_similarity(truths, preds, channel_axis=2)
-        lpips = self.lpips_loss.forward(
-            self.im2tensor(truths), self.im2tensor(preds)).item()
+        # ssim = structural_similarity(truths, preds, channel_axis=2)
+        # lpips = self.lpips_loss.forward(
+        #     self.im2tensor(truths), self.im2tensor(preds)).item()
+        ssim = 0
+        lpips = 0
 
         # simplified since max_pixel_value is 1 here.
         psnr = -10 * np.log10(np.mean((preds - truths) ** 2))
@@ -266,18 +268,20 @@ class PSNRMeter:
         return self.V / self.N
 
     def measure_ssim(self):
-        return self.SSIM / self.N
+        # return self.SSIM / self.N
+        return 0
 
     def measure_lpips(self):
-        return self.LPIPS / self.N
+        # return self.LPIPS / self.N
+        return 0
 
     def write(self, writer, global_step, prefix=""):
         writer.add_scalar(os.path.join(prefix, "PSNR"),
                           self.measure_psnr(), global_step)
-        writer.add_scalar(os.path.join(prefix, "SSIM"),
-                          self.measure_ssim(), global_step)
-        writer.add_scalar(os.path.join(prefix, "LPIPS"),
-                          self.measure_lpips(), global_step)
+        # writer.add_scalar(os.path.join(prefix, "SSIM"),
+        #                   self.measure_ssim(), global_step)
+        # writer.add_scalar(os.path.join(prefix, "LPIPS"),
+        #                   self.measure_lpips(), global_step)
 
     def report(self):
 

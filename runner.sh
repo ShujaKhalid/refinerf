@@ -18,9 +18,11 @@ DATASET_PATH="/home/skhalid/Documents/datalake/dynamic_scene_data_full/nvidia_da
 NM_WEIGHTS="/home/skhalid/Documents/datalake/neural_motion_weights/"
 WEIGHTS_MIDAS=$NM_WEIGHTS"midas_v21-f6b98070.pt"
 WEIGHTS_RAFT=$NM_WEIGHTS"raft-things.pth"
-#cd raymarching 
-#pip install .
-#cd ..
+
+# Run when making changes to the CUDA kernels
+cd raymarching 
+pip install .
+cd ..
 
 if [[ "$1" == "--gui" || "$2" == "--gui" || "$3" == "--gui" ]]
 then

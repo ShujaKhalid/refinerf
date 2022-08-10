@@ -378,6 +378,15 @@ class NeRFRenderer(nn.Module):
             # print("blend.shape: {}".format(blend.shape))
             # print("sf.shape: {}".format(sf.shape))
 
+            weights_full, depth_full, image_full_orig = raymarching.composite_rays_train_full(
+                sigmas_s, rgbs_s, sigmas_d, rgbs_d, blend, deltas, rays)
+            image_full = image_full_orig + \
+                (1 - weights_full).unsqueeze(-1) * bg_color
+            depth_full = torch.clamp(
+                depth_full - nears, min=0) / (fars - nears)
+            image_full = image_full.view(*prefix, 3)
+            depth_full = depth_full.view(*prefix)
+
             # === STATIC ===
             # print("\nExecuting 1st pass...")
             weights_sum_s, depth_s, image_s_orig = raymarching.composite_rays_train(
@@ -511,10 +520,10 @@ class NeRFRenderer(nn.Module):
             results['rgb_map_d_f_f'] = image_d_f_f.to("cpu")
 
             # All required outputs for calculating our losses
-            results['image'] = image_s
+            results['image'] = image_full
             results['blending'] = blend
             # TODO: blend the static and dynamic models here
-            results['rgb_map_full'] = image_s
+            results['rgb_map_full'] = image_full
             results['rgb_map_s'] = image_s
             results['rgb_map_d'] = image_d
             results['weights_s'] = weights_sum_s
