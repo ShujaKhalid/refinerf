@@ -76,7 +76,7 @@ if __name__ == '__main__':
     # sequences = ['Balloon1', 'Balloon2', 'Jumping',
     #              'Playground', 'Skating', 'Truck', 'Umbrella']
     sequences = ['Umbrella']
-    methods = ['NeRF', 'NeRF_t', 'Yoon', 'NR', 'NSFF', 'Ours']
+    methods = ['NeRF', 'NeRF_t', 'Yoon', 'NR', 'NSFF', 'dnerf', 'Ours']
     # methods = ['NeRF', 'NeRF_t', 'NR', 'NSFF', 'dnerf']
 
     PSNRs_total = np.zeros((len(methods)))
