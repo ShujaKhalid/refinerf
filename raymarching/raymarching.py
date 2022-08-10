@@ -367,13 +367,15 @@ class _composite_rays_train_full(Function):
         sigmas_s, rgbs_s, sigmas_d, rgbs_d, blending, deltas, rays, weights_sum, depth, image = ctx.saved_tensors
         M, N = ctx.dims
 
-        grad_sigmas = torch.zeros_like(sigmas_s)
-        grad_rgbs = torch.zeros_like(rgbs_s)
+        grad_sigmas_s = torch.zeros_like(sigmas_s)
+        grad_rgbs_s = torch.zeros_like(rgbs_s)
+        grad_sigmas_d = torch.zeros_like(sigmas_d)
+        grad_rgbs_d = torch.zeros_like(rgbs_d)
 
         _backend.composite_rays_train_full_backward(
-            grad_weights_sum, grad_image, sigmas_s, rgbs_s, sigmas_d, rgbs_d, blending, deltas, rays, weights_sum, image, M, N, grad_sigmas, grad_rgbs)
+            grad_weights_sum, grad_image, sigmas_s, rgbs_s, sigmas_d, rgbs_d, blending, deltas, rays, weights_sum, image, M, N, grad_sigmas_s, grad_rgbs_s, grad_sigmas_d, grad_rgbs_d)
 
-        return grad_sigmas, grad_rgbs, None, None, None, None, None
+        return grad_sigmas_s, grad_rgbs_s, grad_sigmas_d, grad_rgbs_d, None, None, None
 
 
 composite_rays_train_full = _composite_rays_train_full.apply

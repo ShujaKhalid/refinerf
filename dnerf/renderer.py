@@ -408,10 +408,10 @@ class NeRFRenderer(nn.Module):
             depth_d = depth_d.view(*prefix)
 
             # Cleanup
-            results['sigmas_s'] = sigmas_s.to("cpu")
-            results['sigmas_d'] = sigmas_d.to("cpu")
-            results['rgbs_s'] = rgbs_s.to("cpu")
-            results['rgbs_d'] = rgbs_d.to("cpu")
+            results['sigmas_s'] = sigmas_s
+            results['sigmas_d'] = sigmas_d
+            results['rgbs_s'] = rgbs_s
+            results['rgbs_d'] = rgbs_d
             rgbs_s, rgbs_d = 0, 0
             sigmas_s, sigmas_d = 0, 0
             results['depth_map_s'] = depth_s
@@ -436,8 +436,8 @@ class NeRFRenderer(nn.Module):
             # dynamic prep -> frames 2 & 3
             pts_b = xyzs + sceneflow_b
             pts_f = xyzs + sceneflow_f
-            results['sceneflow_f'] = sceneflow_f.to("cpu")
-            results['sceneflow_b'] = sceneflow_b.to("cpu")
+            results['sceneflow_f'] = sceneflow_f
+            results['sceneflow_b'] = sceneflow_b
             sceneflow_b, sceneflow_f, sf = 0, 0, 0
 
             results['raw_pts'] = xyzs.cpu()
@@ -520,10 +520,10 @@ class NeRFRenderer(nn.Module):
             results['rgb_map_d_f_f'] = image_d_f_f.to("cpu")
 
             # All required outputs for calculating our losses
-            results['image'] = image_full
+            results['image'] = image_d
             results['blending'] = blend
             # TODO: blend the static and dynamic models here
-            results['rgb_map_full'] = image_full
+            results['rgb_map_full'] = image_d
             results['rgb_map_s'] = image_s
             results['rgb_map_d'] = image_d
             results['weights_s'] = weights_sum_s

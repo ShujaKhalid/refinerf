@@ -20,9 +20,9 @@ WEIGHTS_MIDAS=$NM_WEIGHTS"midas_v21-f6b98070.pt"
 WEIGHTS_RAFT=$NM_WEIGHTS"raft-things.pth"
 
 # Run when making changes to the CUDA kernels
-cd raymarching 
-pip install .
-cd ..
+#cd raymarching 
+#pip install .
+#cd ..
 
 if [[ "$1" == "--gui" || "$2" == "--gui" || "$3" == "--gui" ]]
 then
