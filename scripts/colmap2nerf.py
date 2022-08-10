@@ -102,13 +102,18 @@ def run_ffmpeg(args):
 
 def run_ffmpeg_images(args):
 
+    # TODO: remove hard-coded paths once we have a proof of concept
     base = args.images.split("images")[0]
     if (args.mode == "train"):
         new_loc = base + "images_scaled"
+        prod = base.split("/")[-3]
+        val_base = "/home/skhalid/Documents/datalake/data/" + prod
+        query_loc = val_base + "/images_2"
+        print("query_loc: {}".format(query_loc))
         os.system("mkdir -p "+new_loc)
-        for img in glob.glob(args.images+"/*.jpg"):
+        for img in glob.glob(query_loc+"/*.png"):
             fn = img.split("/")[-1]
-            out = new_loc+"/"+fn
+            out = new_loc+"/"+"00"+fn.split(".")[0]+".jpg"
             cmd = "ffmpeg -i "+img+" -vf scale=" + \
                 str(args.W)+":"+str(args.H) + " " + out
             print(cmd)
@@ -116,21 +121,34 @@ def run_ffmpeg_images(args):
         args.images = new_loc
     else:
         new_loc = base + args.mode + "/"
-        query_loc = base + "mv_images"
+        prod = base.split("/")[-3]
+        trn_base = "/home/skhalid/Documents/torch-ngp/results/gt/" + prod
+        query_loc = trn_base
         os.system("mkdir -p "+new_loc)
-        folders = glob.glob(query_loc+"/*")
-        folders.sort()
-        for indx, folder in enumerate(folders):
-            files = glob.glob(folder+"/*.jpg")
-            files.sort()
-            file = files[0]
+        files = glob.glob(query_loc+"/*.png")
+        files.sort()
+        for indx, file in enumerate(files):
             # fn = "v000t0"+str(indx).zfill(2)+".jpg"
             fn = "000"+str(indx).zfill(2)+".jpg"
             # fn = file.split("/")[-1]
             cmd = "ffmpeg -i "+file+" -vf scale=" + \
                 str(args.W)+":"+str(args.H) + " " + new_loc+fn
-            print("cmd: {}".format(cmd))
+            #print("cmd: {}".format(cmd))
             os.system(cmd)
+        # query_loc = base + "mv_images"
+        # folders = glob.glob(query_loc+"/*")
+        # folders.sort()
+        # for indx, folder in enumerate(folders):
+        #     files = glob.glob(folder+"/*.jpg")
+        #     files.sort()
+        #     file = files[0]
+        #     # fn = "v000t0"+str(indx).zfill(2)+".jpg"
+        #     fn = "000"+str(indx).zfill(2)+".jpg"
+        #     # fn = file.split("/")[-1]
+        #     cmd = "ffmpeg -i "+file+" -vf scale=" + \
+        #         str(args.W)+":"+str(args.H) + " " + new_loc+fn
+        #     print("cmd: {}".format(cmd))
+        #     os.system(cmd)
         args.images = new_loc
 
 

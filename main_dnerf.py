@@ -32,7 +32,7 @@ if __name__ == '__main__':
                         help="num rays sampled per image for each training step")
     parser.add_argument('--cuda_ray', action='store_true',
                         help="use CUDA raymarching instead of pytorch")
-    parser.add_argument('--max_steps', type=int, default=256,  # sk_debug: used to be 1024
+    parser.add_argument('--max_steps', type=int, default=1024,  # sk_debug: used to be 1024
                         help="max num steps sampled per ray (only valid when using --cuda_ray)")
     parser.add_argument('--update_extra_interval', type=int, default=100,
                         help="iter interval to update extra status (only valid when using --cuda_ray)")
@@ -159,7 +159,7 @@ if __name__ == '__main__':
         def scheduler(optimizer): return optim.lr_scheduler.LambdaLR(
             optimizer, lambda iter: 0.1 ** min(iter / opt.iters, 1))
 
-        trainer = Trainer('ngp', opt, model, device=device, workspace=opt.workspace, optimizer=optimizer, criterion=criterion, ema_decay=0.95,
+        trainer = Trainer('ngp', opt, model, device=device, workspace=opt.workspace, optimizer=optimizer, criterion=criterion, ema_decay=0.99,
                           fp16=opt.fp16, lr_scheduler=scheduler, scheduler_update_every_step=True, metrics=[PSNRMeter()], use_checkpoint=opt.ckpt, eval_interval=10)
 
         if opt.gui:

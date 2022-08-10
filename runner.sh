@@ -9,8 +9,8 @@ export CUDA_ROOT=/usr/local/cuda
 # SCENE="DynamicFace-2"
 # SCENE="Playground"
 # SCENE="Truck-2"
-# SCENE="Umbrella"
-SCENE="Jumping"
+SCENE="Umbrella"
+# SCENE="Jumping"
 # SCENE="Balloon1-2"
 # SCENE="Balloon2-2"
 # SCENE="Skating-2"
@@ -53,16 +53,14 @@ then
 	else
 		if [[ "$2" == "--nvidia" ]]
 		then
-			cp -pr $DATASET_PATH/sparse $DATASET_PATH/colmap_sparse 
 			echo "\\n\\n COLMAP2NERF \\n\\n"
-			# IMAGE_PTH="images_573x288" # Playground
-			# IMAGE_PTH="images_543x288" # Umbrella
+			mv $DATASET_PATH/sparse /tmp
+			rm -rf $DATASET_PATH/*
+			mv /tmp/sparse $DATASET_PATH/
+			cp -pr $DATASET_PATH/sparse $DATASET_PATH/colmap_sparse
+			mkdir -p $DATASET_PATH/images
+			mkdir -p $DATASET_PATH/images_colmap
 			IMAGE_PTH="images" # DynamicFace-2
-			# IMAGE_PTH="images_540x288" # Balloon1-2
-			# IMAGE_PTH="images_545x288" # Balloon2-2
-			# IMAGE_PTH="images_541x288" # Skating-2
-			# IMAGE_PTH="images_540x288" # Jumping
-			# IMAGE_PTH="images_542x288" # Truck-2
 			python scripts/colmap2nerf.py --images $DATASET_PATH/$IMAGE_PTH --run_colmap --dynamic --dataset nvidia --mode train
 			python scripts/colmap2nerf.py --images $DATASET_PATH/$IMAGE_PTH --run_colmap --dynamic --dataset nvidia --mode val
 			cp -pr $DATASET_PATH/images_scaled/*.jpg $DATASET_PATH/images_colmap

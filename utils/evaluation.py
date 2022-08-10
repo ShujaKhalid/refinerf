@@ -34,6 +34,9 @@ def calculate_metrics(data_dir, sequence, methods, lpips_loss):
     if 'Yoon' in methods:
         time_start = 1
         time_end = 11
+    # elif 'Ours' in methods:
+    #     time_start = 1
+    #     time_end = 12
     else:
         time_start = 0
         time_end = 12
@@ -72,7 +75,7 @@ if __name__ == '__main__':
     data_dir = '../results'
     # sequences = ['Balloon1', 'Balloon2', 'Jumping',
     #              'Playground', 'Skating', 'Truck', 'Umbrella']
-    sequences = ['Umbrella', 'Jumping']
+    sequences = ['Umbrella']
     methods = ['NeRF', 'NeRF_t', 'Yoon', 'NR', 'NSFF', 'Ours']
     # methods = ['NeRF', 'NeRF_t', 'NR', 'NSFF', 'dnerf']
 

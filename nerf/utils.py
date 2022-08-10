@@ -977,7 +977,7 @@ class Trainer(object):
                     EVAL_FLAG = True
                     if (EVAL_FLAG):
                         save_path = os.path.join(
-                            "results", 'Ours', self.workspace, f'v{0:03d}_t{self.local_step:03d}.png')
+                            "results", 'Ours', self.workspace, f'v{0:03d}_t{self.local_step-1:03d}.png')
                         # save_path_gt = os.path.join(
                         #     "results", 'gt', self.workspace, f'v{0:03d}_t{self.local_step:03d}.png')
 
