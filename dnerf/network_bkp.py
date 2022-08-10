@@ -74,7 +74,8 @@ class NeRFNetwork(NeRFRenderer):
         sigma_s_net = []
         for l in range(num_layers):
             if l == 0:
-                in_dim = self.in_dim
+                in_dim = self.in_dim + self.in_dim_time + \
+                    self.in_dim_deform  # concat everything
             else:
                 in_dim = hidden_dim
 
@@ -153,98 +154,98 @@ class NeRFNetwork(NeRFRenderer):
             [nn.Linear(self.input_ch, self.W)] + [nn.Linear(self.W, self.W) if i not in self.skips else nn.Linear(self.W + self.input_ch, self.W) for i in range(self.D-1)])
 
         # deformation network ============================================
-        self.num_layers_deform = num_layers_deform
-        self.hidden_dim_deform = hidden_dim_deform
-        self.encoder_deform, self.in_dim_deform = get_encoder(
-            encoding_deform, multires=10)
-        self.encoder_time, self.in_dim_time = get_encoder(
-            encoding_time, input_dim=1, multires=6)
+        # self.num_layers_deform = num_layers_deform
+        # self.hidden_dim_deform = hidden_dim_deform
+        # self.encoder_deform, self.in_dim_deform = get_encoder(
+        #     encoding_deform, multires=10)
+        # self.encoder_time, self.in_dim_time = get_encoder(
+        #     encoding_time, input_dim=1, multires=6)
 
-        deform_d_net = []
-        for l in range(num_layers_deform):
-            if l == 0:
-                in_dim = self.in_dim_deform + self.in_dim_time  # grid dim + time
-            else:
-                in_dim = hidden_dim_deform
+        # deform_d_net = []
+        # for l in range(num_layers_deform):
+        #     if l == 0:
+        #         in_dim = self.in_dim_deform + self.in_dim_time  # grid dim + time
+        #     else:
+        #         in_dim = hidden_dim_deform
 
-            if l == num_layers_deform - 1:
-                out_dim = 3  # deformation for xyz
-            else:
-                out_dim = hidden_dim_deform
+        #     if l == num_layers_deform - 1:
+        #         out_dim = 3  # deformation for xyz
+        #     else:
+        #         out_dim = hidden_dim_deform
 
-            deform_d_net.append(nn.Linear(in_dim, out_dim, bias=False))
+        #     deform_d_net.append(nn.Linear(in_dim, out_dim, bias=False))
 
-        self.deform_d_net = nn.ModuleList(deform_d_net)
+        # self.deform_d_net = nn.ModuleList(deform_d_net)
 
-        # sigma network ============================================
-        self.num_layers = num_layers
-        self.hidden_dim = hidden_dim
-        self.geo_feat_dim = geo_feat_dim
-        self.encoder, self.in_dim = get_encoder(
-            encoding, desired_resolution=2048 * bound)
+        # # sigma network ============================================
+        # self.num_layers = num_layers
+        # self.hidden_dim = hidden_dim
+        # self.geo_feat_dim = geo_feat_dim
+        # self.encoder, self.in_dim = get_encoder(
+        #     encoding, desired_resolution=2048 * bound)
 
-        sigma_d_net = []
-        for l in range(num_layers):
-            if l == 0:
-                in_dim = self.in_dim + self.in_dim_time + \
-                    self.in_dim_deform  # concat everything
-            else:
-                in_dim = hidden_dim
+        # sigma_d_net = []
+        # for l in range(num_layers):
+        #     if l == 0:
+        #         in_dim = self.in_dim + self.in_dim_time + \
+        #             self.in_dim_deform  # concat everything
+        #     else:
+        #         in_dim = hidden_dim
 
-            if l == num_layers - 1:
-                out_dim = 1 + self.geo_feat_dim  # 1 sigma + features for color
-            else:
-                out_dim = hidden_dim
+        #     if l == num_layers - 1:
+        #         out_dim = 1 + self.geo_feat_dim  # 1 sigma + features for color
+        #     else:
+        #         out_dim = hidden_dim
 
-            sigma_d_net.append(nn.Linear(in_dim, out_dim, bias=False))
+        #     sigma_d_net.append(nn.Linear(in_dim, out_dim, bias=False))
 
-        self.sigma_d_net = nn.ModuleList(sigma_d_net)
+        # self.sigma_d_net = nn.ModuleList(sigma_d_net)
 
-        # color network ============================================
-        self.num_layers_color = num_layers_color
-        self.hidden_dim_color = hidden_dim_color
-        self.encoder_dir, self.in_dim_dir = get_encoder(encoding_dir)
+        # # color network ============================================
+        # self.num_layers_color = num_layers_color
+        # self.hidden_dim_color = hidden_dim_color
+        # self.encoder_dir, self.in_dim_dir = get_encoder(encoding_dir)
 
-        color_d_net = []
-        for l in range(num_layers_color):
-            if l == 0:
-                in_dim = self.in_dim_dir + self.geo_feat_dim
-            else:
-                in_dim = hidden_dim
+        # color_d_net = []
+        # for l in range(num_layers_color):
+        #     if l == 0:
+        #         in_dim = self.in_dim_dir + self.geo_feat_dim
+        #     else:
+        #         in_dim = hidden_dim
 
-            if l == num_layers_color - 1:
-                out_dim = 3  # 3 rgb
-            else:
-                out_dim = hidden_dim
+        #     if l == num_layers_color - 1:
+        #         out_dim = 3  # 3 rgb
+        #     else:
+        #         out_dim = hidden_dim
 
-            color_d_net.append(nn.Linear(in_dim, out_dim, bias=False))
+        #     color_d_net.append(nn.Linear(in_dim, out_dim, bias=False))
 
-        self.color_d_net = nn.ModuleList(color_d_net)
+        # self.color_d_net = nn.ModuleList(color_d_net)
 
-        # background network ============================================
-        if self.bg_radius > 0:
-            self.num_layers_bg = num_layers_bg
-            self.hidden_dim_bg = hidden_dim_bg
-            self.encoder_bg, self.in_dim_bg = get_encoder(
-                encoding_bg, input_dim=2, num_levels=4, log2_hashmap_size=19, desired_resolution=2048)  # much smaller hashgrid
+        # # background network ============================================
+        # if self.bg_radius > 0:
+        #     self.num_layers_bg = num_layers_bg
+        #     self.hidden_dim_bg = hidden_dim_bg
+        #     self.encoder_bg, self.in_dim_bg = get_encoder(
+        #         encoding_bg, input_dim=2, num_levels=4, log2_hashmap_size=19, desired_resolution=2048)  # much smaller hashgrid
 
-            bg_d_net = []
-            for l in range(num_layers_bg):
-                if l == 0:
-                    in_dim = self.in_dim_bg + self.in_dim_dir
-                else:
-                    in_dim = hidden_dim_bg
+        #     bg_d_net = []
+        #     for l in range(num_layers_bg):
+        #         if l == 0:
+        #             in_dim = self.in_dim_bg + self.in_dim_dir
+        #         else:
+        #             in_dim = hidden_dim_bg
 
-                if l == num_layers_bg - 1:
-                    out_dim = 3  # 3 rgb
-                else:
-                    out_dim = hidden_dim_bg
+        #         if l == num_layers_bg - 1:
+        #             out_dim = 3  # 3 rgb
+        #         else:
+        #             out_dim = hidden_dim_bg
 
-                bg_d_net.append(nn.Linear(in_dim, out_dim, bias=False))
+        #         bg_d_net.append(nn.Linear(in_dim, out_dim, bias=False))
 
-            self.bg_d_net = nn.ModuleList(bg_d_net)
-        else:
-            self.bg_d_net = None
+        #     self.bg_d_net = nn.ModuleList(bg_d_net)
+        # else:
+        #     self.bg_d_net = None
 
         self.sf_net = nn.Linear(self.W, 6)
         self.blend_net = nn.Linear(self.W, 1)
@@ -255,42 +256,15 @@ class NeRFNetwork(NeRFRenderer):
         # t: [1, 1], in [0, 1]
         # svd: [1], in ["static", "dynamic"]
         if (svd == "static"):
-            sigma, rgbs = self.run_snerf(x, d)
-            return sigma, rgbs
+            sigma, rgbs, deform = self.run_snerf(x, d, t)
+            return sigma, rgbs, deform
         elif (svd == "dynamic"):
             sigma, rgbs, deform, blend, sf = self.run_dnerf(x, d, t)
             return sigma, rgbs, deform, blend, sf
         else:
             raise Exception("Run NeRF in either `static` or `dynamic` mode")
 
-    def run_snerf(self, x, d):
-
-        # sigma
-        h = self.encoder(x, bound=self.bound)
-
-        for l in range(self.num_layers):
-            h = self.sigma_s_net[l](h)
-            if l != self.num_layers - 1:
-                h = F.relu(h, inplace=True)
-
-        sigma = trunc_exp(h[..., 0])
-        geo_feat = h[..., 1:]
-
-        # color
-        d = self.encoder_dir(d)
-
-        h = torch.cat([d, geo_feat], dim=-1)
-        for l in range(self.num_layers_color):
-            h = self.color_s_net[l](h)
-            if l != self.num_layers_color - 1:
-                h = F.relu(h, inplace=True)
-
-        # sigmoid activation for rgb
-        rgbs = torch.sigmoid(h)
-
-        return sigma, rgbs
-
-    def run_dnerf_init(self, x, d, t):
+    def run_snerf(self, x, d, t):
         # deform
         enc_ori_x = self.encoder_deform(x, bound=self.bound)  # [N, C]
         enc_t = self.encoder_time(t)  # [1, 1] --> [1, C']
@@ -310,7 +284,7 @@ class NeRFNetwork(NeRFRenderer):
         # print("deform.shape: {}".format(deform.shape))
 
         for l in range(self.num_layers_deform):
-            deform = self.deform_d_net[l](deform)
+            deform = self.deform_s_net[l](deform)
             if l != self.num_layers_deform - 1:
                 deform = F.relu(deform, inplace=True)
 
@@ -324,7 +298,7 @@ class NeRFNetwork(NeRFRenderer):
         else:
             h = torch.cat([x, enc_ori_x, enc_t], dim=1)
         for l in range(self.num_layers):
-            h = self.sigma_d_net[l](h)
+            h = self.sigma_s_net[l](h)
             if l != self.num_layers - 1:
                 h = F.relu(h, inplace=True)
 
@@ -340,18 +314,19 @@ class NeRFNetwork(NeRFRenderer):
 
         h = torch.cat([d, geo_feat], dim=-1)
         for l in range(self.num_layers_color):
-            h = self.color_d_net[l](h)
+            h = self.color_s_net[l](h)
             if l != self.num_layers_color - 1:
                 h = F.relu(h, inplace=True)
 
         # sigmoid activation for rgb
         rgbs = torch.sigmoid(h)
+        h, x, d, t = 0, 0, 0, 0
 
         return sigma, rgbs, deform
 
     def run_dnerf(self, x, d, t):
         # static
-        sigma, rgbs, deform = self.run_dnerf_init(x, d, t)
+        sigma, rgbs, deform = self.run_snerf(x, d, t)
 
         # dynamic
         input_pts, _ = x, d
@@ -382,7 +357,7 @@ class NeRFNetwork(NeRFRenderer):
 
         deform = torch.cat([enc_ori_x, enc_t], dim=1)  # [N, C + C']
         for l in range(self.num_layers_deform):
-            deform = self.deform_d_net[l](deform)
+            deform = self.deform_s_net[l](deform)
             if l != self.num_layers_deform - 1:
                 deform = F.relu(deform, inplace=True)
 
@@ -393,7 +368,7 @@ class NeRFNetwork(NeRFRenderer):
         x = self.encoder(x, bound=self.bound)
         h = torch.cat([x, enc_ori_x, enc_t], dim=1)
         for l in range(self.num_layers):
-            h = self.sigma_d_net[l](h)
+            h = self.sigma_s_net[l](h)
             if l != self.num_layers - 1:
                 h = F.relu(h, inplace=True)
 
@@ -414,7 +389,7 @@ class NeRFNetwork(NeRFRenderer):
 
         h = torch.cat([d, h], dim=-1)
         for l in range(self.num_layers_bg):
-            h = self.bg_d_net[l](h)
+            h = self.bg_s_net[l](h)
             if l != self.num_layers_bg - 1:
                 h = F.relu(h, inplace=True)
 
@@ -442,7 +417,7 @@ class NeRFNetwork(NeRFRenderer):
         d = self.encoder_dir(d)
         h = torch.cat([d, geo_feat], dim=-1)
         for l in range(self.num_layers_color):
-            h = self.color_d_net[l](h)
+            h = self.color_s_net[l](h)
             if l != self.num_layers_color - 1:
                 h = F.relu(h, inplace=True)
 

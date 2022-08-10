@@ -348,7 +348,7 @@ class NeRFRenderer(nn.Module):
             # plot_pointcloud(xyzs.reshape(-1, 3).detach().cpu().numpy())
 
             # print("xyzs.shape: {}".format(xyzs.shape))
-            sigmas_s, rgbs_s, deform_s = self(
+            sigmas_s, rgbs_s = self(
                 xyzs, dirs, time, svd="static")
             sigmas_s = self.density_scale * sigmas_s
             # print("xyzs.shape: {}".format(xyzs.shape))
@@ -360,7 +360,6 @@ class NeRFRenderer(nn.Module):
             sceneflow_b = sf[..., :3]
             sceneflow_f = sf[..., 3:]
 
-            results['deform_s'] = deform_s
             results['deform_d'] = deform_d
             # deform_s, deform_d = 0, 0
 
@@ -565,7 +564,7 @@ class NeRFRenderer(nn.Module):
                 xyzs, dirs, deltas = raymarching.march_rays(n_alive, n_step, rays_alive, rays_t, rays_o, rays_d, self.bound,
                                                             self.density_bitfield[t], self.cascade, self.grid_size, nears, fars, 128, perturb, dt_gamma, max_steps)
 
-                sigmas_s, rgbs_s, deform_s = self(
+                sigmas_s, rgbs_s = self(
                     xyzs, dirs, time, svd="static")
                 sigmas_d, rgbs_d, deform_d, blend, sf = self(
                     xyzs, dirs, time, svd="dynamic")
@@ -597,7 +596,7 @@ class NeRFRenderer(nn.Module):
         # FIXME: Assign props here
         # FIXME: Assign props here
         # FIXME: Assign props here
-        results['deform'] = deform_s
+        results['deform'] = deform_d
 
         return results
 
