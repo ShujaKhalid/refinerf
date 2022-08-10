@@ -519,10 +519,10 @@ class NeRFRenderer(nn.Module):
             results['rgb_map_d_f_f'] = image_d_f_f.to("cpu")
 
             # All required outputs for calculating our losses
-            results['image'] = image_d
+            results['image'] = image_full
             results['blending'] = blend
             # TODO: blend the static and dynamic models here
-            results['rgb_map_full'] = image_d
+            results['rgb_map_full'] = image_full
             results['rgb_map_s'] = image_s
             results['rgb_map_d'] = image_d
             results['weights_s'] = weights_sum_s
