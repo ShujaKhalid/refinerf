@@ -83,7 +83,7 @@ if __name__ == '__main__':
     SSIMs_total = np.zeros((len(methods)))
     LPIPSs_total = np.zeros((len(methods)))
     for sequence in sequences:
-        print(sequence)
+        print('=======> ' + sequence + ' <=======')
         PSNRs, SSIMs, LPIPSs = calculate_metrics(
             data_dir, sequence, methods, lpips_loss)
         for method_idx, method in enumerate(methods):

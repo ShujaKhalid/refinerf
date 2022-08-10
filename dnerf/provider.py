@@ -298,7 +298,7 @@ class NeRFDataset:
 
         # [debug] uncomment to view examples of randomly generated poses.
         # visualize_poses(rand_poses(100, self.device, radius=self.radius).cpu().numpy())
-        self.FLOW_FLAG = False
+        self.FLOW_FLAG = True
         if (self.FLOW_FLAG):
             # TODO: ADD the additional pre-reqs here
             basedir = self.root_path
@@ -490,7 +490,6 @@ class NeRFDataset:
             grid = torch.Tensor(self.grid)
             grid = torch.reshape(
                 grid, (grid.shape[0], -1, grid.shape[-1]))
-            grid = grid[:, indices, :]
         else:
             masks = None
             grid = None
@@ -499,6 +498,9 @@ class NeRFDataset:
                         self.W, masks, self.num_rays, error_map)  # sk_debug - added masks
 
         indices = rays["inds"] if self.training else -1
+
+        if (self.FLOW_FLAG):
+            grid = grid[:, indices, :]
 
         results = {
             'H': self.H,

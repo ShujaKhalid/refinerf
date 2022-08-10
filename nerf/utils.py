@@ -947,30 +947,30 @@ class Trainer(object):
                     for metric in self.metrics:
                         metric.update(preds, truths)
 
-                    # save image
-                    save_path = os.path.join(
-                        self.workspace, 'validation', f'{name}_{self.local_step:04d}.png')
-                    # save_path_depth = os.path.join(
-                    #     self.workspace, 'validation', f'{name}_{self.local_step:04d}_depth.png')
-                    save_path_gt = os.path.join(
-                        self.workspace, 'validation', f'{name}_{self.local_step:04d}_gt.png')
+                    # # save image
+                    # save_path = os.path.join(
+                    #     self.workspace, 'validation', f'{name}_{self.local_step:04d}.png')
+                    # # save_path_depth = os.path.join(
+                    # #     self.workspace, 'validation', f'{name}_{self.local_step:04d}_depth.png')
+                    # save_path_gt = os.path.join(
+                    #     self.workspace, 'validation', f'{name}_{self.local_step:04d}_gt.png')
 
-                    # self.log(f"==> Saving validation image to {save_path}")
-                    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+                    # # self.log(f"==> Saving validation image to {save_path}")
+                    # os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
-                    if self.opt.color_space == 'linear':
-                        preds = linear_to_srgb(preds)
+                    # if self.opt.color_space == 'linear':
+                    #     preds = linear_to_srgb(preds)
 
-                    pred = preds[0].detach().cpu().numpy()
-                    # pred_depth = preds_depth[0].detach().cpu().numpy()
-                    truth = truths[0].detach().cpu().numpy()
+                    # pred = preds[0].detach().cpu().numpy()
+                    # # pred_depth = preds_depth[0].detach().cpu().numpy()
+                    # truth = truths[0].detach().cpu().numpy()
 
-                    cv2.imwrite(save_path, cv2.cvtColor(
-                        (pred * 255).astype(np.uint8), cv2.COLOR_RGB2BGR))
-                    # cv2.imwrite(save_path_depth,
-                    #             (pred_depth * 255).astype(np.uint8))
-                    cv2.imwrite(save_path_gt, cv2.cvtColor(
-                        (truth * 255).astype(np.uint8), cv2.COLOR_RGB2BGR))
+                    # cv2.imwrite(save_path, cv2.cvtColor(
+                    #     (pred * 255).astype(np.uint8), cv2.COLOR_RGB2BGR))
+                    # # cv2.imwrite(save_path_depth,
+                    # #             (pred_depth * 255).astype(np.uint8))
+                    # cv2.imwrite(save_path_gt, cv2.cvtColor(
+                    #     (truth * 255).astype(np.uint8), cv2.COLOR_RGB2BGR))
 
                     # Save for overall calcs ========================================
                     # save image
