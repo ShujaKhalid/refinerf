@@ -519,10 +519,10 @@ class NeRFRenderer(nn.Module):
             results['rgb_map_d_f_f'] = image_d_f_f.to("cpu")
 
             # All required outputs for calculating our losses
-            results['image'] = image_full
+            results['image'] = image_d
             results['blending'] = blend
             # TODO: blend the static and dynamic models here
-            results['rgb_map_full'] = image_full
+            results['rgb_map_full'] = image_d
             results['rgb_map_s'] = image_s
             results['rgb_map_d'] = image_d
             results['weights_s'] = weights_sum_s
@@ -531,7 +531,7 @@ class NeRFRenderer(nn.Module):
 
         # [Inference]
         else:
-
+            # print("\n\n\nRunning Inference for time t: {}\n\n\n".format(t))
             # allocate outputs
             # if use autocast, must init as half so it won't be autocasted and lose reference.
             #dtype = torch.half if torch.is_autocast_enabled() else torch.float32
@@ -564,8 +564,8 @@ class NeRFRenderer(nn.Module):
                 xyzs, dirs, deltas = raymarching.march_rays(n_alive, n_step, rays_alive, rays_t, rays_o, rays_d, self.bound,
                                                             self.density_bitfield[t], self.cascade, self.grid_size, nears, fars, 128, perturb, dt_gamma, max_steps)
 
-                sigmas_s, rgbs_s = self(
-                    xyzs, dirs, time, svd="static")
+                # sigmas_s, rgbs_s = self(
+                #     xyzs, dirs, time, svd="static")
                 sigmas_d, rgbs_d, deform_d, blend, sf = self(
                     xyzs, dirs, time, svd="dynamic")
 
@@ -573,8 +573,8 @@ class NeRFRenderer(nn.Module):
                 # rgbs_s = torch.unsqueeze(rgbs_s, 0)  # FIXME
 
                 # TODO: FIXME
-                sigmas = self.density_scale * sigmas_s
-                rgbs = rgbs_s
+                sigmas = self.density_scale * sigmas_d
+                rgbs = rgbs_d
                 raymarching.composite_rays(
                     n_alive, n_step, rays_alive, rays_t, sigmas, rgbs, deltas, weights_sum, depth, image)
 

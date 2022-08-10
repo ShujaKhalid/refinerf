@@ -35,31 +35,31 @@ class NeRFNetwork(NeRFRenderer):
         # ==================
 
         # deformation network ============================================
-        self.num_layers_deform = num_layers_deform
-        self.hidden_dim_deform = hidden_dim_deform
-        self.encoder_deform, self.in_dim_deform = get_encoder(
-            encoding_deform, multires=10)
-        self.encoder_time, self.in_dim_time = get_encoder(
-            encoding_time, input_dim=1, multires=6)
+        # self.num_layers_deform = num_layers_deform
+        # self.hidden_dim_deform = hidden_dim_deform
+        # self.encoder_deform, self.in_dim_deform = get_encoder(
+        #     encoding_deform, multires=10)
+        # self.encoder_time, self.in_dim_time = get_encoder(
+        #     encoding_time, input_dim=1, multires=6)
 
-        print("self.in_dim_deform: {}".format(self.in_dim_deform))
-        print("self.in_dim_time: {}".format(self.in_dim_time))
+        # print("self.in_dim_deform: {}".format(self.in_dim_deform))
+        # print("self.in_dim_time: {}".format(self.in_dim_time))
 
-        deform_s_net = []
-        for l in range(num_layers_deform):
-            if l == 0:
-                in_dim = self.in_dim_deform + self.in_dim_time  # grid dim + time
-            else:
-                in_dim = hidden_dim_deform
+        # deform_s_net = []
+        # for l in range(num_layers_deform):
+        #     if l == 0:
+        #         in_dim = self.in_dim_deform + self.in_dim_time  # grid dim + time
+        #     else:
+        #         in_dim = hidden_dim_deform
 
-            if l == num_layers_deform - 1:
-                out_dim = 3  # deformation for xyz
-            else:
-                out_dim = hidden_dim_deform
+        #     if l == num_layers_deform - 1:
+        #         out_dim = 3  # deformation for xyz
+        #     else:
+        #         out_dim = hidden_dim_deform
 
-            deform_s_net.append(nn.Linear(in_dim, out_dim, bias=False))
+        #     deform_s_net.append(nn.Linear(in_dim, out_dim, bias=False))
 
-        self.deform_s_net = nn.ModuleList(deform_s_net)
+        # self.deform_s_net = nn.ModuleList(deform_s_net)
 
         # sigma network ============================================
         self.num_layers = num_layers
@@ -69,7 +69,6 @@ class NeRFNetwork(NeRFRenderer):
             encoding, desired_resolution=2048 * bound)
 
         print("self.in_dim: {}".format(self.in_dim))
-        print("self.in_dim_time: {}".format(self.in_dim_time))
 
         sigma_s_net = []
         for l in range(num_layers):
@@ -466,7 +465,6 @@ class NeRFNetwork(NeRFRenderer):
                 {'params': self.encoder_time.parameters(), 'lr': lr},
                 {'params': self.sigma_s_net.parameters(), 'lr': lr_net},
                 {'params': self.color_s_net.parameters(), 'lr': lr_net},
-                {'params': self.deform_s_net.parameters(), 'lr': lr_net},
             ]
             if self.bg_radius > 0:
                 params.append(
@@ -479,6 +477,25 @@ class NeRFNetwork(NeRFRenderer):
                 {'params': self.encoder_dir.parameters(), 'lr': lr},
                 {'params': self.encoder_deform.parameters(), 'lr': lr},
                 {'params': self.encoder_time.parameters(), 'lr': lr},
+                {'params': self.sigma_d_net.parameters(), 'lr': lr_net},
+                {'params': self.color_d_net.parameters(), 'lr': lr_net},
+                {'params': self.deform_d_net.parameters(), 'lr': lr_net},
+                {'params': self.blend_net.parameters(), 'lr': lr_net},
+                {'params': self.sf_net.parameters(), 'lr': lr_net},
+            ]
+            if self.bg_radius > 0:
+                params.append(
+                    {'params': self.encoder_bg.parameters(), 'lr': lr})
+                params.append(
+                    {'params': self.bg_s_net.parameters(), 'lr': lr_net})
+        elif (svd == "all"):
+            params = [
+                {'params': self.encoder.parameters(), 'lr': lr},
+                {'params': self.encoder_dir.parameters(), 'lr': lr},
+                {'params': self.encoder_deform.parameters(), 'lr': lr},
+                {'params': self.encoder_time.parameters(), 'lr': lr},
+                {'params': self.sigma_s_net.parameters(), 'lr': lr_net},
+                {'params': self.color_s_net.parameters(), 'lr': lr_net},
                 {'params': self.sigma_d_net.parameters(), 'lr': lr_net},
                 {'params': self.color_d_net.parameters(), 'lr': lr_net},
                 {'params': self.deform_d_net.parameters(), 'lr': lr_net},

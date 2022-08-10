@@ -919,6 +919,9 @@ class Trainer(object):
             for data in loader:
                 self.local_step += 1
 
+                # print("data.keys(): {}".format(data.keys()))
+                # print("data.time: {}".format(data["time"]))
+
                 with torch.cuda.amp.autocast(enabled=self.fp16):
                     preds, preds_depth, truths, loss = self.eval_step(data)
 
@@ -994,7 +997,7 @@ class Trainer(object):
                             preds = linear_to_srgb(preds)
 
                         pred = preds[0].detach().cpu().numpy()
-                        # truth = truths[0].detach().cpu().numpy()
+                        #truth = truths[0].detach().cpu().numpy()
 
                         cv2.imwrite(save_path, cv2.cvtColor(
                             (pred * 255).astype(np.uint8), cv2.COLOR_RGB2BGR))

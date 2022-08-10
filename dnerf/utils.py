@@ -162,8 +162,6 @@ class Trainer(_Trainer):
             loss_dict['img_loss'] = img_loss
             loss += args['full_loss_lambda'] * loss_dict['img_loss']
 
-            # print("psnr: {}".format(psnr))
-
             # Compute MSE loss between rgb_s and true RGB.
             img_s_loss = img2mse(ret['rgb_map_s'], gt_rgb)
             psnr_s = mse2psnr(img_s_loss)
@@ -177,6 +175,8 @@ class Trainer(_Trainer):
             loss_dict['psnr_d'] = psnr_d
             loss_dict['img_d_loss'] = img_d_loss
             loss += args['dynamic_loss_lambda'] * loss_dict['img_d_loss']
+
+            # print("loss_dict: {}".format(loss_dict))
 
             # # Compute MSE loss between rgb_d_f and true RGB.
             # img_d_f_loss = img2mse(ret['rgb_map_d_f'].cuda(), gt_rgb)
