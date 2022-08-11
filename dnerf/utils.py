@@ -185,7 +185,7 @@ class Trainer(_Trainer):
             loss_dict['img_d_loss'] = img_d_loss
             loss += args['dynamic_loss_lambda'] * loss_dict['img_d_loss']
 
-            print("\nDYNAMIC_loss_dict: {}\n".format(loss_dict))
+            # print("\nDYNAMIC_loss_dict: {}\n".format(loss_dict))
 
             # # Compute MSE loss between rgb_d_f and true RGB.
             # img_d_f_loss = img2mse(
@@ -311,6 +311,8 @@ class Trainer(_Trainer):
                 loss_dict['img_d_f_f_loss'] = img_d_f_f_loss
                 loss += args['dynamic_loss_lambda'] * \
                     loss_dict['img_d_f_f_loss']
+
+            # print("\n{}\n".format(loss_dict))
 
         else:
             # [B, N, 3] --> [B, N]
