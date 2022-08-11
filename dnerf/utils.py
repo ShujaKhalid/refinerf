@@ -164,7 +164,6 @@ class Trainer(_Trainer):
             # loss += args['full_loss_lambda'] * loss_dict['img_loss']
 
             # Deformation Loss
-
             loss_dict['deform_loss'] = ret['deform'].abs().mean()
             loss += args['deform_loss_lambda'] * loss_dict['deform_loss']
 

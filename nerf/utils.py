@@ -83,18 +83,19 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None):
             if (masks != None):
                 mask = masks[e:masks.shape[0]-e, 0].to(device)
 
-                coords_d = torch.where(mask < 0.5)[0]
-                coords_s = torch.where(mask >= 0.5)[0]
+                coords_s = torch.where(mask < 0.5)[0]
+                coords_d = torch.where(mask >= 0.5)[0]
 
                 inds_s = torch.randint(
-                    0, coords_s.shape[-1]-1, size=[N//2], device=device)  # may duplicate
+                    0, coords_s.shape[-1]-1, size=[int(N*(1/4))], device=device)  # may duplicate
                 inds_d = torch.randint(
-                    0, coords_d.shape[-1]-1, size=[N//2], device=device)  # may duplicate
+                    0, coords_d.shape[-1]-1, size=[int(N*(3/4))], device=device)  # may duplicate
 
                 coords_d = coords_d[inds_d]
                 coords_s = coords_s[inds_s]
 
                 inds = torch.cat([coords_s, coords_d], 0)
+                # inds = torch.cat([coords_d], 0)
 
             else:
                 # sk_debug - Random from anaywhere on grid
@@ -997,10 +998,17 @@ class Trainer(object):
                             preds = linear_to_srgb(preds)
 
                         pred = preds[0].detach().cpu().numpy()
-                        #truth = truths[0].detach().cpu().numpy()
+                        # truth = truths[0].detach().cpu().numpy()
+                        # print("\npreds.shape: {}".format(preds.shape))
+                        # print("truth.shape: {}".format(truth.shape))
+                        # print("preds.mean: {}".format(preds.mean()))
+                        # print("truth.mean: {}".format(truth.mean()))
+                        # print("loss_val: {}".format(loss_val))
 
                         cv2.imwrite(save_path, cv2.cvtColor(
                             (pred * 255).astype(np.uint8), cv2.COLOR_RGB2BGR))
+                        # cv2.imwrite(save_path, cv2.cvtColor(
+                        #     (truth * 255).astype(np.uint8), cv2.COLOR_RGB2BGR))
                         # cv2.imwrite(save_path_gt, cv2.cvtColor(
                         #     (truth * 255).astype(np.uint8), cv2.COLOR_RGB2BGR))
 

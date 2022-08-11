@@ -347,6 +347,9 @@ class NeRFRenderer(nn.Module):
             # Amazing visualization (POINT-CLOUDS)
             # plot_pointcloud(xyzs.reshape(-1, 3).detach().cpu().numpy())
 
+            # print("\n\nxyzs.mean: {}".format(xyzs.mean()))
+            # print("rays_o.mean: {}".format(rays_o.mean()))
+            # print("rays_d.mean: {}".format(rays_d.mean()))
             # print("time: {}".format(time))
             sigmas_s, rgbs_s = self(
                 xyzs, dirs, time, svd="static")
@@ -377,14 +380,14 @@ class NeRFRenderer(nn.Module):
             # print("blend.shape: {}".format(blend.shape))
             # print("sf.shape: {}".format(sf.shape))
 
-            weights_full, depth_full, image_full_orig = raymarching.composite_rays_train_full(
-                sigmas_s, rgbs_s, sigmas_d, rgbs_d, blend, deltas, rays)
-            image_full = image_full_orig + \
-                (1 - weights_full).unsqueeze(-1) * bg_color
-            depth_full = torch.clamp(
-                depth_full - nears, min=0) / (fars - nears)
-            image_full = image_full.view(*prefix, 3)
-            depth_full = depth_full.view(*prefix)
+            # weights_full, depth_full, image_full_orig = raymarching.composite_rays_train_full(
+            #     sigmas_s, rgbs_s, sigmas_d, rgbs_d, blend, deltas, rays)
+            # image_full = image_full_orig + \
+            #     (1 - weights_full).unsqueeze(-1) * bg_color
+            # depth_full = torch.clamp(
+            #     depth_full - nears, min=0) / (fars - nears)
+            # image_full = image_full.view(*prefix, 3)
+            # depth_full = depth_full.view(*prefix)
 
             # === STATIC ===
             # print("\nExecuting 1st pass...")
@@ -564,13 +567,18 @@ class NeRFRenderer(nn.Module):
                 xyzs, dirs, deltas = raymarching.march_rays(n_alive, n_step, rays_alive, rays_t, rays_o, rays_d, self.bound,
                                                             self.density_bitfield[t], self.cascade, self.grid_size, nears, fars, 128, perturb, dt_gamma, max_steps)
 
+                # print("\n\nxyzs.mean: {}".format(xyzs.mean()))
+                # print("rays_o.mean: {}".format(rays_o.mean()))
+                # print("rays_d.mean: {}".format(rays_d.mean()))
+                # print("time: {}".format(time))
+
                 # sigmas_s, rgbs_s = self(
                 #     xyzs, dirs, time, svd="static")
                 sigmas_d, rgbs_d, deform_d, blend, sf = self(
                     xyzs, dirs, time, svd="dynamic")
 
-                # sigmas_s = torch.unsqueeze(sigmas_s, 0)  # FIXME
-                # rgbs_s = torch.unsqueeze(rgbs_s, 0)  # FIXME
+                sigmas_d = torch.unsqueeze(sigmas_d, 0)  # FIXME
+                rgbs_d = torch.unsqueeze(rgbs_d, 0)  # FIXME
 
                 # TODO: FIXME
                 sigmas = self.density_scale * sigmas_d

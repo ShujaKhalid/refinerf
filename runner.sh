@@ -4,17 +4,20 @@ export CC=/usr/bin/gcc-10
 export CXX=/usr/bin/g++-10
 export CUDA_ROOT=/usr/local/cuda
 
-# DATASET_PATH="../datalake/dnerf/custom"
 # DATASET_PATH="../datalake/dnerf/bouncingballs"
+# SCENE="bouncingballs"
+
+# DATASET_PATH="../datalake/dnerf/custom"
 # SCENE="DynamicFace-2"
-# SCENE="Playground"
-# SCENE="Truck-2"
 SCENE="Umbrella"
+# SCENE="Truck-2"
+# SCENE="Umbrella"
 # SCENE="Jumping"
 # SCENE="Balloon1-2"
 # SCENE="Balloon2-2"
 # SCENE="Skating-2"
 DATASET_PATH="/home/skhalid/Documents/datalake/dynamic_scene_data_full/nvidia_data_full/$SCENE/dense"
+
 NM_WEIGHTS="/home/skhalid/Documents/datalake/neural_motion_weights/"
 WEIGHTS_MIDAS=$NM_WEIGHTS"midas_v21-f6b98070.pt"
 WEIGHTS_RAFT=$NM_WEIGHTS"raft-things.pth"
