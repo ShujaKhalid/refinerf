@@ -10,6 +10,10 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Misc utils
 def img2mse(x, y, M=None):
+    # print("x: {}".format(x.shape))
+    # print("y: {}".format(y.shape))
+    # print("x.isnan: {}".format(x.isnan().sum()))
+    # print("y.isnan: {}".format(y.isnan().sum()))
     if M == None:
         return torch.mean((x - y) ** 2)
     else:
@@ -42,7 +46,7 @@ def entropy(x):
 
 
 def mse2psnr(x): return -10. * torch.log(x) / \
-    torch.log(torch.Tensor([10.]).cuda())
+    torch.log(torch.Tensor([10.]).to(device))
 
 
 def to8b(x): return (255 * np.clip(x, 0, 1)).astype(np.uint8)

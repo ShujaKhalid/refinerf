@@ -87,12 +87,12 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None):
                 coords_d = torch.where(mask >= 0.5)[0]
 
                 inds_s = torch.randint(
-                    0, coords_s.shape[-1]-1, size=[int(N*(1/4))], device=device)  # may duplicate
+                    0, coords_s.shape[-1]-1, size=[int(N//2)], device=device)  # may duplicate
                 inds_d = torch.randint(
-                    0, coords_d.shape[-1]-1, size=[int(N*(3/4))], device=device)  # may duplicate
+                    0, coords_d.shape[-1]-1, size=[int(N//2)], device=device)  # may duplicate
 
-                coords_d = coords_d[inds_d]
                 coords_s = coords_s[inds_s]
+                coords_d = coords_d[inds_d]
 
                 inds = torch.cat([coords_s, coords_d], 0)
                 # inds = torch.cat([coords_d], 0)
@@ -225,7 +225,7 @@ class PSNRMeter:
         self.SSIM = 0
         self.LPIPS = 0
         self.N = 0
-        #self.lpips_loss = lpips.LPIPS(net='alex')
+        # self.lpips_loss = lpips.LPIPS(net='alex')
 
     def im2tensor(self, img):
         return torch.Tensor(img.transpose(2, 0, 1) / 127.5 - 1.0)[None, ...]

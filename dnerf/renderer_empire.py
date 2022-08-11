@@ -340,11 +340,11 @@ class NeRFRenderer(nn.Module):
         nears_s, nears_d = nears[:N_static], nears[N_static:]
         fars_s, fars_d = fars[:N_static], fars[N_static:]
 
-        # print("nears_s.shape: {}".format(nears_s.shape))
-        # print("nears_d.shape: {}".format(nears_d.shape))
-        # print("fars_s.shape: {}".format(fars_s.shape))
-        # print("fars_d.shape: {}".format(fars_d.shape))
-        # print("self.bg_radius: {}".format(self.bg_radius))
+        print("nears_s.shape: {}".format(nears_s.shape))
+        print("nears_d.shape: {}".format(nears_d.shape))
+        print("fars_s.shape: {}".format(fars_s.shape))
+        print("fars_d.shape: {}".format(fars_d.shape))
+        print("self.bg_radius: {}".format(self.bg_radius))
 
         # mix background color
         if self.bg_radius > 0:
@@ -369,10 +369,6 @@ class NeRFRenderer(nn.Module):
 
             xyzs_s, dirs_s, deltas_s, rays_s = raymarching.march_rays_train(
                 rays_o_s, rays_d_s, self.bound, self.density_bitfield[t], self.cascade, self.grid_size, nears_s, fars_s, counter, self.mean_count, perturb, 128, force_all_rays, dt_gamma, max_steps)
-
-            counter = self.step_counter[self.local_step % 16]
-            counter.zero_()  # set to 0
-            self.local_step += 1
             xyzs_d, dirs_d, deltas_d, rays_d = raymarching.march_rays_train(
                 rays_o_d, rays_d_d, self.bound, self.density_bitfield[t], self.cascade, self.grid_size, nears_d, fars_d, counter, self.mean_count, perturb, 128, force_all_rays, dt_gamma, max_steps)
 
@@ -396,31 +392,31 @@ class NeRFRenderer(nn.Module):
             sceneflow_b = sf[..., :3]
             sceneflow_f = sf[..., 3:]
 
-            results['deform'] = deform_d
+            results['deform_d'] = deform_d
             deform_d = 0
             torch.cuda.empty_cache()
 
-            # print("\n\n\nPHASE 1 COMPLETE!!!\n\n\n")
+            print("\n\n\nPHASE 1 COMPLETE!!!\n\n\n")
 
-            # print()
-            # print("sigmas_s.shape: {}".format(sigmas_s.shape))
-            # print("rgbs_s.shape: {}".format(rgbs_s.shape))
-            # print("sigmas_d.shape: {}".format(sigmas_d.shape))
-            # print("rgbs_d.shape: {}".format(rgbs_d.shape))
-            # print("xyzs_s.shape: {}".format(xyzs_s.shape))
-            # print("xyzs_d.shape: {}".format(xyzs_d.shape))
-            # print("blend.shape: {}".format(blend.shape))
-            # print("sf.shape: {}".format(sf.shape))
+            print()
+            print("sigmas_s.shape: {}".format(sigmas_s.shape))
+            print("rgbs_s.shape: {}".format(rgbs_s.shape))
+            print("sigmas_d.shape: {}".format(sigmas_d.shape))
+            print("rgbs_d.shape: {}".format(rgbs_d.shape))
+            print("xyzs_s.shape: {}".format(xyzs_s.shape))
+            print("xyzs_d.shape: {}".format(xyzs_d.shape))
+            print("blend.shape: {}".format(blend.shape))
+            print("sf.shape: {}".format(sf.shape))
 
-            # print()
-            # print("sigmas_s.sum(): {}".format(sigmas_s.sum()))
-            # print("rgbs_s.sum(): {}".format(rgbs_s.sum()))
-            # print("sigmas_d.sum(): {}".format(sigmas_d.sum()))
-            # print("rgbs_d.sum(): {}".format(rgbs_d.sum()))
-            # print("xyzs_s.sum(): {}".format(xyzs_s.sum()))
-            # print("xyzs_d.sum(): {}".format(xyzs_d.sum()))
-            # print("blend.sum(): {}".format(blend.sum()))
-            # print("sf.sum(): {}".format(sf.sum()))
+            print()
+            print("sigmas_s.sum(): {}".format(sigmas_s.sum()))
+            print("rgbs_s.sum(): {}".format(rgbs_s.sum()))
+            print("sigmas_d.sum(): {}".format(sigmas_d.sum()))
+            print("rgbs_d.sum(): {}".format(rgbs_d.sum()))
+            print("xyzs_s.sum(): {}".format(xyzs_s.sum()))
+            print("xyzs_d.sum(): {}".format(xyzs_d.sum()))
+            print("blend.sum(): {}".format(blend.sum()))
+            print("sf.sum(): {}".format(sf.sum()))
 
             # weights_full, depth_full, image_full_orig = raymarching.composite_rays_train_full(
             #     sigmas_s, rgbs_s, sigmas_d, rgbs_d, blend, deltas, rays)
@@ -435,15 +431,15 @@ class NeRFRenderer(nn.Module):
             # print("\nExecuting 1st pass...")
             weights_sum_s, depth_s, image_s_orig = raymarching.composite_rays_train(
                 sigmas_s, rgbs_s, deltas_s, rays_s)
-            # print()
-            # print("weights_sum_s.shape: {}".format(weights_sum_s.shape))
-            # print("depth_s.shape: {}".format(depth_s.shape))
-            # print("image_s_orig.shape: {}".format(image_s_orig.shape))
-            # print("sigmas_s.shape: {}".format(sigmas_s.shape))
-            # print("rgbs_s.shape: {}".format(rgbs_s.shape))
-            # print("deltas_s.shape: {}".format(deltas_s.shape))
-            # print("rays_s.shape: {}".format(rays_s.shape))
-            # print("\image_s_orig: {}".format(image_s_orig))
+            print()
+            print("weights_sum_s.shape: {}".format(weights_sum_s.shape))
+            print("depth_s.shape: {}".format(depth_s.shape))
+            print("image_s_orig.shape: {}".format(image_s_orig.shape))
+            print("sigmas_s.shape: {}".format(sigmas_s.shape))
+            print("rgbs_s.shape: {}".format(rgbs_s.shape))
+            print("deltas_s.shape: {}".format(deltas_s.shape))
+            print("rays_s.shape: {}".format(rays_s.shape))
+            print("\image_s_orig: {}".format(image_s_orig))
 
             image_s = image_s_orig + \
                 (1 - weights_sum_s).unsqueeze(-1) * bg_color
@@ -455,25 +451,25 @@ class NeRFRenderer(nn.Module):
             weights_sum_s, depth_s, image_s_orig = 0, 0, 0
             torch.cuda.empty_cache()
             # print("\image_s: {}".format(image_s))
-            # print("\n\n\nPHASE STATIC COMPLETE!!!\n\n\n")
+            print("\n\n\nPHASE STATIC COMPLETE!!!\n\n\n")
 
             # === DYNAMIC ===
             # print("\nExecuting 2nd pass...")
             weights_sum_d, depth_d, image_d_orig = raymarching.composite_rays_train(
                 sigmas_d, rgbs_d, deltas_d, rays_d)
 
-            # print()
-            # print("sigmas_d.shape: {}".format(sigmas_d.shape))
-            # print("rgbs_d.shape: {}".format(rgbs_d.shape))
-            # print("deltas_d.shape: {}".format(deltas_d.shape))
-            # print("rays_d.shape: {}".format(rays_d.shape))
-            # print("weights_sum_d.sum: {}".format(weights_sum_d.sum()))
-            # print("weights_sum_d.shape: {}".format(weights_sum_d.shape))
-            # print("depth_d.shape: {}".format(depth_d.shape))
-            # print("image_d_orig.shape: {}".format(image_d_orig.shape))
+            print()
+            print("sigmas_d.shape: {}".format(sigmas_d.shape))
+            print("rgbs_d.shape: {}".format(rgbs_d.shape))
+            print("deltas_d.shape: {}".format(deltas_d.shape))
+            print("rays_d.shape: {}".format(rays_d.shape))
+            print("weights_sum_d.sum: {}".format(weights_sum_d.sum()))
+            print("weights_sum_d.shape: {}".format(weights_sum_d.shape))
+            print("depth_d.shape: {}".format(depth_d.shape))
+            print("image_d_orig.shape: {}".format(image_d_orig.shape))
 
-            # print("\nweights_sum_d: {}".format(weights_sum_d))
-            # print("image_d_orig: {}".format(image_d_orig))
+            print("\nweights_sum_d: {}".format(weights_sum_d))
+            print("image_d_orig: {}".format(image_d_orig))
 
             image_d = image_d_orig + \
                 (1 - weights_sum_d).unsqueeze(-1) * bg_color
@@ -491,7 +487,7 @@ class NeRFRenderer(nn.Module):
             sigmas_s, sigmas_d = 0, 0
             results['depth_map_s'] = depth_s
             results['depth_map_d'] = depth_d
-            # print("\n\n\nPHASE DYNAMIC COMPLETE!!!\n\n\n")
+            print("\n\n\nPHASE DYNAMIC COMPLETE!!!\n\n\n")
 
             # TODO: We have everything that we need here
             # Required:
@@ -519,7 +515,7 @@ class NeRFRenderer(nn.Module):
             results['raw_pts'] = xyzs_d
             xyzs_s, xyzs_d = 0, 0
             torch.cuda.empty_cache()
-            # print("\n\n\nPHASE 4 COMPLETE!!!\n\n\n")
+            print("\n\n\nPHASE 4 COMPLETE!!!\n\n\n")
 
             # 3rd pass
             # print("\nExecuting 3rd pass...")
@@ -677,7 +673,11 @@ class NeRFRenderer(nn.Module):
             # Only run during inference
             results['image'] = image
             results['depth'] = depth
-            results['deform'] = deform_d
+
+        # FIXME: Assign props here
+        # FIXME: Assign props here
+        # FIXME: Assign props here
+        results['deform'] = deform_d
 
         return results
 
