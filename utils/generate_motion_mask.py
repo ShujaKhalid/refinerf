@@ -2,6 +2,7 @@ import os
 import cv2
 import PIL
 import glob
+import json
 import torch
 import argparse
 import numpy as np
@@ -28,10 +29,12 @@ def extract_poses(im):
     return m
 
 
-def load_colmap_data(realdir):
+def load_colmap_data(realdir, mode):
 
     camerasfile = os.path.join(realdir, 'colmap_sparse/0/cameras.bin')
     camdata = read_cameras_binary(camerasfile)
+
+    print("\ncamdata: {}".format(camdata))
 
     list_of_keys = list(camdata.keys())
     cam = camdata[list_of_keys[0]]
@@ -44,6 +47,20 @@ def load_colmap_data(realdir):
     imagesfile = os.path.join(realdir, 'colmap_sparse/0/images.bin')
     imdata = read_images_binary(imagesfile)
 
+    print("\nimdata: {}".format(imdata))
+    print("\nimdata.keys: {}".format(imdata.keys()))
+
+    # corrections for validation
+    # Fix the camera
+    if (mode == "val"):
+        print("validation corrections")
+        for key in imdata:
+            item = imdata[key]
+            imdata[key] = imdata[key]._replace(id=7)
+            imdata[key] = imdata[key]._replace(qvec=imdata[1][1])
+            imdata[key] = imdata[key]._replace(tvec=imdata[1][2])
+    print("\nimdata: {}".format(imdata))
+
     w2c_mats = []
     # bottom = np.array([0,0,0,1.]).reshape([1,4])
 
@@ -54,6 +71,33 @@ def load_colmap_data(realdir):
     perm = np.argsort(names)
 
     return imdata, perm, img_keys, hwf
+
+# def load_colmap_data(realdir):
+
+#     camerasfile = os.path.join(realdir, 'colmap_sparse/0/cameras.bin')
+#     camdata = read_cameras_binary(camerasfile)
+
+#     list_of_keys = list(camdata.keys())
+#     cam = camdata[list_of_keys[0]]
+#     print('Cameras', len(cam))
+
+#     h, w, f = cam.height, cam.width, cam.params[0]
+#     # w, h, f = factor * w, factor * h, factor * f
+#     hwf = np.array([h, w, f]).reshape([3, 1])
+
+#     imagesfile = os.path.join(realdir, 'colmap_sparse/0/images.bin')
+#     imdata = read_images_binary(imagesfile)
+
+#     w2c_mats = []
+#     # bottom = np.array([0,0,0,1.]).reshape([1,4])
+
+#     names = [imdata[k].name for k in imdata]
+#     img_keys = [k for k in imdata]
+
+#     print('Images #', len(names))
+#     perm = np.argsort(names)
+
+#     return imdata, perm, img_keys, hwf
 
 
 def run_maskrcnn(model, img_path, intWidth=1024, intHeight=576):
@@ -134,7 +178,8 @@ def motion_segmentation(input_folder,
 
     resized_height, resized_width = shape_0[0], shape_0[1]
 
-    imdata, perm, img_keys, hwf = load_colmap_data(basedir)
+    MODE = "train" if "val" not in input_folder else "val"
+    imdata, perm, img_keys, hwf = load_colmap_data(basedir, mode=MODE)
     scale_x, scale_y = resized_width / \
         float(hwf[1]), resized_height / float(hwf[0])
 
