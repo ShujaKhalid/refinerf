@@ -1,5 +1,6 @@
 import sys
 import math
+from traceback import print_exc
 import trimesh
 import numpy as np
 
@@ -312,10 +313,15 @@ class NeRFRenderer(nn.Module):
         rays_o = rays_o.contiguous().view(-1, 3)
         rays_d = rays_d.contiguous().view(-1, 3)
 
-        N = rays_o.shape[0]  # N = B * N, in fact
+        # N = rays_o.shape[0]  # N = B * N, in fact
         device = rays_o.device
-        N_static = N//2
-        N_dynamic = N//2
+        N = rays_o.shape[0]  # N = B * N, in fact
+        # N_static = N // 2
+        N_static = 0
+        N_dynamic = N - N_static
+
+        # print("\nN_static: {}".format(N_static))
+        # print("N_dynamic: {}".format(N_dynamic))
 
         rays_o_s = rays_o[:N_static, :]
         rays_o_d = rays_o[N_static:, :]
@@ -332,13 +338,15 @@ class NeRFRenderer(nn.Module):
         # print("rays_d_d.shape: {}".format(rays_d_d.shape))
 
         # pre-calculate near far
-        nears, fars = raymarching.near_far_from_aabb(
-            rays_o, rays_d, self.aabb_train if self.training else self.aabb_infer, self.min_near)
-        # nears_d, fars_d = raymarching.near_far_from_aabb(
-        #     rays_o_d, rays_d_d, self.aabb_train if self.training else self.aabb_infer, self.min_near)
+        if (N_static > 0):
+            nears_s, fars_s = raymarching.near_far_from_aabb(
+                rays_o_s, rays_d_s, self.aabb_train if self.training else self.aabb_infer, self.min_near)
+        if (N_dynamic > 0):
+            nears_d, fars_d = raymarching.near_far_from_aabb(
+                rays_o_d, rays_d_d, self.aabb_train if self.training else self.aabb_infer, self.min_near)
 
-        nears_s, nears_d = nears[:N_static], nears[N_static:]
-        fars_s, fars_d = fars[:N_static], fars[N_static:]
+        # nears_s, nears_d = nears[:N_static], nears[N_static:]
+        # fars_s, fars_d = fars[:N_static], fars[N_static:]
 
         # print("nears_s.shape: {}".format(nears_s.shape))
         # print("nears_d.shape: {}".format(nears_d.shape))
@@ -362,19 +370,22 @@ class NeRFRenderer(nn.Module):
         results = {}
 
         if self.training:
-            # setup counter
-            counter = self.step_counter[self.local_step % 16]
-            counter.zero_()  # set to 0
-            self.local_step += 1
 
-            xyzs_s, dirs_s, deltas_s, rays_s = raymarching.march_rays_train(
-                rays_o_s, rays_d_s, self.bound, self.density_bitfield[t], self.cascade, self.grid_size, nears_s, fars_s, counter, self.mean_count, perturb, 128, force_all_rays, dt_gamma, max_steps)
+            if (N_static > 0):
+                # setup counter
+                counter = self.step_counter[self.local_step % 16]
+                counter.zero_()  # set to 0
+                self.local_step += 1
+                xyzs_s, dirs_s, deltas_s, rays_s = raymarching.march_rays_train(
+                    rays_o_s, rays_d_s, self.bound, self.density_bitfield[t], self.cascade, self.grid_size, nears_s, fars_s, counter, self.mean_count, perturb, 128, force_all_rays, dt_gamma, max_steps)
 
-            counter = self.step_counter[self.local_step % 16]
-            counter.zero_()  # set to 0
-            self.local_step += 1
-            xyzs_d, dirs_d, deltas_d, rays_d = raymarching.march_rays_train(
-                rays_o_d, rays_d_d, self.bound, self.density_bitfield[t], self.cascade, self.grid_size, nears_d, fars_d, counter, self.mean_count, perturb, 128, force_all_rays, dt_gamma, max_steps)
+            if (N_dynamic > 0):
+                # setup counter
+                counter = self.step_counter[self.local_step % 16]
+                counter.zero_()  # set to 0
+                self.local_step += 1
+                xyzs_d, dirs_d, deltas_d, rays_d = raymarching.march_rays_train(
+                    rays_o_d, rays_d_d, self.bound, self.density_bitfield[t], self.cascade, self.grid_size, nears_d, fars_d, counter, self.mean_count, perturb, 128, force_all_rays, dt_gamma, max_steps)
 
             # Amazing visualization (POINT-CLOUDS)
             # plot_pointcloud(xyzs.reshape(-1, 3).detach().cpu().numpy())
@@ -384,21 +395,24 @@ class NeRFRenderer(nn.Module):
             # print("rays_d.mean: {}".format(rays_d.mean()))
             # print("time: {}".format(time))
 
-            sigmas_s, rgbs_s = self(
-                xyzs_s, dirs_s, time, svd="static")
-            sigmas_s = self.density_scale * sigmas_s
-            # print("xyzs.shape: {}".format(xyzs.shape))
-            sigmas_d, rgbs_d, deform_d, blend, sf = self(
-                xyzs_d, dirs_d, time, svd="dynamic")
-            sigmas_d = self.density_scale * sigmas_d
+            if (N_static > 0):
+                sigmas_s, rgbs_s = self(
+                    xyzs_s, dirs_s, time, svd="static")
+                sigmas_s = self.density_scale * sigmas_s
 
-            # We need the sceneflow from the dynamicNeRF.
-            sceneflow_b = sf[..., :3]
-            sceneflow_f = sf[..., 3:]
+            if (N_dynamic > 0):
+                # print("xyzs.shape: {}".format(xyzs.shape))
+                sigmas_d, rgbs_d, deform_d, blend, sf = self(
+                    xyzs_d, dirs_d, time, svd="dynamic")
+                sigmas_d = self.density_scale * sigmas_d
 
-            results['deform'] = deform_d
-            deform_d = 0
-            torch.cuda.empty_cache()
+                # We need the sceneflow from the dynamicNeRF.
+                sceneflow_b = sf[..., :3]
+                sceneflow_f = sf[..., 3:]
+
+                results['deform'] = deform_d
+                deform_d = 0
+                torch.cuda.empty_cache()
 
             # print("\n\n\nPHASE 1 COMPLETE!!!\n\n\n")
 
@@ -433,178 +447,186 @@ class NeRFRenderer(nn.Module):
 
             # === STATIC ===
             # print("\nExecuting 1st pass...")
-            weights_sum_s, depth_s, image_s_orig = raymarching.composite_rays_train(
-                sigmas_s, rgbs_s, deltas_s, rays_s)
-            # print()
-            # print("weights_sum_s.shape: {}".format(weights_sum_s.shape))
-            # print("depth_s.shape: {}".format(depth_s.shape))
-            # print("image_s_orig.shape: {}".format(image_s_orig.shape))
-            # print("sigmas_s.shape: {}".format(sigmas_s.shape))
-            # print("rgbs_s.shape: {}".format(rgbs_s.shape))
-            # print("deltas_s.shape: {}".format(deltas_s.shape))
-            # print("rays_s.shape: {}".format(rays_s.shape))
-            # print("\image_s_orig: {}".format(image_s_orig))
+            if (N_static > 0):
+                weights_sum_s, depth_s, image_s_orig = raymarching.composite_rays_train(
+                    sigmas_s, rgbs_s, deltas_s, rays_s)
+                # print()
+                # print("weights_sum_s.shape: {}".format(weights_sum_s.shape))
+                # print("depth_s.shape: {}".format(depth_s.shape))
+                # print("image_s_orig.shape: {}".format(image_s_orig.shape))
+                # print("sigmas_s.shape: {}".format(sigmas_s.shape))
+                # print("rgbs_s.shape: {}".format(rgbs_s.shape))
+                # print("deltas_s.shape: {}".format(deltas_s.shape))
+                # print("rays_s.shape: {}".format(rays_s.shape))
+                # print("\image_s_orig: {}".format(image_s_orig))
 
-            image_s = image_s_orig + \
-                (1 - weights_sum_s).unsqueeze(-1) * bg_color
-            depth_s = torch.clamp(
-                depth_s - nears_s, min=0) / (fars_s - nears_s)
-            image_s = image_s.view(prefix_s, 3)
-            depth_s = depth_s.view(prefix_s)
+                image_s = image_s_orig + \
+                    (1 - weights_sum_s).unsqueeze(-1) * bg_color
+                depth_s = torch.clamp(
+                    depth_s - nears_s, min=0) / (fars_s - nears_s)
+                image_s = image_s.view(prefix_s, 3)
+                depth_s = depth_s.view(prefix_s)
 
-            weights_sum_s, depth_s, image_s_orig = 0, 0, 0
-            torch.cuda.empty_cache()
-            # print("\image_s: {}".format(image_s))
-            # print("\n\n\nPHASE STATIC COMPLETE!!!\n\n\n")
+                weights_sum_s, depth_s, image_s_orig = 0, 0, 0
+                torch.cuda.empty_cache()
+                # print("\image_s: {}".format(image_s))
+                # print("\n\n\nPHASE STATIC COMPLETE!!!\n\n\n")
+
+                # Cleanup
+                results['sigmas_s'] = sigmas_s
+                results['rgbs_s'] = rgbs_s
+                rgbs_s = 0, 0
+                sigmas_s = 0, 0
+                results['depth_map_s'] = depth_s
 
             # === DYNAMIC ===
             # print("\nExecuting 2nd pass...")
-            weights_sum_d, depth_d, image_d_orig = raymarching.composite_rays_train(
-                sigmas_d, rgbs_d, deltas_d, rays_d)
+            if (N_dynamic > 0):
+                weights_sum_d, depth_d, image_d_orig = raymarching.composite_rays_train(
+                    sigmas_d, rgbs_d, deltas_d, rays_d)
 
-            # print()
-            # print("sigmas_d.shape: {}".format(sigmas_d.shape))
-            # print("rgbs_d.shape: {}".format(rgbs_d.shape))
-            # print("deltas_d.shape: {}".format(deltas_d.shape))
-            # print("rays_d.shape: {}".format(rays_d.shape))
-            # print("weights_sum_d.sum: {}".format(weights_sum_d.sum()))
-            # print("weights_sum_d.shape: {}".format(weights_sum_d.shape))
-            # print("depth_d.shape: {}".format(depth_d.shape))
-            # print("image_d_orig.shape: {}".format(image_d_orig.shape))
+                # print()
+                # print("sigmas_d.shape: {}".format(sigmas_d.shape))
+                # print("rgbs_d.shape: {}".format(rgbs_d.shape))
+                # print("deltas_d.shape: {}".format(deltas_d.shape))
+                # print("rays_d.shape: {}".format(rays_d.shape))
+                # print("weights_sum_d.sum: {}".format(weights_sum_d.sum()))
+                # print("weights_sum_d.shape: {}".format(weights_sum_d.shape))
+                # print("depth_d.shape: {}".format(depth_d.shape))
+                # print("image_d_orig.shape: {}".format(image_d_orig.shape))
 
-            # print("\nweights_sum_d: {}".format(weights_sum_d))
-            # print("image_d_orig: {}".format(image_d_orig))
+                # print("\nweights_sum_d: {}".format(weights_sum_d))
+                # print("image_d_orig: {}".format(image_d_orig))
 
-            image_d = image_d_orig + \
-                (1 - weights_sum_d).unsqueeze(-1) * bg_color
-            depth_d = torch.clamp(
-                depth_d - nears_d, min=0) / (fars_d - nears_d)
-            image_d = image_d.view(prefix_d, 3)
-            depth_d = depth_d.view(prefix_d)
+                image_d = image_d_orig + \
+                    (1 - weights_sum_d).unsqueeze(-1) * bg_color
+                depth_d = torch.clamp(
+                    depth_d - nears_d, min=0) / (fars_d - nears_d)
+                image_d = image_d.view(prefix_d, 3)
+                depth_d = depth_d.view(prefix_d)
 
-            # Cleanup
-            results['sigmas_s'] = sigmas_s
-            results['sigmas_d'] = sigmas_d
-            results['rgbs_s'] = rgbs_s
-            results['rgbs_d'] = rgbs_d
-            rgbs_s, rgbs_d = 0, 0
-            sigmas_s, sigmas_d = 0, 0
-            results['depth_map_s'] = depth_s
-            results['depth_map_d'] = depth_d
-            # print("\n\n\nPHASE DYNAMIC COMPLETE!!!\n\n\n")
+                # Cleanup
+                results['sigmas_d'] = sigmas_d
+                results['rgbs_d'] = rgbs_d
+                rgbs_d = 0
+                sigmas_d = 0
+                results['depth_map_d'] = depth_d
+                # print("\n\n\nPHASE DYNAMIC COMPLETE!!!\n\n\n")
 
-            # TODO: We have everything that we need here
-            # Required:
-            #          - rgb_map_s
-            #          - rgb_map_d
-            #          - depth_map_s
-            #          - depth_map_d
-            #          - acc_map_s
-            #          - acc_map_d
-            #          - weights_s
-            #          - weights_d
-            #          - rgb_map_full
-            #          - depth_map_full
-            #          - acc_map_full
-            #          - weights_full
-            #          - dynamicness_map
+                # TODO: We have everything that we need here
+                # Required:
+                #          - rgb_map_s
+                #          - rgb_map_d
+                #          - depth_map_s
+                #          - depth_map_d
+                #          - acc_map_s
+                #          - acc_map_d
+                #          - weights_s
+                #          - weights_d
+                #          - rgb_map_full
+                #          - depth_map_full
+                #          - acc_map_full
+                #          - weights_full
+                #          - dynamicness_map
 
-            # dynamic prep -> frames 2 & 3
-            pts_b = xyzs_d + sceneflow_b
-            pts_f = xyzs_d + sceneflow_f
-            results['sceneflow_f'] = sceneflow_f
-            results['sceneflow_b'] = sceneflow_b
-            sceneflow_b, sceneflow_f, sf = 0, 0, 0
+                # dynamic prep -> frames 2 & 3
+                pts_b = xyzs_d + sceneflow_b
+                pts_f = xyzs_d + sceneflow_f
+                results['sceneflow_f'] = sceneflow_f
+                results['sceneflow_b'] = sceneflow_b
+                sceneflow_b, sceneflow_f, sf = 0, 0, 0
 
-            results['raw_pts'] = xyzs_d
-            xyzs_s, xyzs_d = 0, 0
-            torch.cuda.empty_cache()
-            # print("\n\n\nPHASE 4 COMPLETE!!!\n\n\n")
+                results['raw_pts'] = xyzs_d
+                xyzs_s, xyzs_d = 0, 0
+                torch.cuda.empty_cache()
+                # print("\n\n\nPHASE 4 COMPLETE!!!\n\n\n")
 
-            # 3rd pass
-            # print("\nExecuting 3rd pass...")
-            sigmas_d_b, rgbs_d_b, _, _, sf_b = self(
-                pts_b, dirs_d, time, svd="dynamic")
-            sceneflow_b_b = sf_b[..., :3]
-            sceneflow_b_f = sf_b[..., 3:]
-            results['raw_pts_b'] = pts_b
-            # print("raymarching.composite_rays_train 3rd pass...")
-            weights_sum_d_b, _, image_d_b = raymarching.composite_rays_train(
-                sigmas_d_b, rgbs_d_b, deltas_d, rays_d)
-            results['sceneflow_b_f'] = sceneflow_b_f
-            image_d_b = image_d_b + \
-                (1 - weights_sum_d_b).unsqueeze(-1) * bg_color
-            results['rgb_map_d_b'] = image_d_b
-            results['acc_map_d_b'] = torch.abs(
-                torch.sum(weights_sum_d_b - weights_sum_d, -1))
+                # 3rd pass
+                # print("\nExecuting 3rd pass...")
+                sigmas_d_b, rgbs_d_b, _, _, sf_b = self(
+                    pts_b, dirs_d, time, svd="dynamic")
+                sceneflow_b_b = sf_b[..., :3]
+                sceneflow_b_f = sf_b[..., 3:]
+                results['raw_pts_b'] = pts_b
+                # print("raymarching.composite_rays_train 3rd pass...")
+                weights_sum_d_b, _, image_d_b = raymarching.composite_rays_train(
+                    sigmas_d_b, rgbs_d_b, deltas_d, rays_d)
+                results['sceneflow_b_f'] = sceneflow_b_f
+                image_d_b = image_d_b + \
+                    (1 - weights_sum_d_b).unsqueeze(-1) * bg_color
+                results['rgb_map_d_b'] = image_d_b
+                results['acc_map_d_b'] = torch.abs(
+                    torch.sum(weights_sum_d_b - weights_sum_d, -1))
 
-            # Remove from GPU memory
-            sceneflow_b_f = 0
-            image_d_b = 0
-            # dynamic prep -> frames 4 & 5
-            pts_b_b = pts_b + sceneflow_b_b
-            sceneflow_b_b = 0
-            results['raw_pts_b_b'] = pts_b_b
-            sf_b, pts_b = 0, 0
-            torch.cuda.empty_cache()
+                # Remove from GPU memory
+                sceneflow_b_f = 0
+                image_d_b = 0
+                # dynamic prep -> frames 4 & 5
+                pts_b_b = pts_b + sceneflow_b_b
+                sceneflow_b_b = 0
+                results['raw_pts_b_b'] = pts_b_b
+                sf_b, pts_b = 0, 0
+                torch.cuda.empty_cache()
 
-            # 4th pass
-            # print("\nExecuting 4th pass...")
-            # print("pts_f.shape: {}".format(pts_f.shape))
-            sigmas_d_f, rgbs_d_f, _, _, sf_f = self(
-                pts_f, dirs_d, time, svd="dynamic")
-            sceneflow_f_b = sf_f[..., :3]
-            sceneflow_f_f = sf_f[..., 3:]
-            results['raw_pts_f'] = pts_f
-            # print("raymarching.composite_rays_train 4th pass...")
-            weights_sum_d_f, _, image_d_f = raymarching.composite_rays_train(
-                sigmas_d_f, rgbs_d_f, deltas_d, rays_d)
-            image_d_f = image_d_f + \
-                (1 - weights_sum_d_f).unsqueeze(-1) * bg_color
-            results['sceneflow_f_b'] = sceneflow_f_b
-            results['rgb_map_d_f'] = image_d_f
-            results['acc_map_d_f'] = torch.abs(
-                torch.sum(weights_sum_d_f - weights_sum_d, -1))
+                # 4th pass
+                # print("\nExecuting 4th pass...")
+                # print("pts_f.shape: {}".format(pts_f.shape))
+                sigmas_d_f, rgbs_d_f, _, _, sf_f = self(
+                    pts_f, dirs_d, time, svd="dynamic")
+                sceneflow_f_b = sf_f[..., :3]
+                sceneflow_f_f = sf_f[..., 3:]
+                results['raw_pts_f'] = pts_f
+                # print("raymarching.composite_rays_train 4th pass...")
+                weights_sum_d_f, _, image_d_f = raymarching.composite_rays_train(
+                    sigmas_d_f, rgbs_d_f, deltas_d, rays_d)
+                image_d_f = image_d_f + \
+                    (1 - weights_sum_d_f).unsqueeze(-1) * bg_color
+                results['sceneflow_f_b'] = sceneflow_f_b
+                results['rgb_map_d_f'] = image_d_f
+                results['acc_map_d_f'] = torch.abs(
+                    torch.sum(weights_sum_d_f - weights_sum_d, -1))
 
-            # Remove from GPU memory
-            sceneflow_f_b = 0
-            image_d_f = 0
-            # dynamic prep -> frames 4 & 5
-            pts_f_f = pts_f + sceneflow_f_f
-            sceneflow_f_f = 0
-            results['raw_pts_f_f'] = pts_f_f
-            sf_f, pts_f,  = 0, 0
-            torch.cuda.empty_cache()
+                # Remove from GPU memory
+                sceneflow_f_b = 0
+                image_d_f = 0
+                # dynamic prep -> frames 4 & 5
+                pts_f_f = pts_f + sceneflow_f_f
+                sceneflow_f_f = 0
+                results['raw_pts_f_f'] = pts_f_f
+                sf_f, pts_f,  = 0, 0
+                torch.cuda.empty_cache()
 
-            # 5th pass
-            # print("\nExecuting 5th pass...")
-            sigmas_d_b_b, rgbs_d_b_b, _, _, _ = self(
-                pts_b_b, dirs_d, time, svd="dynamic")
-            weights_sum_d_b_b, _, image_d_b_b = raymarching.composite_rays_train(
-                sigmas_d_b_b, rgbs_d_b_b, deltas_d, rays_d)
-            image_d_b_b = image_d_b_b + \
-                (1 - weights_sum_d_b_b).unsqueeze(-1) * bg_color
-            results['rgb_map_d_b_b'] = image_d_b_b
+                # 5th pass
+                # print("\nExecuting 5th pass...")
+                sigmas_d_b_b, rgbs_d_b_b, _, _, _ = self(
+                    pts_b_b, dirs_d, time, svd="dynamic")
+                weights_sum_d_b_b, _, image_d_b_b = raymarching.composite_rays_train(
+                    sigmas_d_b_b, rgbs_d_b_b, deltas_d, rays_d)
+                image_d_b_b = image_d_b_b + \
+                    (1 - weights_sum_d_b_b).unsqueeze(-1) * bg_color
+                results['rgb_map_d_b_b'] = image_d_b_b
 
-            # 6th pass
-            # print("\nExecuting 6th pass...")
-            sigmas_d_f_f, rgbs_d_f_f, _, _, _ = self(
-                pts_f_f, dirs_d, time, svd="dynamic")
-            weights_sum_d_f_f, _, image_d_f_f = raymarching.composite_rays_train(
-                sigmas_d_f_f, rgbs_d_f_f, deltas_d, rays_d)
-            image_d_f_f = image_d_f_f + \
-                (1 - weights_sum_d_f_f).unsqueeze(-1) * bg_color
-            results['rgb_map_d_f_f'] = image_d_f_f
+                # 6th pass
+                # print("\nExecuting 6th pass...")
+                sigmas_d_f_f, rgbs_d_f_f, _, _, _ = self(
+                    pts_f_f, dirs_d, time, svd="dynamic")
+                weights_sum_d_f_f, _, image_d_f_f = raymarching.composite_rays_train(
+                    sigmas_d_f_f, rgbs_d_f_f, deltas_d, rays_d)
+                image_d_f_f = image_d_f_f + \
+                    (1 - weights_sum_d_f_f).unsqueeze(-1) * bg_color
+                results['rgb_map_d_f_f'] = image_d_f_f
 
-            # All required outputs for calculating our losses
-            results['image'] = image_d
-            results['blending'] = blend
-            # TODO: blend the static and dynamic models here
-            results['rgb_map_full'] = image_d
-            results['rgb_map_s'] = image_s
-            results['rgb_map_d'] = image_d
-            results['weights_s'] = weights_sum_s
-            results['weights_d'] = weights_sum_d
+                if (N_static > 0):
+                    results['rgb_map_s'] = image_s
+                    results['weights_s'] = weights_sum_s
+
+                if (N_dynamic > 0):
+                    results['image'] = image_d
+                    results['blending'] = blend
+                    # TODO: blend the static and dynamic models here
+                    results['rgb_map_full'] = image_d
+                    results['rgb_map_d'] = image_d
+                    results['weights_d'] = weights_sum_d
             # results['dynamicness_map'] = torch.sum(weights_full * blending, -1)
 
         # [Inference]
@@ -616,68 +638,142 @@ class NeRFRenderer(nn.Module):
             # output should always be float32! only network inference uses half.
             dtype = torch.float32
 
-            weights_sum = torch.zeros(N, dtype=dtype, device=device)
-            depth = torch.zeros(N, dtype=dtype, device=device)
-            image = torch.zeros(N, 3, dtype=dtype, device=device)
+            # N_static *= 2 # FIXME
+            # N_dynamic *= 2 # FIXME
 
-            n_alive = N
-            rays_alive = torch.arange(
-                n_alive, dtype=torch.int32, device=device)  # [N]
-            rays_t = nears_d.clone()  # [N]
+            if (N_static > 0):
+                weights_sum_s = torch.zeros(
+                    N_static, dtype=dtype, device=device)
+                depth_s = torch.zeros(N_static, dtype=dtype, device=device)
+                image_s = torch.zeros(N_static, 3, dtype=dtype, device=device)
+                n_alive_s = N_static
+
+                print("image_s.shape: {}".format(image_s.shape))
+                rays_alive_s = torch.arange(0,
+                                            n_alive_s, 1, dtype=torch.int32, device=device)  # [N]
+                rays_t_s = nears_s.clone()  # [N]
+
+            if (N_dynamic > 0):
+                weights_sum_d = torch.zeros(
+                    N_dynamic, dtype=dtype, device=device)
+                depth_d = torch.zeros(N_dynamic, dtype=dtype, device=device)
+                image_d = torch.zeros(N_dynamic, 3, dtype=dtype, device=device)
+
+                n_alive_d = N_dynamic
+                rays_alive_d = torch.arange(0,
+                                            n_alive_d, 1, dtype=torch.int32, device=device)  # [N]
+                rays_t_d = nears_d.clone()  # [N]
+
+                # print("image_d.shape: {}".format(image_d.shape))
+                # print("rays_t_d.shape: {}".format(rays_t_d.shape))
+                # print("n_alive_d: {}".format(n_alive_d))
+                # print("rays_o_d.shape: {}".format(rays_o_d.shape))
+                # print("rays_d_d.shape: {}".format(rays_d_d.shape))
+                # print("nears_d.shape: {}".format(nears_d.shape))
+                # print("fars_d.shape: {}".format(fars_d.shape))
 
             step = 0
 
             while step < max_steps:
-
-                # count alive rays
-                n_alive = rays_alive.shape[0]
-
-                # exit loop
-                if n_alive <= 0:
-                    break
-
-                # decide compact_steps
-                n_step = max(min(N // n_alive, 8), 1)
-
-                xyzs_s, dirs_s, deltas_s = raymarching.march_rays(n_alive, n_step, rays_alive, rays_t, rays_o_s, rays_d_s, self.bound,
-                                                                  self.density_bitfield[t], self.cascade, self.grid_size, nears, fars, 128, perturb, dt_gamma, max_steps)
-                xyzs_d, dirs_d, deltas_d = raymarching.march_rays(n_alive, n_step, rays_alive, rays_t, rays_o_d, rays_d_d, self.bound,
-                                                                  self.density_bitfield[t], self.cascade, self.grid_size, nears, fars, 128, perturb, dt_gamma, max_steps)
+                if (N_static > 0):
+                    # count alive rays
+                    n_alive_s = rays_alive_s.shape[0]
+                    # exit loop
+                    if n_alive_s <= 0:
+                        break
+                    # decide compact_steps
+                    n_step = max(min(N_static // n_alive_s, 8), 1)
+                    xyzs_s, dirs_s, deltas_s = raymarching.march_rays(n_alive_s, n_step, rays_alive_s, rays_t_s, rays_o_s, rays_d_s, self.bound,
+                                                                      self.density_bitfield[t], self.cascade, self.grid_size, nears_s, fars_s, 128, perturb, dt_gamma, max_steps)
+                if (N_dynamic > 0):
+                    # count alive rays
+                    n_alive_d = rays_alive_d.shape[0]
+                    # exit loop
+                    if n_alive_d <= 0:
+                        break
+                    n_step = max(min(N_dynamic // n_alive_d, 8), 1)
+                    xyzs_d, dirs_d, deltas_d = raymarching.march_rays(n_alive_d, n_step, rays_alive_d, rays_t_d, rays_o_d, rays_d_d, self.bound,
+                                                                      self.density_bitfield[t], self.cascade, self.grid_size, nears_d, fars_d, 128, perturb, dt_gamma, max_steps)
 
                 # print("\n\nxyzs.mean: {}".format(xyzs.mean()))
                 # print("rays_o.mean: {}".format(rays_o.mean()))
                 # print("rays_d.mean: {}".format(rays_d.mean()))
                 # print("time: {}".format(time))
+                if (N_static > 0):
+                    sigmas_s, rgbs_s = self(
+                        xyzs_s, dirs_s, time, svd="static")
+                if (N_dynamic > 0):
+                    sigmas_d, rgbs_d, deform_d, blend, sf = self(
+                        xyzs_d, dirs_d, time, svd="dynamic")
 
-                sigmas_s, rgbs_s = self(
-                    xyzs, dirs_s, time, svd="static")
-                sigmas_d, rgbs_d, deform_d, blend, sf = self(
-                    xyzs, dirs_d, time, svd="dynamic")
-
-                sigmas_d = torch.unsqueeze(sigmas_d, 0)  # FIXME
-                rgbs_d = torch.unsqueeze(rgbs_d, 0)  # FIXME
+                    # sigmas_d = torch.unsqueeze(sigmas_d, 0)  # FIXME
+                    # rgbs_d = torch.unsqueeze(rgbs_d, 0)  # FIXME
 
                 # TODO: FIXME
-                sigmas = self.density_scale * sigmas_d
-                rgbs = rgbs_d
-                raymarching.composite_rays(
-                    n_alive, n_step, rays_alive, rays_t, sigmas, rgbs, deltas_d, weights_sum, depth, image)
+                # sigmas = self.density_scale * sigmas_d
+                # sigmas = torch.cat([sigmas_s, sigmas_d], 0)
+                # rgbs = torch.cat([rgbs_s, rgbs_d], 0)
+                # deltas = torch.cat([deltas_s, deltas_d], 0)
+                # nears = torch.cat([nears_s, nears_d], 0)
+                # fars = torch.cat([fars_s, fars_d], 0)
+                # rays_t = torch.cat([rays_t_s, rays_t_d], 0)
+                # rays_t = rays_t_s
 
-                rays_alive = rays_alive[rays_alive >= 0]
+                # rays_alive_s = torch.arange(0,
+                #                             n_alive_s, 1, dtype=torch.int32, device=device)
+                # rays_alive_d = torch.arange(0,
+                #                             n_alive_d, 1, dtype=torch.int32, device=device)
+                # n_alive = n_alive_s + n_alive_d
+
+                # print("\nsigmas.shape: {}".format(sigmas.shape))
+                # print("rgbs.shape: {}".format(rgbs.shape))
+                # print("deltas.shape: {}".format(deltas.shape))
+                # print("nears.shape: {}".format(nears.shape))
+                # print("fars.shape: {}".format(fars.shape))
+
+                if (N_static > 0):
+                    # static
+                    raymarching.composite_rays(
+                        n_alive_s, n_step, rays_alive_s, rays_t_s, sigmas_s, rgbs_s, deltas_s, weights_sum_s, depth_s, image_s)
+                    rays_alive_s = rays_alive_s[rays_alive_s >= 0]
+
+                if (N_dynamic > 0):
+                    # dynamic
+                    raymarching.composite_rays(
+                        n_alive_d, n_step, rays_alive_d, rays_t_d, sigmas_d, rgbs_d, deltas_d, weights_sum_d, depth_d, image_d)
+                    rays_alive_d = rays_alive_d[rays_alive_d >= 0]
+
+                # print("\nn_alive_s: {}".format(n_alive_s))
+                # print("n_alive_d: {}".format(n_alive_d))
+                # print("rays_alive_s.max: {}".format(rays_alive_s.max()))
+                # print("rays_alive_d.max: {}".format(rays_alive_d.max()))
 
                 #print(f'step = {step}, n_step = {n_step}, n_alive = {n_alive}, xyzs: {xyzs.shape}')
 
                 step += n_step
 
-            image = image + (1 - weights_sum).unsqueeze(-1) * bg_color
-            depth = torch.clamp(depth - nears_d, min=0) / (fars_d - nears_d)
-            image = image.view(prefix_d, 3)
-            depth = depth.view(prefix_d)
+            if (N_static > 0):
+                image = image_d + (1 - weights_sum_s).unsqueeze(-1) * bg_color
+                # FIXME: nears and fars are logically incorrect
+                depth = torch.clamp(depth_s - nears_s,
+                                    min=0) / (fars_s - nears_s)
+                image = image.view(prefix_s, 3)
+                depth = depth.view(prefix_s)
+
+            if (N_dynamic > 0):
+                image = image_d + (1 - weights_sum_d).unsqueeze(-1) * bg_color
+                # FIXME: nears and fars are logically incorrect
+                depth = torch.clamp(depth_d - nears_d,
+                                    min=0) / (fars_d - nears_d)
+                image = image.view(prefix_d, 3)
+                depth = depth.view(prefix_d)
 
             # Only run during inference
             results['image'] = image
             results['depth'] = depth
-            results['deform'] = deform_d
+
+            if (N_dynamic > 0):
+                results['deform'] = deform_d
 
         return results
 

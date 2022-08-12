@@ -11,9 +11,9 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # Misc utils
 def img2mse(x, y, M=None):
     # print("x: {}".format(x.shape))
-    # print("y: {}".format(y.shape))
+    # print("gt: {}".format(y.shape))
     # print("x.isnan: {}".format(x.isnan().sum()))
-    # print("y.isnan: {}".format(y.isnan().sum()))
+    # print("gt.isnan: {}".format(y.isnan().sum()))
     if M == None:
         return torch.mean((x - y) ** 2)
     else:
