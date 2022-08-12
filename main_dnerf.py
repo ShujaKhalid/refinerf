@@ -21,7 +21,7 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, default=0)
 
     # training options
-    parser.add_argument('--iters', type=int, default=30000,
+    parser.add_argument('--iters', type=int, default=1000000,
                         help="training iters")
     parser.add_argument('--lr', type=float, default=1e-2,
                         help="initial learning rate")

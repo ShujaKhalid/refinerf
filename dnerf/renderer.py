@@ -316,8 +316,11 @@ class NeRFRenderer(nn.Module):
         # N = rays_o.shape[0]  # N = B * N, in fact
         device = rays_o.device
         N = rays_o.shape[0]  # N = B * N, in fact
-        # N_static = N // 2
-        N_static = 0
+        if (self.training):
+            N_static = N // 2
+        else:
+            N_static = N
+
         N_dynamic = N - N_static
 
         # print("\nN_static: {}".format(N_static))
@@ -626,7 +629,8 @@ class NeRFRenderer(nn.Module):
                     # TODO: blend the static and dynamic models here
                     results['rgb_map_full'] = image_d
                     results['rgb_map_d'] = image_d
-                    results['weights_d'] = weights_sum_d
+                    # FIXME: save weights from composite_ray_train
+                    results['weights_d'] = sigmas_d_f
             # results['dynamicness_map'] = torch.sum(weights_full * blending, -1)
 
         # [Inference]
@@ -752,15 +756,23 @@ class NeRFRenderer(nn.Module):
 
                 step += n_step
 
-            if (N_static > 0):
-                image = image_d + (1 - weights_sum_s).unsqueeze(-1) * bg_color
+            if (N_static > 0 and N_dynamic > 0):
+                image = image_d + (1 - weights_sum_s).unsqueeze(-1) * image_s
                 # FIXME: nears and fars are logically incorrect
                 depth = torch.clamp(depth_s - nears_s,
                                     min=0) / (fars_s - nears_s)
                 image = image.view(prefix_s, 3)
                 depth = depth.view(prefix_s)
 
-            if (N_dynamic > 0):
+            elif (N_static > 0):
+                image = image_s + (1 - weights_sum_s).unsqueeze(-1) * bg_color
+                # FIXME: nears and fars are logically incorrect
+                depth = torch.clamp(depth_s - nears_s,
+                                    min=0) / (fars_s - nears_s)
+                image = image.view(prefix_s, 3)
+                depth = depth.view(prefix_s)
+
+            elif (N_dynamic > 0):
                 image = image_d + (1 - weights_sum_d).unsqueeze(-1) * bg_color
                 # FIXME: nears and fars are logically incorrect
                 depth = torch.clamp(depth_d - nears_d,

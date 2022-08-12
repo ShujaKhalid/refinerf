@@ -67,10 +67,20 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None):
     B = poses.shape[0]
     fx, fy, cx, cy = intrinsics
 
+    # FIXME
+    if (N > 0):
+        MODELS = 1  # ["static", "dynamic"]
+    else:
+        MODELS = 1  # ["static", "dynamic"]
+
     i, j = custom_meshgrid(torch.linspace(
-        0, W-1, W, device=device), torch.linspace(0, H-1, H, device=device))
-    i = i.t().reshape([1, H*W]).expand([B, H*W]) + 0.5
-    j = j.t().reshape([1, H*W]).expand([B, H*W]) + 0.5
+        0, (W*MODELS)-1, W*MODELS, device=device), torch.linspace(0, (H*MODELS)-1, H*MODELS, device=device))
+
+    print("i.shape: {}".format(i.shape))
+    print("j.shape: {}".format(j.shape))
+
+    i = i.t().reshape([1, H*W*MODELS]).expand([B, H*W*MODELS]) + 0.5
+    j = j.t().reshape([1, H*W*MODELS]).expand([B, H*W*MODELS]) + 0.5
 
     results = {}
 
@@ -94,15 +104,15 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None):
                 coords_s = coords_s[inds_s]
                 coords_d = coords_d[inds_d]
 
-                # inds = torch.cat([coords_s, coords_d], 0)
-                inds = torch.cat([coords_d], 0)
+                inds = torch.cat([coords_s, coords_d], 0)
+                # inds = torch.cat([coords_d], 0)
 
             else:
                 # sk_debug - Random from anaywhere on grid
                 inds = torch.randint(
                     0, H*W, size=[N], device=device)  # may duplicate
 
-            inds = inds.expand([B, N])
+            inds = inds.expand([B, inds.shape[0]])
         else:
 
             # weighted sample on a low-reso grid
@@ -131,7 +141,8 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None):
         results['inds'] = inds
 
     else:
-        inds = torch.arange(H*W, device=device).expand([B, H*W])
+        inds = torch.arange(H*W*MODELS, device=device).expand([B, H*W*MODELS])
+        results['inds'] = inds
 
     zs = torch.ones_like(i)
     xs = (i - cx) / fx * zs

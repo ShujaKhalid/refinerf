@@ -133,11 +133,11 @@ class Trainer(_Trainer):
             decay_iteration = 25  # FIXME
             num_img = data['num_img']
             img_i = data['index']
-            batch_invdepth = data['disp']
+            batch_invdepth = data['disp'].cuda()
             poses = data['all_poses']
             # FIXME - 0 index probs
-            batch_mask = data['masks']
-            batch_grid = data['grids']
+            batch_mask = data['masks'].cuda()
+            batch_grid = data['grids'].cuda()
             # print("batch_mask.shape: {}".format(batch_mask.shape))
             Temp = 1. / (10 ** (1 // (decay_iteration * 1000)))  # FIXME
             focal = data['intrinsics'][0]  # FIXME
@@ -163,9 +163,9 @@ class Trainer(_Trainer):
             # loss_dict['img_loss'] = img_loss
             # loss += args['full_loss_lambda'] * loss_dict['img_loss']
 
-            # # Deformation Loss
-            # loss_dict['deform_loss'] = ret['deform'].abs().mean()
-            # loss += args['deform_loss_lambda'] * loss_dict['deform_loss']
+            # Deformation Loss
+            loss_dict['deform_loss'] = ret['deform'].abs().mean()
+            loss += args['deform_loss_lambda'] * loss_dict['deform_loss']
 
             # Compute MSE loss between rgb_s and true RGB.
             if ("rgb_map_s" in ret):
@@ -190,59 +190,68 @@ class Trainer(_Trainer):
             # print("\nDYNAMIC_loss_dict: {}\n".format(loss_dict))
 
             # # Compute MSE loss between rgb_d_f and true RGB.
-            # img_d_f_loss = img2mse(
-            #     ret['rgb_map_d_f'], gt_rgb[0, :ret['rgb_map_d_f'].shape[0], :])
-            # psnr_d_f = mse2psnr(img_d_f_loss)
-            # loss_dict['psnr_d_f'] = psnr_d_f
-            # loss_dict['img_d_f_loss'] = img_d_f_loss
-            # loss += args['dynamic_loss_lambda'] * loss_dict['img_d_f_loss']
+            # if ("rgb_map_d_f" in ret):
+            #     img_d_f_loss = img2mse(
+            #         ret['rgb_map_d_f'], gt_rgb[0, :ret['rgb_map_d_f'].shape[0], :])
+            #     psnr_d_f = mse2psnr(img_d_f_loss)
+            #     loss_dict['psnr_d_f'] = psnr_d_f
+            #     loss_dict['img_d_f_loss'] = img_d_f_loss
+            #     loss += args['dynamic_loss_lambda'] * loss_dict['img_d_f_loss']
 
-            # # Compute MSE loss between rgb_d_b and true RGB.
-            # img_d_b_loss = img2mse(
-            #     ret['rgb_map_d_b'], gt_rgb[0, :ret['rgb_map_d_b'].shape[0], :])
-            # psnr_d_b = mse2psnr(img_d_b_loss)
-            # loss_dict['psnr_d_b'] = psnr_d_b
-            # loss_dict['img_d_b_loss'] = img_d_b_loss
-            # loss += args['dynamic_loss_lambda'] * loss_dict['img_d_b_loss']
+            # if ("rgb_map_d_b" in ret):
+            #     # Compute MSE loss between rgb_d_b and true RGB.
+            #     img_d_b_loss = img2mse(
+            #         ret['rgb_map_d_b'], gt_rgb[0, :ret['rgb_map_d_b'].shape[0], :])
+            #     psnr_d_b = mse2psnr(img_d_b_loss)
+            #     loss_dict['psnr_d_b'] = psnr_d_b
+            #     loss_dict['img_d_b_loss'] = img_d_b_loss
+            #     loss += args['dynamic_loss_lambda'] * loss_dict['img_d_b_loss']
 
             # # Motion loss.
             # # FIXME: No idea...
+            # # SOLVE: Get weights_d from composite_rays cuda function
             # # Compuate EPE between induced flow and true flow (forward flow).
             # # The last frame does not have forward flow.
-            # print("ret['weights_d']: {}".format(ret['weights_d'].shape))
-            # print("ret['raw_pts_f'].shape: {}".format(ret['raw_pts_f'].shape))
-            # if img_i < num_img - 1:
-            #     pts_f = ret['raw_pts_f']
-            #     weight = ret['weights_d']
-            #     pose_f = poses[img_i + 1, :3, :4]
-            #     induced_flow_f = induce_flow(
-            #         H, W, focal, pose_f, weight, pts_f, batch_grid[img_i, :, :, :2])
-            #     flow_f_loss = img2mae(
-            #         induced_flow_f, batch_grid[img_i, :, :, 2:4], batch_grid[img_i, :, :, 4:5])
-            #     loss_dict['flow_f_loss'] = flow_f_loss
-            #     loss += args['flow_loss_lambda'] * \
-            #         Temp * loss_dict['flow_f_loss']
+            # if ('weights_d' in ret and 'raw_pts_f' in ret):
+            #     # print("ret['weights_d']: {}".format(ret['weights_d'].shape))
+            #     # print("ret['raw_pts_f'].shape: {}".format(
+            #     #     ret['raw_pts_f'].shape))
+            #     if img_i < num_img - 1:
+            #         pts_f = ret['raw_pts_f']
+            #         weight = ret['weights_d']
+            #         pose_f = poses[img_i + 1, :3, :4]
+            #         induced_flow_f = induce_flow(
+            #             H, W, focal, pose_f, weight, pts_f, batch_grid[img_i, :, :, :2])
+            #         flow_f_loss = img2mae(
+            #             induced_flow_f, batch_grid[img_i, :, :, 2:4], batch_grid[img_i, :, :, 4:5])
+            #         loss_dict['flow_f_loss'] = flow_f_loss
+            #         loss += args['flow_loss_lambda'] * \
+            #             Temp * loss_dict['flow_f_loss']
 
             # # Compuate EPE between induced flow and true flow (backward flow).
             # # The first frame does not have backward flow.
             # # FIXME: No idea...
-            # pts_b = ret['raw_pts_b']
-            # weight = ret['weights_d']
-            # pose_b = poses[img_i - 1, :3, :4]
-            # induced_flow_b = induce_flow(
-            #     H, W, focal, pose_b, weight, pts_b, batch_grid[img_i, :, :, :2])
-            # flow_b_loss = img2mae(
-            #     induced_flow_b, batch_grid[img_i, :, :, 5:7], batch_grid[img_i, :, :, 7:8])
-            # loss_dict['flow_b_loss'] = flow_b_loss
-            # loss += args['flow_loss_lambda'] * Temp * loss_dict['flow_b_loss']
+            # if ('weights_d' in ret and 'raw_pts_b' in ret):
+            #     if img_i > 0:
+            #         pts_b = ret['raw_pts_b']
+            #         weight = ret['weights_d']
+            #         pose_b = poses[img_i - 1, :3, :4]
+            #         induced_flow_b = induce_flow(
+            #             H, W, focal, pose_b, weight, pts_b, batch_grid[img_i, :, :, :2])
+            #         flow_b_loss = img2mae(
+            #             induced_flow_b, batch_grid[img_i, :, :, 5:7], batch_grid[img_i, :, :, 7:8])
+            #         loss_dict['flow_b_loss'] = flow_b_loss
+            #         loss += args['flow_loss_lambda'] * \
+            #             Temp * loss_dict['flow_b_loss']
 
             # # Slow scene flow. The forward and backward sceneflow should be small.
-            # slow_loss = L1(ret['sceneflow_b']) + \
-            #     L1(ret['sceneflow_f'])
-            # loss_dict['slow_loss'] = slow_loss
-            # loss += args['slow_loss_lambda'] * loss_dict['slow_loss']
+            # if ('sceneflow_f' in ret and 'sceneflow_b' in ret):
+            #     slow_loss = L1(ret['sceneflow_b']) + \
+            #         L1(ret['sceneflow_f'])
+            #     loss_dict['slow_loss'] = slow_loss
+            #     loss += args['slow_loss_lambda'] * loss_dict['slow_loss']
 
-            # Smooth scene flow. The summation of the forward and backward sceneflow should be small.
+            # # Smooth scene flow. The summation of the forward and backward sceneflow should be small.
             # smooth_loss = compute_sf_smooth_loss(ret['raw_pts'],
             #                                      ret['raw_pts_f'],
             #                                      ret['raw_pts_b'],
@@ -258,31 +267,40 @@ class Trainer(_Trainer):
             # loss += args['smooth_loss_lambda'] * loss_dict['sp_smooth_loss']
 
             # # Consistency loss.
-            # consistency_loss = L1(ret['sceneflow_f'].cuda() + ret['sceneflow_f_b'].cuda()) + \
-            #     L1(ret['sceneflow_b'].cuda() + ret['sceneflow_b_f'].cuda())
-            # loss_dict['consistency_loss'] = consistency_loss
-            # loss += args['consistency_loss_lambda'] * \
-            #     loss_dict['consistency_loss']
+            # if ('sceneflow_f' in ret and 'sceneflow_b' in ret and 'sceneflow_f_b' in ret):
+            #     consistency_loss = L1(ret['sceneflow_f'].cuda() + ret['sceneflow_f_b'].cuda()) + \
+            #         L1(ret['sceneflow_b'].cuda() + ret['sceneflow_b_f'].cuda())
+            #     loss_dict['consistency_loss'] = consistency_loss
+            #     loss += args['consistency_loss_lambda'] * \
+            #         loss_dict['consistency_loss']
 
-            # FIXME: Blending has incorrect dimensions
+            # FIXME: Blending has incorrect dimensions & Get dynamicness_map
             # Mask loss.
-            # mask_loss = L1(ret['blending'][batch_mask[:, 0].type(torch.bool)]) + \
-            #     img2mae(ret['dynamicness_map'][..., None], 1 - batch_mask)
-            # loss_dict['mask_loss'] = mask_loss
-            # if i < decay_iteration * 1000:
-            #     loss += args['mask_loss_lambda'] * loss_dict['mask_loss']
+            # if ('blending' in ret and 'dynamicness_map' in ret and 'sceneflow_f_b' in ret):
+            #     print("ret['blending'].shape: {}".format(
+            #         ret['blending']).shape)
+            #     print("batch_mask[:, 0]: {}".format(batch_mask[:, 0].shape))
+            #     mask_loss = L1(ret['blending'][batch_mask[:, 0].type(torch.bool)]) + \
+            #         img2mae(ret['dynamicness_map'][..., None], 1 - batch_mask)
+            #     loss_dict['mask_loss'] = mask_loss
+            #     if i_img < decay_iteration * 1000:
+            #         loss += args['mask_loss_lambda'] * loss_dict['mask_loss']
 
             # # Sparsity loss.
-            # sparse_loss = entropy(ret['weights_d']) + entropy(ret['blending'])
-            # loss_dict['sparse_loss'] = sparse_loss
-            # loss += args['sparse_loss_lambda'] * loss_dict['sparse_loss']
+            # if ('weights_d' in ret and 'blending' in ret):
+            #     sparse_loss = entropy(
+            #         ret['weights_d']) + entropy(ret['blending'])
+            #     loss_dict['sparse_loss'] = sparse_loss
+            #     loss += args['sparse_loss_lambda'] * loss_dict['sparse_loss']
 
             # # Depth constraint
             # # Depth in NDC space equals to negative disparity in Euclidean space.
-            # depth_loss = compute_depth_loss(
-            #     ret['depth_map_d'], -batch_invdepth)
-            # loss_dict['depth_loss'] = depth_loss
-            # loss += args['depth_loss_lambda'] * Temp * loss_dict['depth_loss']
+            # if ('depth_map_d' in ret):
+            #     depth_loss = compute_depth_loss(
+            #         ret['depth_map_d'], -batch_invdepth)
+            #     loss_dict['depth_loss'] = depth_loss
+            #     loss += args['depth_loss_lambda'] * \
+            #         Temp * loss_dict['depth_loss']
 
             # FIXME: Order loss
             # order_loss = torch.mean(torch.square(ret['depth_map_d'][batch_mask[0].type(torch.bool)] -
@@ -290,6 +308,7 @@ class Trainer(_Trainer):
             # loss_dict['order_loss'] = order_loss
             # loss += args['order_loss_lambda'] * loss_dict['order_loss']
 
+            # TODO: FIX
             # sf_smooth_loss = compute_sf_smooth_loss(ret['raw_pts_b'],
             #                                         ret['raw_pts'],
             #                                         ret['raw_pts_b_b'],

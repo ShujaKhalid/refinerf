@@ -104,29 +104,57 @@ def run_ffmpeg_images(args):
 
     # TODO: remove hard-coded paths once we have a proof of concept
     base = args.images.split("images")[0]
-    max_imgs = 12
+    max_imgs = 120
+    MULTI_IMG_TRN = False
+    args.MULTI_IMG_TRN = MULTI_IMG_TRN
+    LARGE_DATASET_TRN = False
     if (args.mode == "train"):
         new_loc = base + "images_scaled"
         prod = base.split("/")[-3]
-        val_base = "/home/skhalid/Documents/datalake/data/" + prod
-        query_loc = val_base + "/images_2"
-        print("query_loc: {}".format(query_loc))
-        os.system("mkdir -p "+new_loc)
-        all_imgs = glob.glob(query_loc+"/*.png")
+        if (LARGE_DATASET_TRN):
+            query_loc = "/home/skhalid/Documents/datalake/dynamic_scene_data_full_bkp/nvidia_data_full/" + \
+                prod+"/dense/mv_images"
+            print("query_loc: {}".format(query_loc))
+            os.system("mkdir -p "+new_loc)
+            all_imgs = glob.glob(query_loc+"/*/*.jpg")
+            print(all_imgs)
+            # all_imgs = [v for v in glob.glob(query_loc+"/*")]
+        else:
+            val_base = "/home/skhalid/Documents/datalake/data/" + prod
+            query_loc = val_base + "/images_2"
+            print("query_loc: {}".format(query_loc))
+            os.system("mkdir -p "+new_loc)
+            all_imgs = glob.glob(query_loc+"/*.png")
+        print(all_imgs)
         all_imgs.sort()
         all_imgs_qty = len(all_imgs)
-        for k, img in enumerate(all_imgs):
-            fn = img.split("/")[-1]
-            out = new_loc+"/"+"00"+fn.split(".")[0]+".jpg"  # Original count
-            cmd = "ffmpeg -i "+img+" -vf scale=" + \
-                str(args.W)+":"+str(args.H) + " " + out
-        # for index in range(max_imgs):
-        #     fn = all_imgs[index//(all_imgs_qty+1)]
-        #     out = new_loc+"/"+"00"+str(index).zfill(3)+".jpg"
-        #     cmd = "ffmpeg -i "+fn+" -vf scale=" + \
-        #         str(args.W)+":"+str(args.H) + " " + out
-            print(cmd)
-            os.system(cmd)
+
+        if (MULTI_IMG_TRN):
+            for index in range(max_imgs):
+                fn = all_imgs[index//(all_imgs_qty+1)]
+                out = new_loc+"/"+"00"+str(index).zfill(3)+".jpg"
+                cmd = "ffmpeg -i "+fn+" -vf scale=" + \
+                    str(args.W)+":"+str(args.H) + " " + out
+                print("cmd: {}".format(cmd))
+                os.system(cmd)
+        else:
+            if (LARGE_DATASET_TRN):
+                for k, img in enumerate(all_imgs):
+                    fn = img.split("_images")[-1].replace("/", "_")
+                    out = new_loc+"/"+fn  # Original count
+                    cmd = "ffmpeg -i "+img+" -vf scale=" + \
+                        str(args.W)+":"+str(args.H) + " " + out
+                    print(cmd)
+                    os.system(cmd)
+            else:
+                for k, img in enumerate(all_imgs):
+                    fn = img.split("/")[-1]
+                    out = new_loc+"/"+"00" + \
+                        fn.split(".")[0]+".jpg"  # Original count
+                    cmd = "ffmpeg -i "+img+" -vf scale=" + \
+                        str(args.W)+":"+str(args.H) + " " + out
+                    print(cmd)
+                    os.system(cmd)
         args.images = new_loc
     else:
         new_loc = base + args.mode + "/"
@@ -361,18 +389,19 @@ if __name__ == "__main__":
                 full_name = os.path.join(args.images, name)
                 rel_name = full_name[len(root_dir) + 1:]
 
-                # sk_debug <======================================
-                # img_qty = 12+1
-                # dm = int(full_name.split("/")[-1].split(".")[0])
-                # if (dm % img_qty != 0):
-                #     continue
-                # factor = dm//img_qty
-                # full_name = full_name.split(
-                #     "/00")[0]+"/"+str(factor).zfill(5)+".jpg"
-                # rel_name = full_name[len(root_dir) + 1:]
-                # print("\n\n\ndm: {}".format(dm))
-                # print("full_name: {}\n\n\n".format(full_name))
-                # sk_debug <======================================
+                if (args.MULTI_IMG_TRN):
+                    # sk_debug <======================================
+                    img_qty = 12+1
+                    dm = int(full_name.split("/")[-1].split(".")[0])
+                    if (dm % img_qty != 0):
+                        continue
+                    factor = dm//img_qty
+                    full_name = full_name.split(
+                        "/00")[0]+"/"+str(factor).zfill(5)+".jpg"
+                    rel_name = full_name[len(root_dir) + 1:]
+                    print("\n\n\ndm: {}".format(dm))
+                    print("full_name: {}\n\n\n".format(full_name))
+                    # sk_debug <======================================
 
                 b = sharpness(full_name)
                 # print(name, "sharpness =",b)

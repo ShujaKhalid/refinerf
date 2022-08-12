@@ -21,10 +21,12 @@ def img2mse(x, y, M=None):
 
 
 def img2mae(x, y, M=None):
+    # print("x: {}".format(x))
+    # print("y: {}".format(y))
     if M == None:
         return torch.mean(torch.abs(x - y))
     else:
-        return torch.sum(torch.abs(x - y) * M) / (torch.sum(M) + 1e-8) / x.shape[-1]
+        return torch.sum(torch.abs(x - y) * M) / (torch.sum(M) + 1e-8).to(device) / x.shape[-1]
 
 
 def L1(x, M=None):
@@ -143,7 +145,7 @@ def render_3d_point(H, W, f, pose, weights, pts):
     """Render 3D position along each ray and project it to the image plane.
     """
 
-    c2w = pose
+    c2w = pose.to(device)
     w2c = c2w[:3, :3].transpose(0, 1)  # same as np.linalg.inv(c2w[:3, :3])
 
     # Rendered 3D position in NDC coordinate
@@ -173,7 +175,7 @@ def induce_flow(H, W, focal, pose_neighbor, weights, pts_3d_neighbor, pts_2d):
                                       pose_neighbor,
                                       weights,
                                       pts_3d_neighbor)
-    induced_flow = pts_2d_neighbor - pts_2d
+    induced_flow = pts_2d_neighbor - pts_2d.to(device)
 
     return induced_flow
 
