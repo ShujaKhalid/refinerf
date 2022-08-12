@@ -388,6 +388,9 @@ class Trainer(_Trainer):
         images = data['images']  # [B, H, W, 3/4]
         B, H, W, C = images.shape
 
+        self.opt.inds_s = data['inds_s']
+        self.opt.inds_d = data['inds_d']
+
         if self.opt.color_space == 'linear':
             images[..., :3] = srgb_to_linear(images[..., :3])
 

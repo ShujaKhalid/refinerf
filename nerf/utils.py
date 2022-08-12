@@ -71,16 +71,16 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None):
     if (N > 0):
         MODELS = 1  # ["static", "dynamic"]
     else:
-        MODELS = 1  # ["static", "dynamic"]
+        MODELS = 2  # ["static", "dynamic"]
 
     i, j = custom_meshgrid(torch.linspace(
-        0, (W*MODELS)-1, W*MODELS, device=device), torch.linspace(0, (H*MODELS)-1, H*MODELS, device=device))
+        0, (W)-1, W, device=device), torch.linspace(0, (H)-1, H, device=device))
 
-    print("i.shape: {}".format(i.shape))
-    print("j.shape: {}".format(j.shape))
+    # print("i.shape: {}".format(i.shape))
+    # print("j.shape: {}".format(j.shape))
 
-    i = i.t().reshape([1, H*W*MODELS]).expand([B, H*W*MODELS]) + 0.5
-    j = j.t().reshape([1, H*W*MODELS]).expand([B, H*W*MODELS]) + 0.5
+    i = i.t().reshape([1, H*W]).expand([B, H*W]) + 0.5
+    j = j.t().reshape([1, H*W]).expand([B, H*W]) + 0.5
 
     results = {}
 
@@ -141,6 +141,30 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None):
         results['inds'] = inds
 
     else:
+        if (masks != None):
+            mask = masks[:masks.shape[0], 0].to(device)
+
+            coords_s = torch.where(mask < 0.5)[0]
+            coords_d = torch.where(mask >= 0.5)[0]
+
+            # inds_s = torch.randint(
+            #     0, coords_s.shape[-1]-1, size=[int(N)], device=device)  # may duplicate
+            # inds_d = torch.randint(
+            #     0, coords_d.shape[-1]-1, size=[int(N)], device=device)  # may duplicate
+
+            # coords_s = coords_s[inds_s]
+            # coords_d = coords_d[inds_d]
+
+            inds = torch.cat([coords_s, coords_d], 0)
+            results['inds_s'] = coords_s
+            results['inds_d'] = coords_d
+            # inds = torch.cat([coords_d], 0)
+
+        else:
+            # sk_debug - Random from anaywhere on grid
+            inds = torch.randint(
+                0, H*W, size=[N], device=device)  # may duplicate
+
         inds = torch.arange(H*W*MODELS, device=device).expand([B, H*W*MODELS])
         results['inds'] = inds
 

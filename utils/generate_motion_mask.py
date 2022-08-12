@@ -117,14 +117,18 @@ def run_maskrcnn(model, img_path, intWidth=1024, intHeight=576):
     return npyMask
 
 
-def motion_segmentation(basedir, threshold,
+def motion_segmentation(input_folder,
+                        semantic_mask_folder,
+                        mot_seg_folder,
+                        mot_mask_folder,
+                        basedir, threshold,
                         input_semantic_w=1024,
                         input_semantic_h=576):
 
     points3dfile = os.path.join(basedir, 'colmap_sparse/0/points3D.bin')
     pts3d = read_points3d_binary(points3dfile)
 
-    img_dir = glob.glob(basedir + '/images_colmap')[0]
+    img_dir = glob.glob(basedir + '/'+input_folder)[0]
     img0 = glob.glob(glob.glob(img_dir)[0] + '/*jpg')[0]
     shape_0 = cv2.imread(img0).shape
 
@@ -149,19 +153,19 @@ def motion_segmentation(basedir, threshold,
         (p_ref_h, np.ones((p_ref_h.shape[0], 1))), axis=-1).T
 
     num_frames = len(perm)
-    print("perm.shape: {}".format(perm.shape))
-    print("num_frames: {}".format(num_frames))
+    # print("perm.shape: {}".format(perm.shape))
+    # print("num_frames: {}".format(num_frames))
 
-    if os.path.isdir(os.path.join(basedir, 'images_colmap')):
+    if os.path.isdir(os.path.join(basedir, input_folder)):
         num_colmap_frames = len(
-            glob.glob(os.path.join(basedir, 'images_colmap', '*.jpg')))
+            glob.glob(os.path.join(basedir, input_folder, '*.jpg')))
         num_data_frames = len(
             glob.glob(os.path.join(basedir, 'images', '*.jpg')))
 
         # if num_colmap_frames != num_data_frames:
         #     num_frames = num_data_frames
 
-    save_mask_dir = os.path.join(basedir, 'motion_segmentation')
+    save_mask_dir = os.path.join(basedir, mot_seg_folder)
     create_dir(save_mask_dir)
 
     print("num_frames: {}".format(num_frames))
@@ -232,10 +236,10 @@ def motion_segmentation(basedir, threshold,
         cv2.imwrite(fn, np.uint8(255 * (0. + motion_mask)))
 
     # RUN SEMANTIC SEGMENTATION
-    img_dir = os.path.join(basedir, 'images_colmap')  # sk_debug
+    img_dir = os.path.join(basedir, input_folder)  # sk_debug
     img_path_list = sorted(glob.glob(os.path.join(img_dir, '*.jpg'))) \
         + sorted(glob.glob(os.path.join(img_dir, '*.png')))
-    semantic_mask_dir = os.path.join(basedir, 'semantic_mask')
+    semantic_mask_dir = os.path.join(basedir, semantic_mask_folder)
     netMaskrcnn = torchvision.models.detection.maskrcnn_resnet50_fpn(
         pretrained=True).cuda().eval()
     create_dir(semantic_mask_dir)
@@ -251,13 +255,13 @@ def motion_segmentation(basedir, threshold,
                     semantic_mask)
 
     # combine them
-    save_mask_dir = os.path.join(basedir, 'motion_masks')
+    save_mask_dir = os.path.join(basedir, mot_mask_folder)
     create_dir(save_mask_dir)
 
-    mask_dir = os.path.join(basedir, 'motion_segmentation')
+    mask_dir = os.path.join(basedir, mot_seg_folder)
     mask_path_list = sorted(glob.glob(os.path.join(mask_dir, '*.png')))
 
-    semantic_dir = os.path.join(basedir, 'semantic_mask')
+    semantic_dir = os.path.join(basedir, semantic_mask_folder)
 
     for mask_path in mask_path_list:
         print(mask_path)
@@ -304,8 +308,22 @@ if __name__ == '__main__':
     parser.add_argument("--input_semantic_h", type=int,
                         default=576,
                         help='input image height for semantic segmentation')
+
+    parser.add_argument("--input_folder", type=str, help='input_folder')
+    parser.add_argument("--output_sem_mask_folder",
+                        type=str, help='output_folder')
+    parser.add_argument("--output_mot_seg_folder",
+                        type=str, help='output_folder')
+    parser.add_argument("--output_mot_mask_folder",
+                        type=str, help='output_folder')
+
     args = parser.parse_args()
 
-    motion_segmentation(args.dataset_path, args.epi_threshold,
+    motion_segmentation(args.input_folder,
+                        args.output_sem_mask_folder,
+                        args.output_mot_seg_folder,
+                        args.output_mot_mask_folder,
+                        args.dataset_path,
+                        args.epi_threshold,
                         args.input_semantic_w,
                         args.input_semantic_h)

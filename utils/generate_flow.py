@@ -118,11 +118,15 @@ if __name__ == '__main__':
     parser.add_argument('--small', action='store_true', help='use small model')
     parser.add_argument('--mixed_precision',
                         action='store_true', help='use mixed precision')
+    parser.add_argument("--input_folder", type=str, help='input_folder')
+    parser.add_argument("--output_folder", type=str, help='output_folder')
+    parser.add_argument("--output_img_folder", type=str,
+                        help='output_img_folder')
     args = parser.parse_args()
 
-    input_path = os.path.join(args.dataset_path, 'images_colmap')
-    output_path = os.path.join(args.dataset_path, 'flow')
-    output_img_path = os.path.join(args.dataset_path, 'flow_png')
+    input_path = os.path.join(args.dataset_path, args.input_folder)
+    output_path = os.path.join(args.dataset_path, args.output_folder)
+    output_img_path = os.path.join(args.dataset_path, args.output_img_folder)
     create_dir(output_path)
     create_dir(output_img_path)
 

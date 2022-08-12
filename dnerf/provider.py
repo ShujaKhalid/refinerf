@@ -116,6 +116,7 @@ class NeRFDataset:
 
         self.training = self.type in ['train', 'all', 'trainval']
         self.num_rays = self.opt.num_rays if self.training else -1
+        # self.masks = self.masks_val if self.training else self.masks
 
         self.rand_pose = opt.rand_pose
 
@@ -324,6 +325,16 @@ class NeRFDataset:
             masks = np.stack(masks, -1)
             masks = np.float32(masks > 1e-3)
 
+            # val
+            mask_dir_val = os.path.join(basedir, 'motion_masks_val')
+            maskfiles_val = [os.path.join(mask_dir_val, f)
+                             for f in sorted(os.listdir(mask_dir_val)) if f.endswith('png')]
+
+            masks_val = [cv2.resize(cv2.imread(f)/255., (sh[1], sh[0]),
+                                    interpolation=cv2.INTER_NEAREST) for f in maskfiles_val]
+            masks_val = np.stack(masks_val, -1)
+            masks_val = np.float32(masks_val > 1e-3)
+
             flow_dir = os.path.join(basedir, 'flow')
             flows_f = []
             flow_masks_f = []
@@ -405,6 +416,7 @@ class NeRFDataset:
             self.flows_b = flows_b
             self.flow_masks_b = flow_masks_b
             self.masks = torch.Tensor(masks).to(self.device)
+            self.masks_val = torch.Tensor(masks_val).to(self.device)
             self.disp = disp
 
             # FIXME: sk_debug
@@ -487,6 +499,8 @@ class NeRFDataset:
         if (self.FLOW_FLAG):
             masks = torch.reshape(self.masks, (-1, self.masks.shape[2], self.masks.shape[3]))[
                 :, :, index].to(self.device)  # [B, N]
+            masks_val = torch.reshape(self.masks_val, (-1, self.masks.shape[2], self.masks.shape[3]))[
+                :, :, index].to(self.device)  # [B, N]
             grid = torch.Tensor(self.grid)
             grid = torch.reshape(
                 grid, (grid.shape[0], -1, grid.shape[-1]))
@@ -494,8 +508,19 @@ class NeRFDataset:
             masks = None
             grid = None
 
-        rays = get_rays(poses, self.intrinsics, self.H,
-                        self.W, masks, self.num_rays, error_map)  # sk_debug - added masks
+        if self.training:
+            rays = get_rays(poses, self.intrinsics, self.H,
+                            self.W, masks, self.num_rays, error_map)  # sk_debug - added masks
+        else:
+            rays = get_rays(poses, self.intrinsics, self.H,
+                            self.W, masks_val, self.num_rays, error_map)  # sk_debug - added masks
+
+        if ("inds_s" in rays and "inds_d" in rays):
+            self.inds_s = rays["inds_s"]
+            self.inds_d = rays["inds_d"]
+        else:
+            self.inds_s = 0
+            self.inds_d = 0
 
         indices = rays["inds"] if self.training else -1
 
@@ -512,7 +537,9 @@ class NeRFDataset:
             'rays_d': rays['rays_d'],
             'time': times,
             'poses': poses,
-            'FLOW_FLAG': self.FLOW_FLAG
+            'FLOW_FLAG': self.FLOW_FLAG,
+            "inds_s": self.inds_s,
+            "inds_d": self.inds_d
         }
 
         if self.images is not None:

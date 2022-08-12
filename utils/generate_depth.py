@@ -137,11 +137,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset_path", type=str, help='Dataset path')
     parser.add_argument('--model', help="restore midas checkpoint")
+    parser.add_argument("--input_folder", type=str, help='input_folder')
+    parser.add_argument("--output_folder", type=str, help='output_folder')
+    parser.add_argument("--output_img_folder", type=str,
+                        help='output_img_folder')
     args = parser.parse_args()
 
-    input_path = os.path.join(args.dataset_path, 'images_colmap')
-    output_path = os.path.join(args.dataset_path, 'disp')
-    output_img_path = os.path.join(args.dataset_path, 'disp_png')
+    input_path = os.path.join(args.dataset_path, args.input_folder)
+    output_path = os.path.join(args.dataset_path, args.output_folder)
+    output_img_path = os.path.join(args.dataset_path, args.output_img_folder)
     create_dir(output_path)
     create_dir(output_img_path)
 
