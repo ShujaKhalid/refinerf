@@ -765,7 +765,7 @@ class NeRFRenderer(nn.Module):
                 print("image_s_tmp.shape: {}".format(image_s_tmp.shape))
                 print("image_d_tmp.shape: {}".format(image_d_tmp.shape))
                 # image = image_d + (1 - weights_sum_d).unsqueeze(-1) * bg_color
-                image = image_s_tmp
+                image = image_d_tmp
                 # FIXME: nears and fars are logically incorrect
                 depth = torch.clamp(depth_d - nears_d,
                                     min=0) / (fars_d - nears_d)
