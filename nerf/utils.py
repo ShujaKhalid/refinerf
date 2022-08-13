@@ -101,9 +101,9 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, static_iters=
 
                 # inds = torch.cat([coords_s, coords_d], 0)
                 if (static_iters > max_static_iters):
-                    print("\n\n=======================================")
-                    print("DYNAMIC MODEL ACTIVATED!!! - (get_rays)")
-                    print("=======================================\n\n")
+                    # print("\n\n=======================================")
+                    # print("DYNAMIC MODEL ACTIVATED!!! - (get_rays)")
+                    # print("=======================================\n\n")
                     inds_s = torch.randint(
                         0, coords_s.shape[-1]-1, size=[int(0)], device=device)  # may duplicate
                     inds_d = torch.randint(
@@ -891,7 +891,7 @@ class Trainer(object):
         self.local_step = 0
 
         # print("self.global_step: {}".format(self.global_step))
-        if ((self.global_step > self.opt.max_static_iters) and self.opt_state != "dynamic"):
+        if ((self.global_step >= self.opt.max_static_iters) and self.opt_state != "dynamic"):
             print("\n\n========================================")
             print("DYNAMIC MODEL ACTIVATED!!! - (optimizer)")
             print("========================================\n\n")
