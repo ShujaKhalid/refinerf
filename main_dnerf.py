@@ -28,12 +28,16 @@ if __name__ == '__main__':
     parser.add_argument('--lr_net', type=float, default=1e-3,
                         help="initial learning rate")
     parser.add_argument('--ckpt', type=str, default='latest')
+
     parser.add_argument('--num_rays', type=int, default=8192,
                         help="num rays sampled per image for each training step")
     parser.add_argument('--cuda_ray', action='store_true',
                         help="use CUDA raymarching instead of pytorch")
     parser.add_argument('--max_steps', type=int, default=1024,  # sk_debug: used to be 1024
                         help="max num steps sampled per ray (only valid when using --cuda_ray)")
+    parser.add_argument('--max_static_iters', type=int, default=0,
+                        help="iters to train the static model for - to be followed by dynamic model")
+
     parser.add_argument('--update_extra_interval', type=int, default=100,
                         help="iter interval to update extra status (only valid when using --cuda_ray)")
     parser.add_argument('--num_steps', type=int, default=128,
@@ -82,8 +86,6 @@ if __name__ == '__main__':
                         help="default GUI camera fovy")
     parser.add_argument('--max_spp', type=int, default=64,
                         help="GUI rendering max sample per pixel")
-    parser.add_argument('--max_static_iters', type=int, default=2000,
-                        help="iters to train the static model for - to be followed by dynamic model")
 
     # experimental
     parser.add_argument('--error_map', action='store_true',
