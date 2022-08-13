@@ -309,7 +309,7 @@ class NeRFRenderer(nn.Module):
 
         # TODO: If it's coordinates, find a way to split
         # the sets of xyz coordinates into `static` and `dynamic`
-        DEBUG = False
+        DEBUG = True
         rays_o = rays_o.contiguous().view(-1, 3)
         rays_d = rays_d.contiguous().view(-1, 3)
 
@@ -317,22 +317,25 @@ class NeRFRenderer(nn.Module):
         device = rays_o.device
         N = rays_o.shape[0]  # N = B * N, in fact
         if (self.training):
-            N_static = N // 2
-            N_dynamic = N - N_static
-        else:
-            print()
-            print(kwargs['inds_s'].shape)
-            print(kwargs['inds_d'].shape)
-            print()
+            # N_static = N // 2
+            # N_dynamic = N - N_static
             inds_s = kwargs['inds_s']
             inds_d = kwargs['inds_d']
-            N_static = len(inds_s)
-            N_dynamic = len(inds_d)
+            N_static = len(inds_s) if type(inds_s) != int else 0
+            N_dynamic = len(inds_d) if type(inds_d) != int else 0
+        else:
+            if (DEBUG):
+                print()
+                print(kwargs['inds_s'].shape)
+                print(kwargs['inds_d'].shape)
+                print()
+            # inds_s = kwargs['inds_s']
+            # inds_d = kwargs['inds_d']
+            inds_s = 0
+            inds_d = [v for v in range(129600)]
 
-        print("\nN_static: {}".format(N_static))
-        print("N_dynamic: {}".format(N_dynamic))
-        print("\nN_static: {}".format(N_static))
-        print("N_dynamic: {}".format(N_dynamic))
+            N_static = len(inds_s) if type(inds_s) != int else 0
+            N_dynamic = len(inds_d) if type(inds_d) != int else 0
 
         rays_o_s = rays_o[:N_static, :]
         rays_o_d = rays_o[N_static:, :]
@@ -341,10 +344,19 @@ class NeRFRenderer(nn.Module):
         prefix_s = (rays_o[:N_static, :].shape[0])
         prefix_d = (rays_o[N_static:, :].shape[0])
 
-        print("\nrays_o_s.shape: {}".format(rays_o_s.shape))
-        print("rays_o_d.shape: {}".format(rays_o_d.shape))
-        print("rays_d_s.shape: {}".format(rays_d_s.shape))
-        print("rays_d_d.shape: {}".format(rays_d_d.shape))
+        if (DEBUG):
+            print("\nN_static: {}".format(N_static))
+            print("N_dynamic: {}".format(N_dynamic))
+            print("N_static: {}".format(N_static))
+            print("N_dynamic: {}".format(N_dynamic))
+            if (N_static > 0):
+                print("rays_o.shape: {}".format(rays_o.shape))
+                print("rays_o_s.shape: {}".format(rays_o_s.shape))
+                print("rays_d_s.shape: {}".format(rays_d_s.shape))
+            if (N_dynamic > 0):
+                print("rays_d.shape: {}".format(rays_d.shape))
+                print("rays_o_d.shape: {}".format(rays_o_d.shape))
+                print("rays_d_d.shape: {}".format(rays_d_d.shape))
 
         # pre-calculate near far
         if (N_static > 0):
@@ -357,12 +369,13 @@ class NeRFRenderer(nn.Module):
         # nears_s, nears_d = nears[:N_static], nears[N_static:]
         # fars_s, fars_d = fars[:N_static], fars[N_static:]
         if (DEBUG):
-            print("\nnears_s.shape: {}".format(nears_s.shape))
-            print("nears_d.shape: {}".format(nears_d.shape))
-            print("fars_s.shape: {}".format(fars_s.shape))
-            print("fars_d.shape: {}".format(fars_d.shape))
-            print("self.time_size: {}".format(self.time_size))
-            print("time: {}".format(time))
+            if (N_dynamic > 0):
+                print("rays_o_d.shape: {}".format(rays_o_d.shape))
+                print("rays_d_d.shape: {}".format(rays_d_d.shape))
+                print("nears_d.shape: {}".format(nears_d.shape))
+                print("fars_d.shape: {}".format(fars_d.shape))
+                print("self.time_size: {}".format(self.time_size))
+                print("time: {}".format(time))
 
         # mix background color
         if self.bg_radius > 0:
@@ -426,22 +439,24 @@ class NeRFRenderer(nn.Module):
 
             if (DEBUG):
                 print("\n\n\nPHASE 1 COMPLETE!!!\n\n\n")
-                print("sigmas_s.shape: {}".format(sigmas_s.shape))
-                print("rgbs_s.shape: {}".format(rgbs_s.shape))
-                print("sigmas_d.shape: {}".format(sigmas_d.shape))
-                print("rgbs_d.shape: {}".format(rgbs_d.shape))
-                print("xyzs_s.shape: {}".format(xyzs_s.shape))
-                print("xyzs_d.shape: {}".format(xyzs_d.shape))
-                print("blend.shape: {}".format(blend.shape))
-                print("sf.shape: {}".format(sf.shape))
-                print("sigmas_s.sum(): {}".format(sigmas_s.sum()))
-                print("rgbs_s.sum(): {}".format(rgbs_s.sum()))
-                print("sigmas_d.sum(): {}".format(sigmas_d.sum()))
-                print("rgbs_d.sum(): {}".format(rgbs_d.sum()))
-                print("xyzs_s.sum(): {}".format(xyzs_s.sum()))
-                print("xyzs_d.sum(): {}".format(xyzs_d.sum()))
-                print("blend.sum(): {}".format(blend.sum()))
-                print("sf.sum(): {}".format(sf.sum()))
+                if (N_static > 0):
+                    print("sigmas_s.shape: {}".format(sigmas_s.shape))
+                    print("rgbs_s.shape: {}".format(rgbs_s.shape))
+                    print("xyzs_s.shape: {}".format(xyzs_s.shape))
+                    print("sigmas_s.sum(): {}".format(sigmas_s.sum()))
+                    print("rgbs_s.sum(): {}".format(rgbs_s.sum()))
+                    print("xyzs_s.sum(): {}".format(xyzs_s.sum()))
+                if (N_dynamic > 0):
+                    print("sigmas_d.shape: {}".format(sigmas_d.shape))
+                    print("rgbs_d.shape: {}".format(rgbs_d.shape))
+                    print("xyzs_d.shape: {}".format(xyzs_d.shape))
+                    print("blend.shape: {}".format(blend.shape))
+                    print("sf.shape: {}".format(sf.shape))
+                    print("sigmas_d.sum(): {}".format(sigmas_d.sum()))
+                    print("rgbs_d.sum(): {}".format(rgbs_d.sum()))
+                    print("xyzs_d.sum(): {}".format(xyzs_d.sum()))
+                    print("blend.sum(): {}".format(blend.sum()))
+                    print("sf.sum(): {}".format(sf.sum()))
 
             # weights_full, depth_full, image_full_orig = raymarching.composite_rays_train_full(
             #     sigmas_s, rgbs_s, sigmas_d, rgbs_d, blend, deltas, rays)
@@ -459,16 +474,19 @@ class NeRFRenderer(nn.Module):
                     sigmas_s, rgbs_s, deltas_s, rays_s)
 
                 if (DEBUG):
-                    print()
-                    print("weights_sum_s.shape: {}".format(weights_sum_s.shape))
-                    print("depth_s.shape: {}".format(depth_s.shape))
-                    print("image_s_orig.shape: {}".format(image_s_orig.shape))
-                    print("sigmas_s.shape: {}".format(sigmas_s.shape))
-                    print("rgbs_s.shape: {}".format(rgbs_s.shape))
-                    print("deltas_s.shape: {}".format(deltas_s.shape))
-                    print("rays_s.shape: {}".format(rays_s.shape))
-                    print("\image_s_orig: {}".format(image_s_orig))
-                    print("\n\n\nPHASE STATIC COMPLETE!!!\n\n\n")
+                    if (N_static > 0):
+                        print()
+                        print("weights_sum_s.shape: {}".format(
+                            weights_sum_s.shape))
+                        print("depth_s.shape: {}".format(depth_s.shape))
+                        print("image_s_orig.shape: {}".format(
+                            image_s_orig.shape))
+                        print("sigmas_s.shape: {}".format(sigmas_s.shape))
+                        print("rgbs_s.shape: {}".format(rgbs_s.shape))
+                        print("deltas_s.shape: {}".format(deltas_s.shape))
+                        print("rays_s.shape: {}".format(rays_s.shape))
+                        print("\image_s_orig: {}".format(image_s_orig))
+                        print("\n\n\nPHASE STATIC COMPLETE!!!\n\n\n")
 
                 image_s = image_s_orig + \
                     (1 - weights_sum_s).unsqueeze(-1) * bg_color
@@ -494,16 +512,20 @@ class NeRFRenderer(nn.Module):
                     sigmas_d, rgbs_d, deltas_d, rays_d)
 
                 if (DEBUG):
-                    print()
-                    print("sigmas_d.shape: {}".format(sigmas_d.shape))
-                    print("rgbs_d.shape: {}".format(rgbs_d.shape))
-                    print("deltas_d.shape: {}".format(deltas_d.shape))
-                    print("rays_d.shape: {}".format(rays_d.shape))
-                    print("weights_sum_d.sum: {}".format(weights_sum_d.sum()))
-                    print("weights_sum_d.shape: {}".format(weights_sum_d.shape))
-                    print("depth_d.shape: {}".format(depth_d.shape))
-                    print("image_d_orig.shape: {}".format(image_d_orig.shape))
-                    print("\n\n\nPHASE DYNAMIC COMPLETE!!!\n\n\n")
+                    if (N_dynamic > 0):
+                        print()
+                        print("sigmas_d.shape: {}".format(sigmas_d.shape))
+                        print("rgbs_d.shape: {}".format(rgbs_d.shape))
+                        print("deltas_d.shape: {}".format(deltas_d.shape))
+                        print("rays_d.shape: {}".format(rays_d.shape))
+                        print("weights_sum_d.sum: {}".format(
+                            weights_sum_d.sum()))
+                        print("weights_sum_d.shape: {}".format(
+                            weights_sum_d.shape))
+                        print("depth_d.shape: {}".format(depth_d.shape))
+                        print("image_d_orig.shape: {}".format(
+                            image_d_orig.shape))
+                        print("\n\n\nPHASE DYNAMIC COMPLETE!!!\n\n\n")
 
                 image_d = image_d_orig + \
                     (1 - weights_sum_d).unsqueeze(-1) * bg_color
@@ -669,13 +691,14 @@ class NeRFRenderer(nn.Module):
                 rays_t_d = nears_d.clone()  # [N]
 
                 if (DEBUG):
-                    print("image_d.shape: {}".format(image_d.shape))
-                    print("rays_t_d.shape: {}".format(rays_t_d.shape))
-                    print("n_alive_d: {}".format(n_alive_d))
-                    print("rays_o_d.shape: {}".format(rays_o_d.shape))
-                    print("rays_d_d.shape: {}".format(rays_d_d.shape))
-                    print("nears_d.shape: {}".format(nears_d.shape))
-                    print("fars_d.shape: {}".format(fars_d.shape))
+                    if (N_dynamic > 0):
+                        print("image_d.shape: {}".format(image_d.shape))
+                        print("rays_t_d.shape: {}".format(rays_t_d.shape))
+                        print("n_alive_d: {}".format(n_alive_d))
+                        print("rays_o_d.shape: {}".format(rays_o_d.shape))
+                        print("rays_d_d.shape: {}".format(rays_d_d.shape))
+                        print("nears_d.shape: {}".format(nears_d.shape))
+                        print("fars_d.shape: {}".format(fars_d.shape))
 
             '''
             STATIC
@@ -693,6 +716,8 @@ class NeRFRenderer(nn.Module):
                     xyzs_s, dirs_s, deltas_s = raymarching.march_rays(n_alive_s, n_step, rays_alive_s, rays_t_s, rays_o_s, rays_d_s, self.bound,
                                                                       self.density_bitfield[t], self.cascade, self.grid_size, nears_s, fars_s, 128, perturb, dt_gamma, max_steps)
 
+                    # print("time: {}".format(time))
+                    # time = torch.Tensor([[0.9167]], device='cpu')  # FIXME
                     sigmas_s, rgbs_s = self(
                         xyzs_s, dirs_s, time, svd="static")
                     sigmas_s = self.density_scale * sigmas_s
@@ -754,15 +779,15 @@ class NeRFRenderer(nn.Module):
                     N_static+N_dynamic, 3, dtype=dtype, device=device)
                 image_d_tmp = torch.zeros(
                     N_static+N_dynamic, 3, dtype=dtype, device=device)
-                print("weights_sum_s.shape: {}".format(weights_sum_s.shape))
-                print("weights_sum_d.shape: {}".format(weights_sum_d.shape))
+                # print("weights_sum_s.shape: {}".format(weights_sum_s.shape))
+                # print("weights_sum_d.shape: {}".format(weights_sum_d.shape))
                 image_s_tmp[inds_s, :] = image_s + \
                     (1 - weights_sum_s).unsqueeze(-1) * bg_color
                 image_d_tmp[inds_d, :] = image_d + \
                     (1 - weights_sum_d).unsqueeze(-1) * bg_color
                 print("image_s.shape: {}".format(image_s.shape))
-                print("image_d.shape: {}".format(image_d.shape))
                 print("image_s_tmp.shape: {}".format(image_s_tmp.shape))
+                print("image_d.shape: {}".format(image_d.shape))
                 print("image_d_tmp.shape: {}".format(image_d_tmp.shape))
                 # image = image_d + (1 - weights_sum_d).unsqueeze(-1) * bg_color
                 image = image_d_tmp

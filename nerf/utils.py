@@ -1,3 +1,4 @@
+from ntpath import join
 import os
 import glob
 import tqdm
@@ -95,7 +96,6 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None):
 
                 coords_s = torch.where(mask < 0.5)[0]
                 coords_d = torch.where(mask >= 0.5)[0]
-
                 inds_s = torch.randint(
                     0, coords_s.shape[-1]-1, size=[int(N)], device=device)  # may duplicate
                 inds_d = torch.randint(
@@ -104,8 +104,11 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None):
                 coords_s = coords_s[inds_s]
                 coords_d = coords_d[inds_d]
 
-                inds = torch.cat([coords_s, coords_d], 0)
-                # inds = torch.cat([coords_d], 0)
+                results['inds_s'] = coords_s
+                results['inds_d'] = coords_d
+
+                # inds = torch.cat([coords_s, coords_d], 0)
+                inds = torch.cat([inds_s, coords_d], 0)
 
             else:
                 # sk_debug - Random from anaywhere on grid
@@ -176,6 +179,9 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None):
     rays_d = directions @ poses[:, :3, :3].transpose(-1, -2)  # (B, N, 3)
     rays_o = poses[..., :3, 3]  # [B, 3]
     rays_o = rays_o[..., None, :].expand_as(rays_d)  # [B, N, 3]
+
+    # print("\nrays_o.shape: {}".format(rays_o.shape))
+    # print("\nrays_d.shape: {}".format(rays_d.shape))
 
     results['rays_o'] = rays_o
     results['rays_d'] = rays_d

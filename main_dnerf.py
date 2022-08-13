@@ -150,7 +150,7 @@ if __name__ == '__main__':
     else:
 
         def optimizer(model): return torch.optim.Adam(model.get_params(
-            opt.lr, opt.lr_net, svd="all"), betas=(0.9, 0.99), eps=1e-15)
+            opt.lr, opt.lr_net, svd="dynamic"), betas=(0.9, 0.99), eps=1e-15)
 
         train_loader = NeRFDataset(
             opt, device=device, type='train').dataloader()

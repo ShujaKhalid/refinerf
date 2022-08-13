@@ -93,6 +93,9 @@ class Trainer(_Trainer):
         else:
             gt_rgb = images
 
+        self.opt.inds_s = data['inds_s']
+        self.opt.inds_d = data['inds_d']
+
         ret = self.model.render(rays_o, rays_d, time, staged=False,
                                 bg_color=bg_color, perturb=True, force_all_rays=False, **vars(self.opt))
 
