@@ -52,7 +52,7 @@ def srgb_to_linear(x):
 
 
 @torch.cuda.amp.autocast(enabled=False)
-def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None):
+def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, static_iters=-1, max_static_iters=-1):
     ''' get rays
     Args:
         poses: [B, 4, 4], cam2world
@@ -96,19 +96,40 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None):
 
                 coords_s = torch.where(mask < 0.5)[0]
                 coords_d = torch.where(mask >= 0.5)[0]
-                inds_s = torch.randint(
-                    0, coords_s.shape[-1]-1, size=[int(N)], device=device)  # may duplicate
-                inds_d = torch.randint(
-                    0, coords_d.shape[-1]-1, size=[int(N)], device=device)  # may duplicate
-
-                coords_s = coords_s[inds_s]
-                coords_d = coords_d[inds_d]
-
-                results['inds_s'] = coords_s
-                results['inds_d'] = coords_d
+                # print("\ncoords_s: {}".format(coords_s))
+                # print("coords_d: {}".format(coords_d))
 
                 # inds = torch.cat([coords_s, coords_d], 0)
-                inds = torch.cat([coords_s, coords_d], 0)
+                if (static_iters > max_static_iters):
+                    print("\n\n=======================================")
+                    print("DYNAMIC MODEL ACTIVATED!!! - (get_rays)")
+                    print("=======================================\n\n")
+                    inds_s = torch.randint(
+                        0, coords_s.shape[-1]-1, size=[int(0)], device=device)  # may duplicate
+                    inds_d = torch.randint(
+                        0, coords_d.shape[-1]-1, size=[int(N)], device=device)  # may duplicate
+
+                    coords_s = coords_s[inds_s]
+                    coords_d = coords_d[inds_d]
+                    inds = torch.cat([coords_d], 0)
+                    results['inds_s'] = 0
+                    results['inds_d'] = coords_d
+                else:
+                    # print(
+                    #     "\n\n\static_iter: {}/{}\n\n\n".format(static_iters, max_static_iters))
+                    inds_s = torch.randint(
+                        0, coords_s.shape[-1]-1, size=[int(N)], device=device)  # may duplicate
+                    inds_d = torch.randint(
+                        0, coords_d.shape[-1]-1, size=[int(0)], device=device)  # may duplicate
+
+                    coords_s = coords_s[inds_s]
+                    coords_d = coords_d[inds_d]
+                    inds = torch.cat([coords_s], 0)
+                    results['inds_s'] = coords_s
+                    results['inds_d'] = 0
+
+                # print("\ncoords_s: {}".format(coords_s))
+                # print("coords_d: {}".format(coords_d))
 
             else:
                 # sk_debug - Random from anaywhere on grid
@@ -380,6 +401,7 @@ class Trainer(object):
         self.device = device if device is not None else torch.device(
             f'cuda:{local_rank}' if torch.cuda.is_available() else 'cpu')
         self.console = Console()
+        self.optimizer_func = optimizer
 
         model.to(self.device)
         if self.world_size > 1:
@@ -396,7 +418,8 @@ class Trainer(object):
             self.optimizer = optim.Adam(
                 self.model.parameters(), lr=0.001, weight_decay=5e-4)  # naive adam
         else:
-            self.optimizer = optimizer(self.model)
+            self.opt_state = "static"
+            self.optimizer = optimizer(self.model, self.opt_state)
 
         if lr_scheduler is None:
             self.lr_scheduler = optim.lr_scheduler.LambdaLR(
@@ -866,6 +889,14 @@ class Trainer(object):
                              bar_format='{desc}: {percentage:3.0f}% {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]')
 
         self.local_step = 0
+
+        # print("self.global_step: {}".format(self.global_step))
+        if ((self.global_step > self.opt.max_static_iters) and self.opt_state != "dynamic"):
+            print("\n\n========================================")
+            print("DYNAMIC MODEL ACTIVATED!!! - (optimizer)")
+            print("========================================\n\n")
+            self.opt_state = "dynamic"
+            self.optimizer = self.optimizer_func(self.model, self.opt_state)
 
         for data in loader:
 

@@ -21,7 +21,7 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, default=0)
 
     # training options
-    parser.add_argument('--iters', type=int, default=1000000,
+    parser.add_argument('--iters', type=int, default=100000,
                         help="training iters")
     parser.add_argument('--lr', type=float, default=1e-2,
                         help="initial learning rate")
@@ -82,6 +82,8 @@ if __name__ == '__main__':
                         help="default GUI camera fovy")
     parser.add_argument('--max_spp', type=int, default=64,
                         help="GUI rendering max sample per pixel")
+    parser.add_argument('--max_static_iters', type=int, default=24,
+                        help="iters to train the static model for - to be followed by dynamic model")
 
     # experimental
     parser.add_argument('--error_map', action='store_true',
@@ -149,8 +151,8 @@ if __name__ == '__main__':
 
     else:
 
-        def optimizer(model): return torch.optim.Adam(model.get_params(
-            opt.lr, opt.lr_net, svd="dynamic"), betas=(0.9, 0.99), eps=1e-15)
+        def optimizer(model, state): return torch.optim.Adam(model.get_params(
+            opt.lr, opt.lr_net, svd=state), betas=(0.9, 0.99), eps=1e-15)
 
         train_loader = NeRFDataset(
             opt, device=device, type='train').dataloader()

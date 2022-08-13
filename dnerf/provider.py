@@ -119,6 +119,8 @@ class NeRFDataset:
         # self.masks = self.masks_val if self.training else self.masks
 
         self.rand_pose = opt.rand_pose
+        self.MAX_STATIC_ITERS = opt.max_static_iters
+        self.STATIC_ITERS = 0
 
         # auto-detect transforms.json and split mode.
         if os.path.exists(os.path.join(self.root_path, 'transforms.json')):
@@ -482,7 +484,7 @@ class NeRFDataset:
             # only in training, assert num_rays > 0
             s = np.sqrt(self.H * self.W / self.num_rays)
             rH, rW = int(self.H / s), int(self.W / s)
-            rays = get_rays(poses, self.intrinsics / s, rH, rW, -1)
+            rays = get_rays(poses, self.intrinsics / s, rH, rW, -1, -1, -1)
 
             return {
                 'H': rH,
@@ -510,10 +512,12 @@ class NeRFDataset:
 
         if self.training:
             rays = get_rays(poses, self.intrinsics, self.H,
-                            self.W, masks, self.num_rays, error_map)  # sk_debug - added masks
+                            self.W, masks, self.num_rays, error_map, self.STATIC_ITERS, self.MAX_STATIC_ITERS)  # sk_debug - added masks
         else:
             rays = get_rays(poses, self.intrinsics, self.H,
-                            self.W, masks_val, self.num_rays, error_map)  # sk_debug - added masks
+                            self.W, masks_val, self.num_rays, error_map, self.STATIC_ITERS, self.MAX_STATIC_ITERS)  # sk_debug - added masks
+
+        self.STATIC_ITERS += 1
 
         if ("inds_s" in rays and "inds_d" in rays):
             self.inds_s = rays["inds_s"]
