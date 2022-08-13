@@ -82,7 +82,7 @@ if __name__ == '__main__':
                         help="default GUI camera fovy")
     parser.add_argument('--max_spp', type=int, default=64,
                         help="GUI rendering max sample per pixel")
-    parser.add_argument('--max_static_iters', type=int, default=24,
+    parser.add_argument('--max_static_iters', type=int, default=1000,
                         help="iters to train the static model for - to be followed by dynamic model")
 
     # experimental

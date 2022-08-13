@@ -331,10 +331,11 @@ class NeRFRenderer(nn.Module):
                 print()
             # inds_s = kwargs['inds_s']
             # inds_d = kwargs['inds_d']
-            # inds_s = 0
-            # inds_d = kwargs['inds_d']
+
+            rend_s = kwargs['inds_s']
+            rend_d = kwargs['inds_d']
             inds_s = [v for v in range(129600)]
-            inds_d = 0
+            inds_d = [v for v in range(129600)]
 
             N_static = len(inds_s) if type(inds_s) != int else 0
             N_dynamic = len(inds_d) if type(inds_d) != int else 0
@@ -785,27 +786,26 @@ class NeRFRenderer(nn.Module):
                     step += n_step
 
             if (N_static > 0 and N_dynamic > 0):
-                print("\n\nBLENDING!!!\n\n")
+                # print("\n\nBLENDING!!!\n\n")
                 image_s_tmp = torch.zeros(
-                    N_static+N_dynamic, 3, dtype=dtype, device=device)
+                    N, 3, dtype=dtype, device=device)
                 image_d_tmp = torch.zeros(
-                    N_static+N_dynamic, 3, dtype=dtype, device=device)
+                    N, 3, dtype=dtype, device=device)
                 # print("weights_sum_s.shape: {}".format(weights_sum_s.shape))
                 # print("weights_sum_d.shape: {}".format(weights_sum_d.shape))
-                image_s_tmp[inds_s, :] = image_s + \
-                    (1 - weights_sum_s).unsqueeze(-1) * bg_color
-                image_d_tmp[inds_d, :] = image_d + \
-                    (1 - weights_sum_d).unsqueeze(-1) * bg_color
-                print("image_s.shape: {}".format(image_s.shape))
-                print("image_s_tmp.shape: {}".format(image_s_tmp.shape))
-                print("image_d.shape: {}".format(image_d.shape))
-                print("image_d_tmp.shape: {}".format(image_d_tmp.shape))
+                image_s_tmp[rend_s, :] = image_s[rend_s, :] + \
+                    (1 - weights_sum_s).unsqueeze(-1)[rend_s, :] * bg_color
+                image_d_tmp[rend_d, :] = image_d[rend_d, :] + \
+                    (1 - weights_sum_d).unsqueeze(-1)[rend_d, :] * bg_color
+                # print("image_s_tmp.shape: {}".format(image_s_tmp.shape))
+                # print("image_d.shape: {}".format(image_d.shape))
+                # print("image_d_tmp.shape: {}".format(image_d_tmp.shape))
                 # image = image_d + (1 - weights_sum_d).unsqueeze(-1) * bg_color
-                image = image_d_tmp
+                image = image_s_tmp + image_d_tmp
                 # FIXME: nears and fars are logically incorrect
                 depth = torch.clamp(depth_d - nears_d,
                                     min=0) / (fars_d - nears_d)
-                image = image.view(prefix_s + prefix_d, 3)
+                image = image.view(N, 3)
                 depth = image[:, 0]  # FIXME
                 # depth = depth.view(prefix_s + prefix_d)
 
