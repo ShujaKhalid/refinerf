@@ -309,7 +309,7 @@ class NeRFRenderer(nn.Module):
 
         # TODO: If it's coordinates, find a way to split
         # the sets of xyz coordinates into `static` and `dynamic`
-        DEBUG = True
+        DEBUG = False
         rays_o = rays_o.contiguous().view(-1, 3)
         rays_d = rays_d.contiguous().view(-1, 3)
 
@@ -402,6 +402,12 @@ class NeRFRenderer(nn.Module):
                 xyzs_s, dirs_s, deltas_s, rays_s = raymarching.march_rays_train(
                     rays_o_s, rays_d_s, self.bound, self.density_bitfield[t], self.cascade, self.grid_size, nears_s, fars_s, counter, self.mean_count, perturb, 128, force_all_rays, dt_gamma, max_steps)
 
+                sigmas_s, rgbs_s = self(
+                    xyzs_s, dirs_s, time, svd="static")
+                sigmas_s = self.density_scale * sigmas_s
+
+            # plot_pointcloud(xyzs_s.reshape(-1, 3).detach().cpu().numpy())
+
             if (N_dynamic > 0):
                 # setup counter
                 counter = self.step_counter[self.local_step % 16]
@@ -410,20 +416,6 @@ class NeRFRenderer(nn.Module):
                 xyzs_d, dirs_d, deltas_d, rays_d = raymarching.march_rays_train(
                     rays_o_d, rays_d_d, self.bound, self.density_bitfield[t], self.cascade, self.grid_size, nears_d, fars_d, counter, self.mean_count, perturb, 128, force_all_rays, dt_gamma, max_steps)
 
-            # Amazing visualization (POINT-CLOUDS)
-            # plot_pointcloud(xyzs.reshape(-1, 3).detach().cpu().numpy())
-
-            # print("\n\nxyzs.mean: {}".format(xyzs.mean()))
-            # print("rays_o.mean: {}".format(rays_o.mean()))
-            # print("rays_d.mean: {}".format(rays_d.mean()))
-            # print("time: {}".format(time))
-
-            if (N_static > 0):
-                sigmas_s, rgbs_s = self(
-                    xyzs_s, dirs_s, time, svd="static")
-                sigmas_s = self.density_scale * sigmas_s
-
-            if (N_dynamic > 0):
                 # print("xyzs.shape: {}".format(xyzs.shape))
                 sigmas_d, rgbs_d, deform_d, blend, sf = self(
                     xyzs_d, dirs_d, time, svd="dynamic")
@@ -436,6 +428,14 @@ class NeRFRenderer(nn.Module):
                 results['deform'] = deform_d
                 deform_d = 0
                 torch.cuda.empty_cache()
+
+            # Amazing visualization (POINT-CLOUDS)
+            # plot_pointcloud(xyzs_d.reshape(-1, 3).detach().cpu().numpy())
+
+            # print("\n\nxyzs.mean: {}".format(xyzs.mean()))
+            # print("rays_o.mean: {}".format(rays_o.mean()))
+            # print("rays_d.mean: {}".format(rays_d.mean()))
+            # print("time: {}".format(time))
 
             if (DEBUG):
                 print("\n\n\nPHASE 1 COMPLETE!!!\n\n\n")
@@ -458,6 +458,7 @@ class NeRFRenderer(nn.Module):
                     print("blend.sum(): {}".format(blend.sum()))
                     print("sf.sum(): {}".format(sf.sum()))
 
+            # FIXME
             # weights_full, depth_full, image_full_orig = raymarching.composite_rays_train_full(
             #     sigmas_s, rgbs_s, sigmas_d, rgbs_d, blend, deltas, rays)
             # image_full = image_full_orig + \
@@ -699,6 +700,41 @@ class NeRFRenderer(nn.Module):
                         print("rays_d_d.shape: {}".format(rays_d_d.shape))
                         print("nears_d.shape: {}".format(nears_d.shape))
                         print("fars_d.shape: {}".format(fars_d.shape))
+            '''
+            DYNAMIC
+            '''
+            step = 0
+            if (N_dynamic > 0):
+                while step < max_steps:
+                    # count alive rays
+                    n_alive_d = rays_alive_d.shape[0]
+                    # exit loop
+                    if n_alive_d <= 0:
+                        break
+                    n_step = max(min(N_dynamic // n_alive_d, 8), 1)
+                    xyzs_d, dirs_d, deltas_d = raymarching.march_rays(n_alive_d, n_step, rays_alive_d, rays_t_d, rays_o_d, rays_d_d, self.bound,
+                                                                      self.density_bitfield[t], self.cascade, self.grid_size, nears_d, fars_d, 128, perturb, dt_gamma, max_steps)
+
+                    sigmas_d, rgbs_d, deform_d, blend, sf = self(
+                        xyzs_d, dirs_d, time, svd="dynamic")
+                    sigmas_d = self.density_scale * sigmas_d
+
+                    if (DEBUG):
+                        print("rays_alive_d.shape (before): {}".format(
+                            rays_alive_d.shape))
+
+                    # dynamic
+                    raymarching.composite_rays(
+                        n_alive_d, n_step, rays_alive_d, rays_t_d, sigmas_d, rgbs_d, deltas_d, weights_sum_d, depth_d, image_d)
+                    rays_alive_d = rays_alive_d[rays_alive_d >= 0]
+
+                    if (DEBUG):
+                        print("rays_alive_d.shape (after): {}".format(
+                            rays_alive_d.shape))
+
+                    #print(f'step = {step}, n_step = {n_step}, n_alive = {n_alive}, xyzs: {xyzs.shape}')
+
+                    step += n_step
 
             '''
             STATIC
@@ -734,42 +770,6 @@ class NeRFRenderer(nn.Module):
                     if (DEBUG):
                         print("rays_alive_s.shape (after): {}".format(
                             rays_alive_s.shape))
-
-                    step += n_step
-
-            '''
-            DYNAMIC
-            '''
-            step = 0
-            if (N_dynamic > 0):
-                while step < max_steps:
-                    # count alive rays
-                    n_alive_d = rays_alive_d.shape[0]
-                    # exit loop
-                    if n_alive_d <= 0:
-                        break
-                    n_step = max(min(N_dynamic // n_alive_d, 8), 1)
-                    xyzs_d, dirs_d, deltas_d = raymarching.march_rays(n_alive_d, n_step, rays_alive_d, rays_t_d, rays_o_d, rays_d_d, self.bound,
-                                                                      self.density_bitfield[t], self.cascade, self.grid_size, nears_d, fars_d, 128, perturb, dt_gamma, max_steps)
-
-                    sigmas_d, rgbs_d, deform_d, blend, sf = self(
-                        xyzs_d, dirs_d, time, svd="dynamic")
-                    sigmas_d = self.density_scale * sigmas_d
-
-                    if (DEBUG):
-                        print("rays_alive_d.shape (before): {}".format(
-                            rays_alive_d.shape))
-
-                    # dynamic
-                    raymarching.composite_rays(
-                        n_alive_d, n_step, rays_alive_d, rays_t_d, sigmas_d, rgbs_d, deltas_d, weights_sum_d, depth_d, image_d)
-                    rays_alive_d = rays_alive_d[rays_alive_d >= 0]
-
-                    if (DEBUG):
-                        print("rays_alive_d.shape (after): {}".format(
-                            rays_alive_d.shape))
-
-                    #print(f'step = {step}, n_step = {n_step}, n_alive = {n_alive}, xyzs: {xyzs.shape}')
 
                     step += n_step
 

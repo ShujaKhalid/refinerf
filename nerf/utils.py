@@ -108,7 +108,7 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None):
                 results['inds_d'] = coords_d
 
                 # inds = torch.cat([coords_s, coords_d], 0)
-                inds = torch.cat([inds_s, coords_d], 0)
+                inds = torch.cat([coords_s, coords_d], 0)
 
             else:
                 # sk_debug - Random from anaywhere on grid
