@@ -23,19 +23,19 @@ if __name__ == '__main__':
     # training options
     parser.add_argument('--iters', type=int, default=100000,
                         help="training iters")
-    parser.add_argument('--lr', type=float, default=1e-2,
+    parser.add_argument('--lr', type=float, default=1e-2,  # 1e-2
                         help="initial learning rate")
-    parser.add_argument('--lr_net', type=float, default=1e-3,
+    parser.add_argument('--lr_net', type=float, default=1e-3,  # 1e-3
                         help="initial learning rate")
     parser.add_argument('--ckpt', type=str, default='latest')
 
-    parser.add_argument('--num_rays', type=int, default=8192,
+    parser.add_argument('--num_rays', type=int, default=4096,
                         help="num rays sampled per image for each training step")
     parser.add_argument('--cuda_ray', action='store_true',
                         help="use CUDA raymarching instead of pytorch")
-    parser.add_argument('--max_steps', type=int, default=1024,  # sk_debug: used to be 1024
+    parser.add_argument('--max_steps', type=int, default=128,  # sk_debug: used to be 1024
                         help="max num steps sampled per ray (only valid when using --cuda_ray)")
-    parser.add_argument('--max_static_iters', type=int, default=0,
+    parser.add_argument('--max_static_iters', type=int, default=0,  # 1000 iters
                         help="iters to train the static model for - to be followed by dynamic model")
 
     parser.add_argument('--update_extra_interval', type=int, default=100,

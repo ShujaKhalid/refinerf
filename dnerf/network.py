@@ -146,7 +146,7 @@ class NeRFNetwork(NeRFRenderer):
         print("\nINITIALIZING DYNAMIC MODEL!!!\n")
         self.input_ch = 3
         self.D = 8  # FIXME: used to be 8!
-        self.W = 128  # FIXME: used to be 256!
+        self.W = 64  # FIXME: used to be 256!
         self.skips = [4]
         self.pts_linears = nn.ModuleList(
             [nn.Linear(self.input_ch, self.W)] + [nn.Linear(self.W, self.W) if i not in self.skips else nn.Linear(self.W + self.input_ch, self.W) for i in range(self.D-1)])
@@ -157,7 +157,7 @@ class NeRFNetwork(NeRFRenderer):
         self.encoder_deform, self.in_dim_deform = get_encoder(
             encoding_deform, multires=10)
         self.encoder_time, self.in_dim_time = get_encoder(
-            encoding_time, input_dim=1, multires=32)  # FIXME: used to be 6
+            encoding_time, input_dim=1, multires=128)  # FIXME: used to be 6
 
         print("\nin_dim_deform: {}".format(self.in_dim_deform))
         print("in_dim_time: {}".format(self.in_dim_time))
