@@ -119,7 +119,7 @@ class NeRFDataset:
         # self.masks = self.masks_val if self.training else self.masks
 
         self.rand_pose = opt.rand_pose
-        self.MAX_STATIC_ITERS = opt.max_static_iters
+        self.MAX_STATIC_ITERS = eval(opt.max_static_iters)
         self.STATIC_ITERS = 0
 
         # auto-detect transforms.json and split mode.

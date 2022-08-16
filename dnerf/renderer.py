@@ -323,29 +323,36 @@ class NeRFRenderer(nn.Module):
             inds_d = kwargs['inds_d']
             N_static = len(inds_s) if type(inds_s) != int else 0
             N_dynamic = len(inds_d) if type(inds_d) != int else 0
+
+            rays_o_s = rays_o[:N_static, :]
+            rays_o_d = rays_o[N_static:, :]
+            rays_d_s = rays_d[:N_static, :]
+            rays_d_d = rays_d[N_static:, :]
+            prefix_s = (rays_o[:N_static, :].shape[0])
+            prefix_d = (rays_o[N_static:, :].shape[0])
         else:
             if (DEBUG):
                 print()
                 print(kwargs['inds_s'].shape)
                 print(kwargs['inds_d'].shape)
                 print()
-            # inds_s = kwargs['inds_s']
-            # inds_d = kwargs['inds_d']
-
             rend_s = kwargs['inds_s']
             rend_d = kwargs['inds_d']
-            inds_s = [v for v in range(129600)]
-            inds_d = [v for v in range(129600)]
+            # rend_s = [v for v in range(129600)]
+            # rend_d = [v for v in range(129600)]
+            inds_s = [v for v in range(480*270)]
+            inds_d = [v for v in range(480*270)]
 
             N_static = len(inds_s) if type(inds_s) != int else 0
             N_dynamic = len(inds_d) if type(inds_d) != int else 0
 
-        rays_o_s = rays_o[:N_static, :]
-        rays_o_d = rays_o[-N_dynamic:, :]
-        rays_d_s = rays_d[:N_static, :]
-        rays_d_d = rays_d[-N_dynamic:, :]
-        prefix_s = (rays_o[:N_static, :].shape[0])
-        prefix_d = (rays_o[-N_dynamic:, :].shape[0])
+            # FIXME
+            rays_o_s = rays_o
+            rays_o_d = rays_o
+            rays_d_s = rays_d
+            rays_d_d = rays_d
+            prefix_s = (rays_o.shape[0])
+            prefix_d = (rays_o.shape[0])
 
         if (DEBUG):
             print("\nN_static: {}".format(N_static))
@@ -793,18 +800,40 @@ class NeRFRenderer(nn.Module):
                     N, 3, dtype=dtype, device=device)
                 # print("weights_sum_s.shape: {}".format(weights_sum_s.shape))
                 # print("weights_sum_d.shape: {}".format(weights_sum_d.shape))
+
+                #image_s_tmp[rend_s, :] = image_s[rend_s, :]
+                #image_d_tmp[rend_d, :] = image_d[rend_d, :]
+
+                # image_s_tmp[rend_s, :] = (
+                #     weights_sum_s).unsqueeze(-1)[rend_s, :] * bg_color
+                # image_d_tmp[rend_d, :] = (
+                #     weights_sum_d).unsqueeze(-1)[rend_d, :] * bg_color
                 image_s_tmp[rend_s, :] = image_s[rend_s, :] + \
                     (1 - weights_sum_s).unsqueeze(-1)[rend_s, :] * bg_color
                 image_d_tmp[rend_d, :] = image_d[rend_d, :] + \
                     (1 - weights_sum_d).unsqueeze(-1)[rend_d, :] * bg_color
+
+                # print("image_s_tmp.min: {}".format(image_s_tmp.min()))
+                # print("image_s_tmp.max: {}".format(image_s_tmp.max()))
+                # print("image_s.min: {}".format(image_s.min()))
+                # print("image_s.max: {}".format(image_s.max()))
+                # print("weights_sum_s.min: {}".format(weights_sum_s.min()))
+                # print("weights_sum_s.max: {}".format(weights_sum_s.max()))
+                # print("image_d_tmp.min: {}".format(image_d_tmp.min()))
+                # print("image_d_tmp.max: {}".format(image_d_tmp.max()))
+                # print("image_d.min: {}".format(image_d.min()))
+                # print("image_d.max: {}".format(image_d.max()))
+                # print("weights_sum_d.min: {}".format(weights_sum_d.min()))
+                # print("weights_sum_d.max: {}".format(weights_sum_d.max()))
+                # print("bg_color: {}".format(bg_color))
                 # print("image_s_tmp.shape: {}".format(image_s_tmp.shape))
                 # print("image_d.shape: {}".format(image_d.shape))
                 # print("image_d_tmp.shape: {}".format(image_d_tmp.shape))
                 # image = image_d + (1 - weights_sum_d).unsqueeze(-1) * bg_color
                 image = image_s_tmp + image_d_tmp
                 # FIXME: nears and fars are logically incorrect
-                depth = torch.clamp(depth_d - nears_d,
-                                    min=0) / (fars_d - nears_d)
+                # depth = torch.clamp(depth_d - nears_d,
+                #                     min=0) / (fars_d - nears_d)
                 image = image.view(N, 3)
                 depth = image[:, 0]  # FIXME
                 # depth = depth.view(prefix_s + prefix_d)

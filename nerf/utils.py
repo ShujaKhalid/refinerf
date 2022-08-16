@@ -95,39 +95,45 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, static_iters=
                 mask = masks[e:masks.shape[0]-e, 0].to(device)
 
                 coords_s = torch.where(mask < 0.5)[0]
-                coords_d = torch.where(mask >= 0.5)[0]
+                coords_d = torch.where(mask > 0.5)[0]
                 # print("\ncoords_s: {}".format(coords_s))
                 # print("coords_d: {}".format(coords_d))
 
                 # inds = torch.cat([coords_s, coords_d], 0)
-                if (static_iters > max_static_iters):
-                    # print("\n\n=======================================")
-                    # print("DYNAMIC MODEL ACTIVATED!!! - (get_rays)")
-                    # print("=======================================\n\n")
+                cond = np.array([static_iters >= u and static_iters <=
+                                 v for (u, v) in max_static_iters]).sum()
+                if (cond):
+                    print("\n\n=======================================")
+                    print(
+                        "STATIC MODEL ACTIVATED!!! - (get_rays) - iter: {}".format(static_iters))
+                    print("=======================================\n\n")
+                    # print(
+                    #     "\n\n\static_iter: {}/{}\n\n\n".format(static_iters, max_static_iters))
                     inds_s = torch.randint(
-                        0, coords_s.shape[-1]-1, size=[int(0)], device=device)  # may duplicate
+                        0, coords_s.shape[-1]-1, size=[int(N)], device=device)  # may duplicate
+                    inds_d = torch.randint(
+                        0, coords_s.shape[-1]-1, size=[0], device=device)  # may duplicate
+
+                    coords_s = coords_s[inds_s]
+                    coords_d = coords_d[inds_d]
+                    inds = torch.cat([coords_s], 0)
+                    results['inds_s'] = coords_s
+                    results['inds_d'] = coords_d
+                else:
+                    print("\n\n=======================================")
+                    print(
+                        "DYNAMIC MODEL ACTIVATED!!! - (get_rays) - iter: {}".format(static_iters))
+                    print("=======================================\n\n")
+                    inds_s = torch.randint(
+                        0, coords_s.shape[-1]-1, size=[0], device=device)  # may duplicate
                     inds_d = torch.randint(
                         0, coords_d.shape[-1]-1, size=[int(N)], device=device)  # may duplicate
 
                     coords_s = coords_s[inds_s]
                     coords_d = coords_d[inds_d]
                     inds = torch.cat([coords_d], 0)
-                    results['inds_s'] = 0
-                    results['inds_d'] = coords_d
-                else:
-                    # print(
-                    #     "\n\n\static_iter: {}/{}\n\n\n".format(static_iters, max_static_iters))
-                    inds_s = torch.randint(
-                        0, coords_s.shape[-1]-1, size=[int(N)], device=device)  # may duplicate
-                    inds_d = torch.randint(
-                        0, coords_d.shape[-1]-1, size=[int(0)], device=device)  # may duplicate
-
-                    coords_s = coords_s[inds_s]
-                    coords_d = coords_d[inds_d]
-                    inds = torch.cat([coords_s], 0)
                     results['inds_s'] = coords_s
-                    results['inds_d'] = 0
-
+                    results['inds_d'] = coords_d
                 # print("\ncoords_s: {}".format(coords_s))
                 # print("coords_d: {}".format(coords_d))
 
@@ -169,7 +175,7 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, static_iters=
             mask = masks[:masks.shape[0], 0].to(device)
 
             coords_s = torch.where(mask < 0.5)[0]
-            coords_d = torch.where(mask >= 0.5)[0]
+            coords_d = torch.where(mask > 0.5)[0]
 
             # inds_s = torch.randint(
             #     0, coords_s.shape[-1]-1, size=[int(N)], device=device)  # may duplicate
@@ -890,8 +896,19 @@ class Trainer(object):
 
         self.local_step = 0
 
-        # print("self.global_step: {}".format(self.global_step))
-        if ((self.global_step >= self.opt.max_static_iters) and self.opt_state != "dynamic"):
+        print("self.global_step: {}".format(self.global_step))
+        print(self.opt.max_static_iters)
+        print(type(self.opt.max_static_iters))
+        cond = np.array([self.global_step >= u and self.global_step <=
+                         v for (u, v) in eval(self.opt.max_static_iters)]).sum()
+        # if ((self.global_step >= self.opt.max_static_iters) and self.opt_state != "dynamic"):
+        if (cond and self.opt_state != "static"):
+            print("\n\n========================================")
+            print("STATIC MODEL ACTIVATED!!! - (optimizer)")
+            print("========================================\n\n")
+            self.opt_state = "static"
+            self.optimizer = self.optimizer_func(self.model, self.opt_state)
+        elif (cond and self.opt_state != "dynamic"):
             print("\n\n========================================")
             print("DYNAMIC MODEL ACTIVATED!!! - (optimizer)")
             print("========================================\n\n")
