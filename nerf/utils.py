@@ -52,7 +52,7 @@ def srgb_to_linear(x):
 
 
 @torch.cuda.amp.autocast(enabled=False)
-def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, static_iters=-1, max_static_iters=-1):
+def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, dynamic_iter=-1, dynamic_iters=-1):
     ''' get rays
     Args:
         poses: [B, 4, 4], cam2world
@@ -100,29 +100,12 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, static_iters=
                 # print("coords_d: {}".format(coords_d))
 
                 # inds = torch.cat([coords_s, coords_d], 0)
-                cond = np.array([static_iters >= u and static_iters <=
-                                 v for (u, v) in max_static_iters]).sum()
+                cond = np.array([dynamic_iter >= u and dynamic_iter <=
+                                 v for (u, v) in dynamic_iters]).sum()
                 if (cond):
                     print("\n\n=======================================")
                     print(
-                        "STATIC MODEL ACTIVATED!!! - (get_rays) - iter: {}".format(static_iters))
-                    print("=======================================\n\n")
-                    # print(
-                    #     "\n\n\static_iter: {}/{}\n\n\n".format(static_iters, max_static_iters))
-                    inds_s = torch.randint(
-                        0, coords_s.shape[-1]-1, size=[int(N)], device=device)  # may duplicate
-                    inds_d = torch.randint(
-                        0, coords_s.shape[-1]-1, size=[0], device=device)  # may duplicate
-
-                    coords_s = coords_s[inds_s]
-                    coords_d = coords_d[inds_d]
-                    inds = torch.cat([coords_s], 0)
-                    results['inds_s'] = coords_s
-                    results['inds_d'] = coords_d
-                else:
-                    print("\n\n=======================================")
-                    print(
-                        "DYNAMIC MODEL ACTIVATED!!! - (get_rays) - iter: {}".format(static_iters))
+                        "DYNAMIC MODEL ACTIVATED!!! - (get_rays) - iter: {}".format(dynamic_iter))
                     print("=======================================\n\n")
                     inds_s = torch.randint(
                         0, coords_s.shape[-1]-1, size=[0], device=device)  # may duplicate
@@ -134,6 +117,22 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, static_iters=
                     inds = torch.cat([coords_d], 0)
                     results['inds_s'] = coords_s
                     results['inds_d'] = coords_d
+                else:
+                    print("\n\n=======================================")
+                    print(
+                        "STATIC MODEL ACTIVATED!!! - (get_rays) - iter: {}".format(dynamic_iter))
+                    print("=======================================\n\n")
+                    inds_s = torch.randint(
+                        0, coords_s.shape[-1]-1, size=[int(N)], device=device)  # may duplicate
+                    inds_d = torch.randint(
+                        0, coords_s.shape[-1]-1, size=[0], device=device)  # may duplicate
+
+                    coords_s = coords_s[inds_s]
+                    coords_d = coords_d[inds_d]
+                    inds = torch.cat([coords_s], 0)
+                    results['inds_s'] = coords_s
+                    results['inds_d'] = coords_d
+
                 # print("\ncoords_s: {}".format(coords_s))
                 # print("coords_d: {}".format(coords_d))
 
@@ -897,22 +896,21 @@ class Trainer(object):
         self.local_step = 0
 
         print("self.global_step: {}".format(self.global_step))
-        print(self.opt.max_static_iters)
-        print(type(self.opt.max_static_iters))
-        cond = np.array([self.global_step >= u and self.global_step <=
-                         v for (u, v) in eval(self.opt.max_static_iters)]).sum()
+
+        cond = np.array([self.global_step > u and self.global_step <
+                         v for (u, v) in eval(self.opt.dynamic_iters)]).sum()
         # if ((self.global_step >= self.opt.max_static_iters) and self.opt_state != "dynamic"):
-        if (cond and self.opt_state != "static"):
-            print("\n\n========================================")
-            print("STATIC MODEL ACTIVATED!!! - (optimizer)")
-            print("========================================\n\n")
-            self.opt_state = "static"
-            self.optimizer = self.optimizer_func(self.model, self.opt_state)
-        elif (cond and self.opt_state != "dynamic"):
+        if (cond):
             print("\n\n========================================")
             print("DYNAMIC MODEL ACTIVATED!!! - (optimizer)")
             print("========================================\n\n")
             self.opt_state = "dynamic"
+            self.optimizer = self.optimizer_func(self.model, self.opt_state)
+        else:
+            print("\n\n========================================")
+            print("STATIC MODEL ACTIVATED!!! - (optimizer)")
+            print("========================================\n\n")
+            self.opt_state = "static"
             self.optimizer = self.optimizer_func(self.model, self.opt_state)
 
         for data in loader:

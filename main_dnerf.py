@@ -36,8 +36,9 @@ if __name__ == '__main__':
                         help="use CUDA raymarching instead of pytorch")
     parser.add_argument('--max_steps', type=int, default=128,  # sk_debug: used to be 1024
                         help="max num steps sampled per ray (only valid when using --cuda_ray)")
-    parser.add_argument('--max_static_iters', type=str, default="[(1,100), (200,300)]",  # 2400 iters
-                        help="iters to train the static model for - to be followed by dynamic model")
+    # parser.add_argument('--dynamic_iters', type=str, default="[(204,312), (480,600), (2400, 3000)]",  # 2400 iters
+    parser.add_argument('--dynamic_iters', type=str, default="[(2400, 3000), (5400, 6000), (8400, 9000)]",  # 2400 iters
+                        help="intervals to train the dynamic model for")
     # =================================================================================
 
     parser.add_argument('--update_extra_interval', type=int, default=100,

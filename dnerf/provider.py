@@ -119,8 +119,8 @@ class NeRFDataset:
         # self.masks = self.masks_val if self.training else self.masks
 
         self.rand_pose = opt.rand_pose
-        self.MAX_STATIC_ITERS = eval(opt.max_static_iters)
-        self.STATIC_ITERS = 0
+        self.DYNAMIC_ITERS = eval(opt.dynamic_iters)
+        self.DYNAMIC_ITER = 0
 
         # auto-detect transforms.json and split mode.
         if os.path.exists(os.path.join(self.root_path, 'transforms.json')):
@@ -512,12 +512,12 @@ class NeRFDataset:
 
         if self.training:
             rays = get_rays(poses, self.intrinsics, self.H,
-                            self.W, masks, self.num_rays, error_map, self.STATIC_ITERS, self.MAX_STATIC_ITERS)  # sk_debug - added masks
+                            self.W, masks, self.num_rays, error_map, self.DYNAMIC_ITER, self.DYNAMIC_ITERS)  # sk_debug - added masks
         else:
             rays = get_rays(poses, self.intrinsics, self.H,
-                            self.W, masks_val, self.num_rays, error_map, self.STATIC_ITERS, self.MAX_STATIC_ITERS)  # sk_debug - added masks
+                            self.W, masks_val, self.num_rays, error_map, self.DYNAMIC_ITER, self.DYNAMIC_ITERS)  # sk_debug - added masks
 
-        self.STATIC_ITERS += 1
+        self.DYNAMIC_ITER += 1
 
         if ("inds_s" in rays and "inds_d" in rays):
             self.inds_s = rays["inds_s"]
