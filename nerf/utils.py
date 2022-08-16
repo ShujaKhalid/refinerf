@@ -103,10 +103,10 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, dynamic_iter=
                 cond = np.array([dynamic_iter >= u and dynamic_iter <=
                                  v for (u, v) in dynamic_iters]).sum()
                 if (cond):
-                    print("\n\n=======================================")
-                    print(
-                        "DYNAMIC MODEL ACTIVATED!!! - (get_rays) - iter: {}".format(dynamic_iter))
-                    print("=======================================\n\n")
+                    # print("\n\n=======================================")
+                    # print(
+                    #     "DYNAMIC MODEL ACTIVATED!!! - (get_rays) - iter: {}".format(dynamic_iter))
+                    # print("=======================================\n\n")
                     inds_s = torch.randint(
                         0, coords_s.shape[-1]-1, size=[0], device=device)  # may duplicate
                     inds_d = torch.randint(
@@ -118,10 +118,10 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, dynamic_iter=
                     results['inds_s'] = coords_s
                     results['inds_d'] = coords_d
                 else:
-                    print("\n\n=======================================")
-                    print(
-                        "STATIC MODEL ACTIVATED!!! - (get_rays) - iter: {}".format(dynamic_iter))
-                    print("=======================================\n\n")
+                    # print("\n\n=======================================")
+                    # print(
+                    #     "STATIC MODEL ACTIVATED!!! - (get_rays) - iter: {}".format(dynamic_iter))
+                    # print("=======================================\n\n")
                     inds_s = torch.randint(
                         0, coords_s.shape[-1]-1, size=[int(N)], device=device)  # may duplicate
                     inds_d = torch.randint(
@@ -907,9 +907,9 @@ class Trainer(object):
             self.opt_state = "dynamic"
             self.optimizer = self.optimizer_func(self.model, self.opt_state)
         else:
-            print("\n\n========================================")
-            print("STATIC MODEL ACTIVATED!!! - (optimizer)")
-            print("========================================\n\n")
+            # print("\n\n========================================")
+            # print("STATIC MODEL ACTIVATED!!! - (optimizer)")
+            # print("========================================\n\n")
             self.opt_state = "static"
             self.optimizer = self.optimizer_func(self.model, self.opt_state)
 

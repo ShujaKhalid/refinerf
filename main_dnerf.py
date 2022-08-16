@@ -37,7 +37,7 @@ if __name__ == '__main__':
     parser.add_argument('--max_steps', type=int, default=128,  # sk_debug: used to be 1024
                         help="max num steps sampled per ray (only valid when using --cuda_ray)")
     # parser.add_argument('--dynamic_iters', type=str, default="[(204,312), (480,600), (2400, 3000)]",  # 2400 iters
-    parser.add_argument('--dynamic_iters', type=str, default="[(2400, 3000), (5400, 6000), (8400, 9000)]",  # 2400 iters
+    parser.add_argument('--dynamic_iters', type=str, default="[(2400, 4800), (6000, 8400), (9600, 12000), (14400, 18000), (21600, 24000)]",  # 2400 iters
                         help="intervals to train the dynamic model for")
     # =================================================================================
 
