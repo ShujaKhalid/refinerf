@@ -21,7 +21,7 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, default=0)
 
     # training options
-    parser.add_argument('--iters', type=int, default=48000,
+    parser.add_argument('--iters', type=int, default=24000,
                         help="training iters")
     parser.add_argument('--lr', type=float, default=1e-2,  # 1e-2
                         help="initial learning rate")
@@ -30,15 +30,18 @@ if __name__ == '__main__':
     parser.add_argument('--ckpt', type=str, default='latest')
 
     # =================================================================================
-    parser.add_argument('--num_rays', type=int, default=4096,
+    # parser.add_argument('--num_rays', type=int, default=4096,
+    # parser.add_argument('--num_rays', type=int, default=8192,
+    parser.add_argument('--num_rays', type=int, default=1024,
                         help="num rays sampled per image for each training step")
     parser.add_argument('--cuda_ray', action='store_true',
                         help="use CUDA raymarching instead of pytorch")
-    parser.add_argument('--max_steps', type=int, default=128,  # sk_debug: used to be 1024
+    parser.add_argument('--max_steps', type=int, default=64,  # sk_debug: used to be 1024
                         help="max num steps sampled per ray (only valid when using --cuda_ray)")
     # parser.add_argument('--dynamic_iters', type=str, default="[(204,312), (480,600), (2400, 3000)]",  # 2400 iters
     # parser.add_argument('--dynamic_iters', type=str, default="[(480, 960), (1200, 1440), (2400, 3600), (6000, 7200), (9600, 10800), (14400, 18000), (21600, 24000)]",  # 2400 iters
-    parser.add_argument('--dynamic_iters', type=str, default="[(480, 960), (1200, 1440), (2400, 3600), (6000, 7200), (9600, 10800)]",  # 2400 iters
+    # parser.add_argument('--dynamic_iters', type=str, default="[(480, 960), (1200, 1440), (2400, 3600), (6000, 7200), (9600, 10800)]",  # 2400 iters
+    parser.add_argument('--dynamic_iters', type=str, default="[(0, 28800)]",  # 2400 iters
                         help="intervals to train the dynamic model for")
     # =================================================================================
 

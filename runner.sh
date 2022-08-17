@@ -9,9 +9,8 @@ export CUDA_ROOT=/usr/local/cuda
 
 # DATASET_PATH="../datalake/dnerf/custom"
 # SCENE="DynamicFace-2"
-SCENE="Umbrella"
 # SCENE="Truck-2"
-# SCENE="Umbrella"
+SCENE="Umbrella"
 # SCENE="Jumping"
 # SCENE="Balloon1-2"
 # SCENE="Balloon2-2"

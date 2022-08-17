@@ -322,7 +322,11 @@ def motion_segmentation(input_folder,
         semantic_mask = cv2.resize(semantic_mask, (resized_width, resized_height),
                                    interpolation=cv2.INTER_NEAREST)
         semantic_mask = semantic_mask[:, :, 0] > 0.1
-        motion_mask = semantic_mask | motion_mask
+
+        if ("val" in save_mask_dir):
+            motion_mask = semantic_mask | motion_mask  # TODO: used to be |
+        else:
+            motion_mask = semantic_mask | motion_mask  # TODO: used to be &
 
         motion_mask = skimage.morphology.dilation(
             motion_mask, skimage.morphology.disk(2))

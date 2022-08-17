@@ -508,6 +508,7 @@ class NeRFDataset:
                 grid, (grid.shape[0], -1, grid.shape[-1]))
         else:
             masks = None
+            masks_val = None
             grid = None
 
         if self.training:
@@ -547,13 +548,26 @@ class NeRFDataset:
         }
 
         if self.images is not None:
+            # [B, H, W, 3/4]
+            # print("index: {}".format(index))
+            i = index[0]
+            images_b = self.images[i-1].to(self.device) if i - \
+                1 > 0 else self.images[i].to(self.device)
+            images_f = self.images[i+1].to(self.device) if i+1 < len(
+                self.images) else self.images[index].to(self.device)   # [B, H, W, 3/4]
             images = self.images[index].to(self.device)  # [B, H, W, 3/4]
 
             if self.training:
                 C = images.shape[-1]
                 images = torch.gather(images.view(
                     B, -1, C), 1, torch.stack(C * [rays['inds']], -1))  # [B, N, 3/4]
+                images_b = torch.gather(images_b.view(
+                    B, -1, C), 1, torch.stack(C * [rays['inds']], -1))  # [B, N, 3/4]
+                images_f = torch.gather(images_f.view(
+                    B, -1, C), 1, torch.stack(C * [rays['inds']], -1))  # [B, N, 3/4]
             results['images'] = images
+            results['images_b'] = images_b
+            results['images_f'] = images_f
 
         # FLOW_FLAG = False
         if (self.FLOW_FLAG):

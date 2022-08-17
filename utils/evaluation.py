@@ -75,7 +75,7 @@ if __name__ == '__main__':
     data_dir = '../results'
     # sequences = ['Balloon1', 'Balloon2', 'Jumping',
     #              'Playground', 'Skating', 'Truck', 'Umbrella']
-    sequences = ['Umbrella']
+    sequences = ['Jumping']
     methods = ['NeRF', 'NeRF_t', 'Yoon', 'NR', 'NSFF', 'dnerf', 'Ours']
     # methods = ['NeRF', 'NeRF_t', 'NR', 'NSFF', 'dnerf']
 

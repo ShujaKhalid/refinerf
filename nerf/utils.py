@@ -140,6 +140,8 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, dynamic_iter=
                 # sk_debug - Random from anaywhere on grid
                 inds = torch.randint(
                     0, H*W, size=[N], device=device)  # may duplicate
+                results['inds_s'] = torch.Tensor([]).cuda()
+                results['inds_d'] = inds
 
             inds = inds.expand([B, inds.shape[0]])
         else:
@@ -176,15 +178,15 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, dynamic_iter=
             coords_s = torch.where(mask < 0.5)[0]
             coords_d = torch.where(mask > 0.5)[0]
 
-            # inds_s = torch.randint(
-            #     0, coords_s.shape[-1]-1, size=[int(N)], device=device)  # may duplicate
-            # inds_d = torch.randint(
-            #     0, coords_d.shape[-1]-1, size=[int(N)], device=device)  # may duplicate
+            # no segmentation assistance
+            # coords_s = torch.randint(
+            #     0, coords_s.shape[-1]-1, size=[int(len(coords_s)+len(coords_d))], device=device)  # may duplicate
+            # coords_d = torch.randint(
+            #     0, coords_d.shape[-1]-1, size=[int(len(coords_s)+len(coords_d))], device=device)  # may duplicate
 
-            # coords_s = coords_s[inds_s]
-            # coords_d = coords_d[inds_d]
-
+            # segmentation assisted
             inds = torch.cat([coords_s, coords_d], 0)
+
             results['inds_s'] = coords_s
             results['inds_d'] = coords_d
             # inds = torch.cat([coords_d], 0)

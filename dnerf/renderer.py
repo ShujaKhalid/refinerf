@@ -77,7 +77,7 @@ class NeRFRenderer(nn.Module):
 
         self.bound = bound
         self.cascade = 1 + math.ceil(math.log2(bound))
-        self.time_size = 64
+        self.time_size = 12  # FIXME
         self.grid_size = 128
         self.density_scale = density_scale
         self.min_near = min_near
@@ -336,10 +336,14 @@ class NeRFRenderer(nn.Module):
                 print(kwargs['inds_s'].shape)
                 print(kwargs['inds_d'].shape)
                 print()
-            rend_s = kwargs['inds_s']
-            rend_d = kwargs['inds_d']
-            # rend_s = [v for v in range(129600)]
-            # rend_d = [v for v in range(129600)]
+
+            # segmentation assisted
+            #rend_s = kwargs['inds_s']
+            #rend_d = kwargs['inds_d']
+
+            # no segmentation assistance
+            rend_s = 0
+            rend_d = [v for v in range(480*270)]
             inds_s = [v for v in range(480*270)]
             inds_d = [v for v in range(480*270)]
 
@@ -412,7 +416,9 @@ class NeRFRenderer(nn.Module):
                 xyzs_d, dirs_d, deltas_d, rays_d = raymarching.march_rays_train(
                     rays_o_d, rays_d_d, self.bound, self.density_bitfield[t], self.cascade, self.grid_size, nears_d, fars_d, counter, self.mean_count, perturb, 128, force_all_rays, dt_gamma, max_steps)
 
-                # print("\nxyzs_d.shape: {}".format(xyzs_d.shape))
+                #print("\nxyzs_d.shape: {}".format(xyzs_d.shape))
+                print("\nt: {}".format(t))
+                print("time: {}\n".format(time))
                 sigmas_d, rgbs_d, deform_d, blend, sf = self(
                     xyzs_d, dirs_d, time, svd="dynamic")
                 # Amazing visualization (POINT-CLOUDS)
@@ -477,14 +483,20 @@ class NeRFRenderer(nn.Module):
                     print("sf.sum(): {}".format(sf.sum()))
 
             # FIXME
+            # # counter = self.step_counter[self.local_step % 16]
+            # # counter.zero_()  # set to 0
+            # # self.local_step += 1
+            # # xyzs, dirs, deltas, rays = raymarching.march_rays_train(
+            # #     rays_o, rays_d, self.bound, self.density_bitfield[t], self.cascade, self.grid_size, nears, fars, counter, self.mean_count, perturb, 128, force_all_rays, dt_gamma, max_steps)
+
             # weights_full, depth_full, image_full_orig = raymarching.composite_rays_train_full(
-            #     sigmas_s, rgbs_s, sigmas_d, rgbs_d, blend, deltas, rays)
+            #     sigmas_s, rgbs_s, sigmas_d, rgbs_d, blend, deltas_s, rays_s)
             # image_full = image_full_orig + \
             #     (1 - weights_full).unsqueeze(-1) * bg_color
-            # depth_full = torch.clamp(
-            #     depth_full - nears, min=0) / (fars - nears)
-            # image_full = image_full.view(*prefix, 3)
-            # depth_full = depth_full.view(*prefix)
+            # # depth_full = torch.clamp(
+            # #     depth_full - nears, min=0) / (fars - nears)
+            # image_full = image_full.view(prefix_s + prefix_d, 3)
+            #depth_full = image_full.view(prefix_s + prefix_d, 3)[:, 0]
 
             # === STATIC ===
             # print("\nExecuting 1st pass...")
