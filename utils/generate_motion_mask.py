@@ -270,13 +270,21 @@ def motion_segmentation(input_folder,
 
         e_dist = np.maximum(bwd_e_dist, fwd_e_dist)
 
+        # FIXME:
+        threshold = e_dist[e_dist.nonzero()].mean()
+        threshold = 1.34236723382802e-10
+
         motion_mask = skimage.morphology.binary_opening(
             e_dist > threshold, skimage.morphology.disk(1))
 
         fn = os.path.join(save_mask_dir, im_ref.name.replace(
             '.jpg', '.png'))
 
-        print("fn: {}".format(fn))
+        print("Writing motion segmentation file - fn: {}".format(fn))
+        print("threshold: {}".format(threshold))
+        print("motion_mask: {}".format(motion_mask.sum()))
+        print("e_dist.min: {}".format(e_dist.min()))
+        print("e_dist.max: {}".format(e_dist.max()))
 
         cv2.imwrite(fn, np.uint8(255 * (0. + motion_mask)))
 
@@ -292,6 +300,7 @@ def motion_segmentation(input_folder,
     for i in range(0, len(img_path_list)):
         img_path = img_path_list[i]
         img_name = img_path.split('/')[-1]
+        print("img_name: {}".format(img_name))
         semantic_mask = run_maskrcnn(netMaskrcnn, img_path,
                                      input_semantic_w,
                                      input_semantic_h)
