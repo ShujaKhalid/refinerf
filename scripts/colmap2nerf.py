@@ -110,6 +110,7 @@ def run_ffmpeg_images(args):
     LARGE_DATASET_TRN = False
     if (args.mode == "train"):
         new_loc = base + "images_scaled"
+        new_loc_mask = base + "motion_masks"
         prod = base.split("/")[-3]
         if (LARGE_DATASET_TRN):
             query_loc = "/home/skhalid/Documents/datalake/dynamic_scene_data_full_bkp/nvidia_data_full/" + \
@@ -122,9 +123,12 @@ def run_ffmpeg_images(args):
         else:
             val_base = "/home/skhalid/Documents/datalake/data/" + prod
             query_loc = val_base + "/images_2"
+            query_loc_mask = val_base + "/motion_masks"
             print("query_loc: {}".format(query_loc))
             os.system("mkdir -p "+new_loc)
+            os.system("mkdir -p "+new_loc_mask)
             all_imgs = glob.glob(query_loc+"/*.png")
+            all_masks = glob.glob(query_loc_mask+"/*.png")
         print(all_imgs)
         all_imgs.sort()
         all_imgs_qty = len(all_imgs)
@@ -150,6 +154,14 @@ def run_ffmpeg_images(args):
                 for k, img in enumerate(all_imgs):
                     fn = img.split("/")[-1]
                     out = new_loc+"/"+"00" + \
+                        fn.split(".")[0]+".jpg"  # Original count
+                    cmd = "ffmpeg -i "+img+" -vf scale=" + \
+                        str(args.W)+":"+str(args.H) + " " + out
+                    print(cmd)
+                    os.system(cmd)
+                for k, img in enumerate(all_masks):
+                    fn = img.split("/")[-1]
+                    out = new_loc_mask+"/"+"00" + \
                         fn.split(".")[0]+".jpg"  # Original count
                     cmd = "ffmpeg -i "+img+" -vf scale=" + \
                         str(args.W)+":"+str(args.H) + " " + out

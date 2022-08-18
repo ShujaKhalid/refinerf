@@ -36,15 +36,15 @@ if __name__ == '__main__':
                         help="num rays sampled per image for each training step")
     parser.add_argument('--cuda_ray', action='store_true',
                         help="use CUDA raymarching instead of pytorch")
-    parser.add_argument('--max_steps', type=int, default=64,  # sk_debug: used to be 1024
+    parser.add_argument('--max_steps', type=int, default=256,  # sk_debug: used to be 1024
                         help="max num steps sampled per ray (only valid when using --cuda_ray)")
     # parser.add_argument('--dynamic_iters', type=str, default="[(204,312), (480,600), (2400, 3000)]",  # 2400 iters
     # parser.add_argument('--dynamic_iters', type=str, default="[(480, 960), (1200, 1440), (2400, 3600), (6000, 7200), (9600, 10800), (14400, 18000), (21600, 24000)]",  # 2400 iters
     # parser.add_argument('--dynamic_iters', type=str, default="[(1200, 1440), (2400, 3600), (6000, 7200), (9600, 10800)]",  # 2400 iters
-    parser.add_argument('--dynamic_iters', type=str, default="{'d1': (0, 24000)}",  # 2400 iters
+    parser.add_argument('--dynamic_iters', type=str, default="{'d1': (0, 1200), 'b1': (1200, 2400), 'd2': (3000, 3600), 'b2': (4800, 6000), 'd3': (7200, 9600), 'b3': (10800, 14400), 'd2': (14400, 16800)}",  # 2400 iters
                         # parser.add_argument('--dynamic_iters', type=str, default="[(0, 28800)]",  # 2400 iters
                         help="intervals to train the dynamic model for")
-    parser.add_argument('--update_extra_interval', type=int, default=12,  # TODO: used to be 100
+    parser.add_argument('--update_extra_interval', type=int, default=5000,  # TODO: used to be 100
                         help="iter interval to update extra status (only valid when using --cuda_ray)")
     # =================================================================================
 
