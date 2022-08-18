@@ -326,11 +326,11 @@ class NeRFRenderer(nn.Module):
             N_dynamic = len(inds_d) if type(inds_d) != int else 0
 
             rays_o_s = rays_o[:N_static, :]
-            rays_o_d = rays_o[N_static:, :]
+            rays_o_d = rays_o[-N_dynamic:, :]
             rays_d_s = rays_d[:N_static, :]
-            rays_d_d = rays_d[N_static:, :]
+            rays_d_d = rays_d[-N_dynamic:, :]
             prefix_s = (rays_o[:N_static, :].shape[0])
-            prefix_d = (rays_o[N_static:, :].shape[0])
+            prefix_d = (rays_o[-N_dynamic:, :].shape[0])
         else:
             if (DEBUG):
                 print()
@@ -339,14 +339,20 @@ class NeRFRenderer(nn.Module):
                 print()
 
             # segmentation assisted
-            rend_s = kwargs['inds_s']
-            rend_d = kwargs['inds_d']
+            # rend_s = kwargs['inds_s']
+            # rend_d = kwargs['inds_d']
 
             # no segmentation assistance
             # rend_s = 0
             # rend_d = [v for v in range(480*270)]
-            inds_s = [v for v in range(480*270)]
-            inds_d = [v for v in range(480*270)]
+            # inds_s = [v for v in range(480*270)]
+            # inds_d = [v for v in range(480*270)]
+
+            # dNeRF (Bouncing_Balls)
+            rend_s = 0
+            rend_d = [v for v in range(800*800)]
+            inds_s = [v for v in range(800*800)]
+            inds_d = [v for v in range(800*800)]
 
             N_static = len(inds_s) if type(inds_s) != int else 0
             N_dynamic = len(inds_d) if type(inds_d) != int else 0
@@ -409,6 +415,10 @@ class NeRFRenderer(nn.Module):
 
         if self.training:
 
+            print()
+            for i in range(len(self.density_bitfield)):
+                print(np.mean(self.density_bitfield[i, :].cpu().numpy()))
+
             if (N_dynamic > 0):
                 # setup counter
                 counter = self.step_counter[self.local_step % 16]
@@ -444,10 +454,11 @@ class NeRFRenderer(nn.Module):
                 counter = self.step_counter[self.local_step % 16]
                 counter.zero_()  # set to 0
                 self.local_step += 1
+                # FIXME: was t -> 0
                 xyzs_s, dirs_s, deltas_s, rays_s = raymarching.march_rays_train(
-                    rays_o_s, rays_d_s, self.bound, self.density_bitfield[t], self.cascade, self.grid_size, nears_s, fars_s, counter, self.mean_count, perturb, 128, force_all_rays, dt_gamma, max_steps)
+                    rays_o_s, rays_d_s, self.bound, self.density_bitfield[0], self.cascade, self.grid_size, nears_s, fars_s, counter, self.mean_count, perturb, 128, force_all_rays, dt_gamma, max_steps)
 
-                # print("\nxyzs_s.shape: {}".format(xyzs_s.shape))
+                    # print("\nxyzs_s.shape: {}".format(xyzs_s.shape))
                 sigmas_s, rgbs_s = self(
                     xyzs_s, dirs_s, time, svd="static")
                 sigmas_s = self.density_scale * sigmas_s
@@ -484,20 +495,30 @@ class NeRFRenderer(nn.Module):
                     print("sf.sum(): {}".format(sf.sum()))
 
             # FIXME
-            # # counter = self.step_counter[self.local_step % 16]
-            # # counter.zero_()  # set to 0
-            # # self.local_step += 1
-            # # xyzs, dirs, deltas, rays = raymarching.march_rays_train(
-            # #     rays_o, rays_d, self.bound, self.density_bitfield[t], self.cascade, self.grid_size, nears, fars, counter, self.mean_count, perturb, 128, force_all_rays, dt_gamma, max_steps)
+            # counter = self.step_counter[self.local_step % 16]
+            # counter.zero_()  # set to 0
+            # self.local_step += 1
+            # xyzs, dirs, deltas, rays = raymarching.march_rays_train(
+            #     rays_o, rays_d, self.bound, self.density_bitfield[t], self.cascade, self.grid_size, nears, fars, counter, self.mean_count, perturb, 128, force_all_rays, dt_gamma, max_steps)
 
-            # weights_full, depth_full, image_full_orig = raymarching.composite_rays_train_full(
-            #     sigmas_s, rgbs_s, sigmas_d, rgbs_d, blend, deltas_s, rays_s)
-            # image_full = image_full_orig + \
-            #     (1 - weights_full).unsqueeze(-1) * bg_color
-            # # depth_full = torch.clamp(
-            # #     depth_full - nears, min=0) / (fars - nears)
-            # image_full = image_full.view(prefix_s + prefix_d, 3)
-            #depth_full = image_full.view(prefix_s + prefix_d, 3)[:, 0]
+            # if (N_static > 0 and N_dynamic > 0):
+            #     weights_full, depth_full, image_full_orig = raymarching.composite_rays_train_full(
+            #         sigmas_s, rgbs_s, sigmas_d, rgbs_d, blend, deltas_s, rays_s)
+            #     image_full = image_full_orig + \
+            #         (1 - weights_full).unsqueeze(-1) * bg_color
+            #     # depth_full = torch.clamp(
+            #     #     depth_full - nears, min=0) / (fars - nears)
+            #     # print("image_full.shape: {}".format(image_full.shape))
+            #     # print("weights_full.shape: {}".format(weights_full.shape))
+            #     # print("blend.shape: {}".format(blend.shape))
+            #     # print("deltas_s.shape: {}".format(deltas_s.shape))
+            #     # print("rays_s.shape: {}".format(rays_s.shape))
+            #     # print("prefix_s: {}".format(prefix_s))
+            #     # print("prefix_d: {}".format(prefix_d))
+            #     image_full = image_full.view(prefix_s, 3)
+            #     # depth_full = image_full.view(prefix_s, 3)[:, 0]
+
+            #     results['rgb_map_full'] = image_full
 
             # === STATIC ===
             # print("\nExecuting 1st pass...")
@@ -685,7 +706,7 @@ class NeRFRenderer(nn.Module):
                 results['image'] = image_d
                 results['blending'] = blend
                 # TODO: blend the static and dynamic models here
-                results['rgb_map_full'] = image_d
+                # results['rgb_map_full'] = image_d
                 results['rgb_map_d'] = image_d
                 # FIXME: save weights from composite_ray_train
                 #results['weights_d'] = sigmas_d_f

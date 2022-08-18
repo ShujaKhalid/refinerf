@@ -552,7 +552,7 @@ __global__ void kernel_composite_rays_train_full_forward(
 
         const scalar_t alpha_s = 1.0f - __expf(- sigmas_s[0] * deltas[0]);
         const scalar_t alpha_d = 1.0f - __expf(- sigmas_d[0] * deltas[0]);
-        const scalar_t weight = (alpha_d * blending[0] + alpha_s * (1.0f-blending[0])) * T;
+        const scalar_t weight = (alpha_d * blending[0] + alpha_s * (1.0f - blending[0])) * T;
 
         
         t += deltas[1]; // real delta
@@ -560,7 +560,7 @@ __global__ void kernel_composite_rays_train_full_forward(
         
         ws += weight;
         
-        T *= (1.0f - alpha_d * blending[0]) * (1.0f - alpha_s * ( 1.0f - blending[0]));
+        T *= (1.0f - alpha_d * blending[0]) * (1.0f - alpha_s * (1.0f - blending[0]));
 
         const scalar_t factor_d = T * alpha_d * blending[0];
         const scalar_t factor_s = T * alpha_s * (1.0f-blending[0]);

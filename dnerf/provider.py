@@ -301,7 +301,7 @@ class NeRFDataset:
 
         # [debug] uncomment to view examples of randomly generated poses.
         # visualize_poses(rand_poses(100, self.device, radius=self.radius).cpu().numpy())
-        self.FLOW_FLAG = True
+        self.FLOW_FLAG = False
         if (self.FLOW_FLAG):
             # TODO: ADD the additional pre-reqs here
             basedir = self.root_path
@@ -587,7 +587,7 @@ class NeRFDataset:
                 # print("disp.view(B, -1, 1).shape: {}".format(disp.view(1, -1, 1).shape))
                 if self.training:
                     masks = torch.gather(masks.view(
-                        B, -1, 1), 1, torch.stack(1 * [rays['inds']], -1))  # [B, N, 3/4]
+                        B, -1, 3), 1, torch.stack(3 * [rays['inds']], -1))  # [B, N, 3/4]
                     disp = torch.gather(disp.view(
                         B, -1, 1), 1, torch.stack(1 * [rays['inds']], -1))  # [B, N, 3/4]
                 results['disp'] = disp

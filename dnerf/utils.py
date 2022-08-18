@@ -166,11 +166,12 @@ class Trainer(_Trainer):
             }
 
             # TODO: Combined loss
-            # img_loss = img2mse(ret['rgb_map_full'], gt_rgb)
-            # psnr = mse2psnr(img_loss)
-            # loss_dict['psnr'] = psnr
-            # loss_dict['img_loss'] = img_loss
-            # loss += args['full_loss_lambda'] * loss_dict['img_loss']
+            if ("rgb_map_full" in ret):
+                img_loss = img2mse(ret['rgb_map_full'], gt_rgb)
+                psnr = mse2psnr(img_loss)
+                loss_dict['psnr'] = psnr
+                loss_dict['img_loss'] = img_loss
+                loss += args['full_loss_lambda'] * loss_dict['img_loss']
 
             # Deformation Loss
             # loss_dict['deform_loss'] = ret['deform'].abs().mean()
@@ -455,6 +456,9 @@ class Trainer(_Trainer):
         if bg_color is not None:
             bg_color = bg_color.to(self.device)
 
+        self.opt.inds_s = data['inds_s']
+        self.opt.inds_d = data['inds_d']
+
         outputs = self.model.render(
             rays_o, rays_d, time, staged=True, bg_color=bg_color, perturb=perturb, **vars(self.opt))
 
@@ -473,7 +477,7 @@ class Trainer(_Trainer):
 
         pose = torch.from_numpy(pose).unsqueeze(0).to(self.device)
 
-        rays = get_rays(pose, intrinsics, rH, rW, -1)
+        rays = get_rays(pose, intrinsics, rH, rW, None, -1)
 
         data = {
             # from scalar to [1, 1] tensor.
