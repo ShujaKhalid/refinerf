@@ -77,9 +77,9 @@ class NeRFRenderer(nn.Module):
 
         self.bound = bound
         self.cascade = 1 + math.ceil(math.log2(bound))
-        self.time_size = 128  # FIXME
+        self.time_size = 12  # FIXME
         self.grid_size = 128
-        self.density_scale = density_scale
+        self.density_scale = density_scale * 1  # TODO: used to be 1
         self.min_near = min_near
         self.density_thresh = density_thresh
         self.bg_radius = bg_radius  # radius of the background sphere.
@@ -455,9 +455,8 @@ class NeRFRenderer(nn.Module):
                 counter = self.step_counter[self.local_step % 16]
                 counter.zero_()  # set to 0
                 self.local_step += 1
-                # FIXME: was t -> 0
                 xyzs_s, dirs_s, deltas_s, rays_s = raymarching.march_rays_train(
-                    rays_o_s, rays_d_s, self.bound, self.density_bitfield[0], self.cascade, self.grid_size, nears_s, fars_s, counter, self.mean_count, perturb, 128, force_all_rays, dt_gamma, max_steps)
+                    rays_o_s, rays_d_s, self.bound, self.density_bitfield[t], self.cascade, self.grid_size, nears_s, fars_s, counter, self.mean_count, perturb, 128, force_all_rays, dt_gamma, max_steps)
 
                 # print("\nxyzs_s.shape: {}".format(xyzs_s.shape))
                 sigmas_s, rgbs_s = self(

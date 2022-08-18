@@ -36,13 +36,14 @@ if __name__ == '__main__':
                         help="num rays sampled per image for each training step")
     parser.add_argument('--cuda_ray', action='store_true',
                         help="use CUDA raymarching instead of pytorch")
-    parser.add_argument('--max_steps', type=int, default=1024,  # sk_debug: used to be 1024
+    parser.add_argument('--max_steps', type=int, default=128,  # sk_debug: used to be 1024
                         help="max num steps sampled per ray (only valid when using --cuda_ray)")
     # parser.add_argument('--dynamic_iters', type=str, default="[(204,312), (480,600), (2400, 3000)]",  # 2400 iters
     # parser.add_argument('--dynamic_iters', type=str, default="[(480, 960), (1200, 1440), (2400, 3600), (6000, 7200), (9600, 10800), (14400, 18000), (21600, 24000)]",  # 2400 iters
-    # parser.add_argument('--dynamic_iters', type=str, default="[(1200, 1440), (2400, 3600), (6000, 7200), (9600, 10800)]",  # 2400 iters
-    parser.add_argument('--dynamic_iters', type=str, default="{'d1': (600, 2400), 'b1': (3000, 4800), 'd3': (6000, 9600), 'b3': (10800, 14400), 'd2': (15600, 16800)}",  # 2400 iters
-                        # parser.add_argument('--dynamic_iters', type=str, default="[(0, 28800)]",  # 2400 iters
+    # parser.add_argument('--dynamic_iters', type=str, default="{'d1': (2400, 3600), 'b1': (3600, 4800), 'd3': (6000, 9600), 'b3': (10800, 14400), 'd2': (15600, 16800)}",  # 2400 iters
+    parser.add_argument('--dynamic_iters', type=str,
+                        # 2400 iters
+                        default="{'d1': (120, 180), 'b1': (180, 240)}",
                         help="intervals to train the dynamic model for")
     parser.add_argument('--update_extra_interval', type=int, default=100,  # TODO: used to be 100
                         help="iter interval to update extra status (only valid when using --cuda_ray)")
@@ -134,7 +135,7 @@ if __name__ == '__main__':
     print(model)
 
     criterion = torch.nn.MSELoss(reduction='none')
-    #criterion = partial(huber_loss, reduction='none')
+    # criterion = partial(huber_loss, reduction='none')
     # criterion = torch.nn.HuberLoss(reduction='none', beta=0.1) # only available after torch 1.10 ?
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -159,7 +160,7 @@ if __name__ == '__main__':
                 # colmap doesn't have gt, so just test.
                 trainer.test(test_loader)
 
-            #trainer.save_mesh(resolution=256, threshold=10)
+            # trainer.save_mesh(resolution=256, threshold=10)
 
     else:
 
@@ -198,4 +199,4 @@ if __name__ == '__main__':
                 # colmap doesn't have gt, so just test.
                 trainer.test(test_loader)
 
-            #trainer.save_mesh(resolution=256, threshold=10)
+            # trainer.save_mesh(resolution=256, threshold=10)
