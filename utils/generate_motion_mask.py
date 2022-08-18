@@ -326,7 +326,7 @@ def motion_segmentation(input_folder,
         if ("val" in save_mask_dir):
             motion_mask = semantic_mask | motion_mask  # TODO: used to be |
         else:
-            motion_mask = semantic_mask | motion_mask  # TODO: used to be &
+            motion_mask = semantic_mask & motion_mask  # TODO: used to be &
 
         motion_mask = skimage.morphology.dilation(
             motion_mask, skimage.morphology.disk(2))

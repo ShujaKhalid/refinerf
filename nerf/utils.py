@@ -100,9 +100,9 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, dynamic_iter=
                 # print("coords_d: {}".format(coords_d))
 
                 # inds = torch.cat([coords_s, coords_d], 0)
-                cond = np.array([dynamic_iter >= u and dynamic_iter <=
-                                 v for (u, v) in dynamic_iters]).sum()
-                if (cond):
+                cond = np.array([key for key in dynamic_iters if dynamic_iter >= dynamic_iters[key][0] and dynamic_iter <=
+                                 dynamic_iters[key][1]])
+                if ('d' in cond):
                     # print("\n\n=======================================")
                     # print(
                     #     "DYNAMIC MODEL ACTIVATED!!! - (get_rays) - iter: {}".format(dynamic_iter))
@@ -117,6 +117,22 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, dynamic_iter=
                     inds = torch.cat([coords_d], 0)
                     results['inds_s'] = coords_s
                     results['inds_d'] = coords_d
+                elif ('b' in cond):
+                    # print("\n\n=======================================")
+                    # print(
+                    #     "COMBINED MODEL ACTIVATED!!! - (get_rays) - iter: {}".format(dynamic_iter))
+                    # print("=======================================\n\n")
+                    inds_s = torch.randint(
+                        0, coords_s.shape[-1]-1, size=[int(N//2)], device=device)  # may duplicate
+                    inds_d = torch.randint(
+                        0, coords_d.shape[-1]-1, size=[int(N//2)], device=device)  # may duplicate
+
+                    coords_s = coords_s[inds_s]
+                    coords_d = coords_d[inds_d]
+                    inds = torch.cat([coords_s, coords_d], 0)
+
+                    results['inds_s'] = coords_s
+                    results['inds_d'] = coords_d
                 else:
                     # print("\n\n=======================================")
                     # print(
@@ -125,7 +141,7 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, dynamic_iter=
                     inds_s = torch.randint(
                         0, coords_s.shape[-1]-1, size=[int(N)], device=device)  # may duplicate
                     inds_d = torch.randint(
-                        0, coords_s.shape[-1]-1, size=[0], device=device)  # may duplicate
+                        0, coords_d.shape[-1]-1, size=[0], device=device)  # may duplicate
 
                     coords_s = coords_s[inds_s]
                     coords_d = coords_d[inds_d]
@@ -138,6 +154,7 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, dynamic_iter=
 
             else:
                 # sk_debug - Random from anaywhere on grid
+                # For dnerf datasets - not sure if required
                 inds = torch.randint(
                     0, H*W, size=[N], device=device)  # may duplicate
                 results['inds_s'] = torch.Tensor([]).cuda()
@@ -409,6 +426,7 @@ class Trainer(object):
             f'cuda:{local_rank}' if torch.cuda.is_available() else 'cpu')
         self.console = Console()
         self.optimizer_func = optimizer
+        self.scheduler_func = lr_scheduler
 
         model.to(self.device)
         if self.world_size > 1:
@@ -897,23 +915,35 @@ class Trainer(object):
 
         self.local_step = 0
 
-        print("self.global_step: {}".format(self.global_step))
-
-        cond = np.array([self.global_step > u and self.global_step <
-                         v for (u, v) in eval(self.opt.dynamic_iters)]).sum()
+        print("  self.global_step: {} - self.opt_state: {}".format(self.global_step,  self.opt_state))
+        iter_states = eval(self.opt.dynamic_iters)
+        print(iter_states)
+        # cond = np.array([self.global_step > u and self.global_step <
+        #                  v for (u, v) in eval(self.opt.dynamic_iters)]).sum()
+        cond = np.array([key for key in iter_states if self.global_step >= iter_states[key][0] and self.global_step <=
+                         iter_states[key][1]])
         # if ((self.global_step >= self.opt.max_static_iters) and self.opt_state != "dynamic"):
-        if (cond):
-            print("\n\n========================================")
-            print("DYNAMIC MODEL ACTIVATED!!! - (optimizer)")
-            print("========================================\n\n")
+        if ('d' in cond):
+            # print("\n\n========================================")
+            # print("DYNAMIC MODEL ACTIVATED!!! - (optimizer)")
+            # print("========================================\n\n")
             self.opt_state = "dynamic"
             self.optimizer = self.optimizer_func(self.model, self.opt_state)
+            self.lr_scheduler = self.scheduler_func(self.optimizer)
+        elif ('b' in cond):
+            # print("\n\n========================================")
+            # print("COMBINED MODEL ACTIVATED!!! - (optimizer)")
+            # print("========================================\n\n")
+            self.opt_state = "all"
+            self.optimizer = self.optimizer_func(self.model, self.opt_state)
+            self.lr_scheduler = self.scheduler_func(self.optimizer)
         else:
             # print("\n\n========================================")
             # print("STATIC MODEL ACTIVATED!!! - (optimizer)")
             # print("========================================\n\n")
             self.opt_state = "static"
             self.optimizer = self.optimizer_func(self.model, self.opt_state)
+            self.lr_scheduler = self.scheduler_func(self.optimizer)
 
         for data in loader:
 

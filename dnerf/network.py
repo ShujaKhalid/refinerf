@@ -23,8 +23,8 @@ class NeRFNetwork(NeRFRenderer):
                  num_layers_bg=2,
                  hidden_dim_bg=64,
                  # a deeper MLP is very necessary for performance.
-                 num_layers_deform=8,
-                 hidden_dim_deform=128,
+                 num_layers_deform=16,
+                 hidden_dim_deform=256,
                  bound=1,
                  **kwargs,
                  ):
@@ -110,33 +110,33 @@ class NeRFNetwork(NeRFRenderer):
 
         self.color_s_net = nn.ModuleList(color_s_net)
 
-        # background network ============================================
-        if self.bg_radius > 0:
-            self.num_layers_bg = num_layers_bg
-            self.hidden_dim_bg = hidden_dim_bg
-            self.encoder_bg, self.in_dim_bg = get_encoder(
-                encoding_bg, input_dim=2, num_levels=4, log2_hashmap_size=19, desired_resolution=2048)  # much smaller hashgrid
+        # # background network ============================================
+        # if self.bg_radius > 0:
+        #     self.num_layers_bg = num_layers_bg
+        #     self.hidden_dim_bg = hidden_dim_bg
+        #     self.encoder_bg, self.in_dim_bg = get_encoder(
+        #         encoding_bg, input_dim=2, num_levels=4, log2_hashmap_size=19, desired_resolution=2048)  # much smaller hashgrid
 
-            # print("self.in_dim_bg: {}".format(self.in_dim_bg))
-            # print("self.in_dim_dir: {}".format(self.in_dim_dir))
+        #     # print("self.in_dim_bg: {}".format(self.in_dim_bg))
+        #     # print("self.in_dim_dir: {}".format(self.in_dim_dir))
 
-            bg_s_net = []
-            for l in range(num_layers_bg):
-                if l == 0:
-                    in_dim = self.in_dim_bg + self.in_dim_dir
-                else:
-                    in_dim = hidden_dim_bg
+        #     bg_s_net = []
+        #     for l in range(num_layers_bg):
+        #         if l == 0:
+        #             in_dim = self.in_dim_bg + self.in_dim_dir
+        #         else:
+        #             in_dim = hidden_dim_bg
 
-                if l == num_layers_bg - 1:
-                    out_dim = 3  # 3 rgb
-                else:
-                    out_dim = hidden_dim_bg
+        #         if l == num_layers_bg - 1:
+        #             out_dim = 3  # 3 rgb
+        #         else:
+        #             out_dim = hidden_dim_bg
 
-                bg_s_net.append(nn.Linear(in_dim, out_dim, bias=False))
+        #         bg_s_net.append(nn.Linear(in_dim, out_dim, bias=False))
 
-            self.bg_s_net = nn.ModuleList(bg_s_net)
-        else:
-            self.bg_s_net = None
+        #     self.bg_s_net = nn.ModuleList(bg_s_net)
+        # else:
+        #     self.bg_s_net = None
 
         # ==================
         # DYNAMIC
@@ -155,9 +155,9 @@ class NeRFNetwork(NeRFRenderer):
         self.num_layers_deform = num_layers_deform
         self.hidden_dim_deform = hidden_dim_deform
         self.encoder_deform, self.in_dim_deform = get_encoder(
-            encoding_deform, multires=12)  # FIXME: used to be 6
+            encoding_deform, multires=6)  # FIXME: used to be 6
         self.encoder_time, self.in_dim_time = get_encoder(
-            encoding_time, input_dim=1, multires=6)  # FIXME: used to be 6
+            encoding_time, input_dim=1, multires=64)  # FIXME: used to be 6
 
         print("\nin_dim_deform: {}".format(self.in_dim_deform))
         print("in_dim_time: {}".format(self.in_dim_time))
@@ -223,30 +223,30 @@ class NeRFNetwork(NeRFRenderer):
 
         self.color_d_net = nn.ModuleList(color_d_net)
 
-        # background network ============================================
-        if self.bg_radius > 0:
-            self.num_layers_bg = num_layers_bg
-            self.hidden_dim_bg = hidden_dim_bg
-            self.encoder_bg, self.in_dim_bg = get_encoder(
-                encoding_bg, input_dim=2, num_levels=4, log2_hashmap_size=19, desired_resolution=2048)  # much smaller hashgrid
+        # # background network ============================================
+        # if self.bg_radius > 0:
+        #     self.num_layers_bg = num_layers_bg
+        #     self.hidden_dim_bg = hidden_dim_bg
+        #     self.encoder_bg, self.in_dim_bg = get_encoder(
+        #         encoding_bg, input_dim=2, num_levels=4, log2_hashmap_size=19, desired_resolution=2048)  # much smaller hashgrid
 
-            bg_d_net = []
-            for l in range(num_layers_bg):
-                if l == 0:
-                    in_dim = self.in_dim_bg + self.in_dim_dir
-                else:
-                    in_dim = hidden_dim_bg
+        #     bg_d_net = []
+        #     for l in range(num_layers_bg):
+        #         if l == 0:
+        #             in_dim = self.in_dim_bg + self.in_dim_dir
+        #         else:
+        #             in_dim = hidden_dim_bg
 
-                if l == num_layers_bg - 1:
-                    out_dim = 3  # 3 rgb
-                else:
-                    out_dim = hidden_dim_bg
+        #         if l == num_layers_bg - 1:
+        #             out_dim = 3  # 3 rgb
+        #         else:
+        #             out_dim = hidden_dim_bg
 
-                bg_d_net.append(nn.Linear(in_dim, out_dim, bias=False))
+        #         bg_d_net.append(nn.Linear(in_dim, out_dim, bias=False))
 
-            self.bg_d_net = nn.ModuleList(bg_d_net)
-        else:
-            self.bg_d_net = None
+        #     self.bg_d_net = nn.ModuleList(bg_d_net)
+        # else:
+        #     self.bg_d_net = None
 
         self.sf_net = nn.Linear(self.W, 6)
         self.blend_net = nn.Linear(self.W, 1)

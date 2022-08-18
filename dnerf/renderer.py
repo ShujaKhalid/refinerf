@@ -137,7 +137,7 @@ class NeRFRenderer(nn.Module):
         self.mean_count = 0
         self.local_step = 0
 
-    # VERY SIMILAR SETUP TO NSFF
+    # # VERY SIMILAR SETUP TO NSFF
     # def run(self, rays_o, rays_d, time, num_steps=128, upsample_steps=128, bg_color=None, perturb=False, **kwargs):
     #     # rays_o, rays_d: [B, N, 3], assumes B == 1
     #     # time: [B, 1]
@@ -291,12 +291,13 @@ class NeRFRenderer(nn.Module):
     #         'depth': depth,
     #         'image': image,
     #         'deform': density_outputs['deform'],
+    #         'rgb_map_s': image
     #     }
 
-    def clear_mem(self, args):
-        for arg in args:
-            arg = 0
-        return
+    # def clear_mem(self, args):
+    #     for arg in args:
+    #         arg = 0
+    #     return
 
     def run_cuda(self, rays_o, rays_d, time, dt_gamma=0, bg_color=None, perturb=False, force_all_rays=False, max_steps=1024, **kwargs):
         # rays_o, rays_d: [B, N, 3], assumes B == 1
@@ -338,12 +339,12 @@ class NeRFRenderer(nn.Module):
                 print()
 
             # segmentation assisted
-            #rend_s = kwargs['inds_s']
-            #rend_d = kwargs['inds_d']
+            rend_s = kwargs['inds_s']
+            rend_d = kwargs['inds_d']
 
             # no segmentation assistance
-            rend_s = 0
-            rend_d = [v for v in range(480*270)]
+            # rend_s = 0
+            # rend_d = [v for v in range(480*270)]
             inds_s = [v for v in range(480*270)]
             inds_d = [v for v in range(480*270)]
 
@@ -417,8 +418,8 @@ class NeRFRenderer(nn.Module):
                     rays_o_d, rays_d_d, self.bound, self.density_bitfield[t], self.cascade, self.grid_size, nears_d, fars_d, counter, self.mean_count, perturb, 128, force_all_rays, dt_gamma, max_steps)
 
                 #print("\nxyzs_d.shape: {}".format(xyzs_d.shape))
-                print("\nt: {}".format(t))
-                print("time: {}\n".format(time))
+                # print("\nt: {}".format(t))
+                # print("time: {}\n".format(time))
                 sigmas_d, rgbs_d, deform_d, blend, sf = self(
                     xyzs_d, dirs_d, time, svd="dynamic")
                 # Amazing visualization (POINT-CLOUDS)
@@ -526,7 +527,7 @@ class NeRFRenderer(nn.Module):
                 image_s = image_s.view(prefix_s, 3)
                 depth_s = depth_s.view(prefix_s)
 
-                weights_sum_s, depth_s, image_s_orig = 0, 0, 0
+                # weights_sum_s, depth_s, image_s_orig = 0, 0, 0
                 torch.cuda.empty_cache()
 
                 # Cleanup

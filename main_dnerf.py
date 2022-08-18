@@ -23,16 +23,16 @@ if __name__ == '__main__':
     # training options
     parser.add_argument('--iters', type=int, default=24000,
                         help="training iters")
-    parser.add_argument('--lr', type=float, default=1e-2,  # 1e-2
+    parser.add_argument('--lr', type=float, default=5e-2,  # 1e-2
                         help="initial learning rate")
-    parser.add_argument('--lr_net', type=float, default=1e-3,  # 1e-3
+    parser.add_argument('--lr_net', type=float, default=5e-3,  # 1e-3
                         help="initial learning rate")
     parser.add_argument('--ckpt', type=str, default='latest')
 
     # =================================================================================
     # parser.add_argument('--num_rays', type=int, default=4096,
     # parser.add_argument('--num_rays', type=int, default=8192,
-    parser.add_argument('--num_rays', type=int, default=1024,
+    parser.add_argument('--num_rays', type=int, default=4096,
                         help="num rays sampled per image for each training step")
     parser.add_argument('--cuda_ray', action='store_true',
                         help="use CUDA raymarching instead of pytorch")
@@ -40,8 +40,9 @@ if __name__ == '__main__':
                         help="max num steps sampled per ray (only valid when using --cuda_ray)")
     # parser.add_argument('--dynamic_iters', type=str, default="[(204,312), (480,600), (2400, 3000)]",  # 2400 iters
     # parser.add_argument('--dynamic_iters', type=str, default="[(480, 960), (1200, 1440), (2400, 3600), (6000, 7200), (9600, 10800), (14400, 18000), (21600, 24000)]",  # 2400 iters
-    # parser.add_argument('--dynamic_iters', type=str, default="[(480, 960), (1200, 1440), (2400, 3600), (6000, 7200), (9600, 10800)]",  # 2400 iters
-    parser.add_argument('--dynamic_iters', type=str, default="[(0, 28800)]",  # 2400 iters
+    # parser.add_argument('--dynamic_iters', type=str, default="[(1200, 1440), (2400, 3600), (6000, 7200), (9600, 10800)]",  # 2400 iters
+    parser.add_argument('--dynamic_iters', type=str, default="{'b': (0, 3600), 'd': (6000, 7200)}",  # 2400 iters
+                        # parser.add_argument('--dynamic_iters', type=str, default="[(0, 28800)]",  # 2400 iters
                         help="intervals to train the dynamic model for")
     # =================================================================================
 
@@ -108,6 +109,8 @@ if __name__ == '__main__':
         opt.fp16 = True
         opt.cuda_ray = True
         opt.preload = True
+
+    # opt.cuda_ray = False
 
     if opt.basis:
         assert opt.cuda_ray, "Non-cuda-ray mode is temporarily broken with temporal basis mode"

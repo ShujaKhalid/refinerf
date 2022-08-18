@@ -10,11 +10,12 @@ export CUDA_ROOT=/usr/local/cuda
 # DATASET_PATH="../datalake/dnerf/custom"
 # SCENE="DynamicFace-2"
 # SCENE="Truck-2"
-SCENE="Umbrella"
+# SCENE="Umbrella"
 # SCENE="Jumping"
 # SCENE="Balloon1-2"
 # SCENE="Balloon2-2"
 # SCENE="Skating-2"
+SCENE="Playground"
 DATASET_PATH="/home/skhalid/Documents/datalake/dynamic_scene_data_full/nvidia_data_full/$SCENE/dense"
 
 NM_WEIGHTS="/home/skhalid/Documents/datalake/neural_motion_weights/"
@@ -64,7 +65,7 @@ then
 			cp -pr $DATASET_PATH/sparse $DATASET_PATH/colmap_sparse
 			mkdir -p $DATASET_PATH/images
 			mkdir -p $DATASET_PATH/images_colmap
-			IMAGE_PTH="images" # DynamicFace-2
+			IMAGE_PTH="images"
 			python scripts/colmap2nerf.py --images $DATASET_PATH/$IMAGE_PTH --run_colmap --dynamic --dataset nvidia --mode train
 			python scripts/colmap2nerf.py --images $DATASET_PATH/$IMAGE_PTH --run_colmap --dynamic --dataset nvidia --mode val
 			cp -pr $DATASET_PATH/images_scaled/*.jpg $DATASET_PATH/images_colmap
@@ -114,5 +115,5 @@ fi
 
 if [[ "$1" == "--run" || "$2" == "--run" || "$3" == "--run"  ]]
 then
-	python main_dnerf.py $DATASET_PATH --workspace $SCENE --fp16 --cuda_ray $GUIFLAG
+	python main_dnerf.py $DATASET_PATH --workspace $SCENE --fp16 -O  $GUIFLAG
 fi

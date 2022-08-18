@@ -173,8 +173,8 @@ class Trainer(_Trainer):
             # loss += args['full_loss_lambda'] * loss_dict['img_loss']
 
             # Deformation Loss
-            loss_dict['deform_loss'] = ret['deform'].abs().mean()
-            loss += args['deform_loss_lambda'] * loss_dict['deform_loss']
+            # loss_dict['deform_loss'] = ret['deform'].abs().mean()
+            # loss += args['deform_loss_lambda'] * loss_dict['deform_loss']
 
             # Compute MSE loss between rgb_s and true RGB.
             if ("rgb_map_s" in ret):
@@ -190,7 +190,7 @@ class Trainer(_Trainer):
             # Compute MSE loss between rgb_d and true RGB.
             if ("rgb_map_d" in ret):
                 img_d_loss = img2mse(
-                    ret['rgb_map_d'], gt_rgb_b[0, :ret['rgb_map_d'].shape[0], :])
+                    ret['rgb_map_d'], gt_rgb[0, -ret['rgb_map_d'].shape[0]:, :])
                 psnr_d = mse2psnr(img_d_loss)
                 loss_dict['psnr_d'] = psnr_d
                 loss_dict['img_d_loss'] = img_d_loss
@@ -198,25 +198,25 @@ class Trainer(_Trainer):
 
             # print("\nDYNAMIC_loss_dict: {}\n".format(loss_dict))
 
-            # FIXME: This should be looking at the next frame. gt_rgb_next
-            # Compute MSE loss between rgb_d_f and true RGB.
-            if ("rgb_map_d_f" in ret):
-                img_d_f_loss = img2mse(
-                    ret['rgb_map_d_f'], gt_rgb_f[0, :ret['rgb_map_d_f'].shape[0], :])
-                psnr_d_f = mse2psnr(img_d_f_loss)
-                loss_dict['psnr_d_f'] = psnr_d_f
-                loss_dict['img_d_f_loss'] = img_d_f_loss
-                loss += args['dynamic_loss_lambda'] * loss_dict['img_d_f_loss']
+            # # FIXME: This should be looking at the next frame. gt_rgb_next
+            # # Compute MSE loss between rgb_d_f and true RGB.
+            # if ("rgb_map_d_f" in ret):
+            #     img_d_f_loss = img2mse(
+            #         ret['rgb_map_d_f'], gt_rgb_f[0, :ret['rgb_map_d_f'].shape[0], :])
+            #     psnr_d_f = mse2psnr(img_d_f_loss)
+            #     loss_dict['psnr_d_f'] = psnr_d_f
+            #     loss_dict['img_d_f_loss'] = img_d_f_loss
+            #     loss += args['dynamic_loss_lambda'] * loss_dict['img_d_f_loss']
 
-            # FIXME: This should be looking at the next frame. gt_rgb_back
-            if ("rgb_map_d_b" in ret):
-                # Compute MSE loss between rgb_d_b and true RGB.
-                img_d_b_loss = img2mse(
-                    ret['rgb_map_d_b'], gt_rgb[0, :ret['rgb_map_d_b'].shape[0], :])
-                psnr_d_b = mse2psnr(img_d_b_loss)
-                loss_dict['psnr_d_b'] = psnr_d_b
-                loss_dict['img_d_b_loss'] = img_d_b_loss
-                loss += args['dynamic_loss_lambda'] * loss_dict['img_d_b_loss']
+            # # FIXME: This should be looking at the next frame. gt_rgb_back
+            # if ("rgb_map_d_b" in ret):
+            #     # Compute MSE loss between rgb_d_b and true RGB.
+            #     img_d_b_loss = img2mse(
+            #         ret['rgb_map_d_b'], gt_rgb_b[0, :ret['rgb_map_d_b'].shape[0], :])
+            #     psnr_d_b = mse2psnr(img_d_b_loss)
+            #     loss_dict['psnr_d_b'] = psnr_d_b
+            #     loss_dict['img_d_b_loss'] = img_d_b_loss
+            #     loss += args['dynamic_loss_lambda'] * loss_dict['img_d_b_loss']
 
             # # Motion loss.
             # # FIXME: No idea...
@@ -318,10 +318,24 @@ class Trainer(_Trainer):
             #         Temp * loss_dict['depth_loss']
 
             # FIXME: Order loss
-            # order_loss = torch.mean(torch.square(ret['depth_map_d'][batch_mask[0].type(torch.bool)] -
-            #                                      ret['depth_map_s'].detach()[batch_mask[0].type(torch.bool)]))
-            # loss_dict['order_loss'] = order_loss
-            # loss += args['order_loss_lambda'] * loss_dict['order_loss']
+            # Not sure if the mask indices and the other indices correspond
+            # if ('depth_map_s' in ret and 'depth_map_d' in ret):
+            #     # print("batch_mask_s: {}".format(
+            #     #     batch_mask[0, :ret['depth_map_s'].shape[0], 0].shape))
+            #     # print("batch_mask_d: {}".format(
+            #     #     batch_mask[0, -ret['depth_map_d'].shape[0]:, 0].shape))
+            #     # print("batch_mask_d: {}".format(
+            #     #     ret['depth_map_s'][batch_mask[0, :ret['depth_map_s'].shape[0], 0].type(torch.bool)].shape))
+            #     # print("batch_mask_d: {}".format(
+            #     #     ret['depth_map_d'][batch_mask[0, -ret['depth_map_d'].shape[0]:, 0].type(torch.bool)].shape))
+            #     # print("ret['depth_map_d']: {}".format(
+            #     #     ret['depth_map_d'].shape))
+            #     # print("ret['depth_map_s']: {}".format(
+            #     #     ret['depth_map_s'].shape))
+            #     order_loss = torch.mean(torch.square(ret['depth_map_s'][batch_mask[0, :ret['depth_map_s'].shape[0], 0].type(torch.bool)] -
+            #                                          ret['depth_map_d'][batch_mask[0, :ret['depth_map_d'].shape[0], 0].type(torch.bool)]))
+            #     loss_dict['order_loss'] = order_loss
+            #     loss += args['order_loss_lambda'] * loss_dict['order_loss']
 
             # TODO: FIX
             # sf_smooth_loss = compute_sf_smooth_loss(ret['raw_pts_b'],
@@ -355,6 +369,8 @@ class Trainer(_Trainer):
             # [B, N, 3] --> [B, N]
             # FIXME: uncomment the line below if necessary
             loss = self.criterion(pred_rgb, gt_rgb).mean(-1)
+
+        # print("loss: {}".format(loss))
 
         # special case for CCNeRF's rank-residual training
         if len(loss.shape) == 3:  # [K, B, N]
@@ -408,12 +424,12 @@ class Trainer(_Trainer):
         self.opt.inds_d = data['inds_d']
 
         if self.opt.color_space == 'linear':
-            images[..., :3] = srgb_to_linear(images[..., :3])
+            images[..., : 3] = srgb_to_linear(images[..., : 3])
 
         # eval with fixed background color
         bg_color = 1
         if C == 4:
-            gt_rgb = images[..., :3] * images[..., 3:] + \
+            gt_rgb = images[..., : 3] * images[..., 3:] + \
                 bg_color * (1 - images[..., 3:])
         else:
             gt_rgb = images
