@@ -15,8 +15,8 @@ export CUDA_ROOT=/usr/local/cuda
 # SCENE="Balloon1-2"
 # SCENE="Balloon2-2"
 # SCENE="Skating-2"
-# SCENE="Playground"
-# DATASET_PATH="/home/skhalid/Documents/datalake/dynamic_scene_data_full/nvidia_data_full/$SCENE/dense"
+SCENE="Playground"
+DATASET_PATH="/home/skhalid/Documents/datalake/dynamic_scene_data_full/nvidia_data_full/$SCENE/dense"
 
 NM_WEIGHTS="/home/skhalid/Documents/datalake/neural_motion_weights/"
 WEIGHTS_MIDAS=$NM_WEIGHTS"midas_v21-f6b98070.pt"

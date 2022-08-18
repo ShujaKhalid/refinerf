@@ -44,7 +44,7 @@ if __name__ == '__main__':
     parser.add_argument('--dynamic_iters', type=str, default="{'d1': (0, 24000)}",  # 2400 iters
                         # parser.add_argument('--dynamic_iters', type=str, default="[(0, 28800)]",  # 2400 iters
                         help="intervals to train the dynamic model for")
-    parser.add_argument('--update_extra_interval', type=int, default=12,  # TODO: used to be 100
+    parser.add_argument('--update_extra_interval', type=int, default=100,  # TODO: used to be 100
                         help="iter interval to update extra status (only valid when using --cuda_ray)")
     # =================================================================================
 

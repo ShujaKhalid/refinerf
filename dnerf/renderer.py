@@ -338,21 +338,21 @@ class NeRFRenderer(nn.Module):
                 print(kwargs['inds_d'].shape)
                 print()
 
+            # NVIDIA - Dynamic Scenes dataset
             # segmentation assisted
-            # rend_s = kwargs['inds_s']
-            # rend_d = kwargs['inds_d']
-
+            rend_s = kwargs['inds_s']
+            rend_d = kwargs['inds_d']
             # no segmentation assistance
             # rend_s = 0
             # rend_d = [v for v in range(480*270)]
-            # inds_s = [v for v in range(480*270)]
-            # inds_d = [v for v in range(480*270)]
+            inds_s = [v for v in range(480*270)]
+            inds_d = [v for v in range(480*270)]
 
             # dNeRF (Bouncing_Balls)
-            rend_s = 0
-            rend_d = [v for v in range(800*800)]
-            inds_s = [v for v in range(800*800)]
-            inds_d = [v for v in range(800*800)]
+            # rend_s = 0
+            # rend_d = [v for v in range(800*800)]
+            # inds_s = [v for v in range(800*800)]
+            # inds_d = [v for v in range(800*800)]
 
             N_static = len(inds_s) if type(inds_s) != int else 0
             N_dynamic = len(inds_d) if type(inds_d) != int else 0
@@ -415,9 +415,10 @@ class NeRFRenderer(nn.Module):
 
         if self.training:
 
-            print()
-            for i in range(len(self.density_bitfield)):
-                print(np.mean(self.density_bitfield[i, :].cpu().numpy()))
+            # # bitfield update
+            # print()
+            # for i in range(len(self.density_bitfield)):
+            #     print(np.mean(self.density_bitfield[i, :].cpu().numpy()))
 
             if (N_dynamic > 0):
                 # setup counter
@@ -458,7 +459,7 @@ class NeRFRenderer(nn.Module):
                 xyzs_s, dirs_s, deltas_s, rays_s = raymarching.march_rays_train(
                     rays_o_s, rays_d_s, self.bound, self.density_bitfield[0], self.cascade, self.grid_size, nears_s, fars_s, counter, self.mean_count, perturb, 128, force_all_rays, dt_gamma, max_steps)
 
-                    # print("\nxyzs_s.shape: {}".format(xyzs_s.shape))
+                # print("\nxyzs_s.shape: {}".format(xyzs_s.shape))
                 sigmas_s, rgbs_s = self(
                     xyzs_s, dirs_s, time, svd="static")
                 sigmas_s = self.density_scale * sigmas_s
