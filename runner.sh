@@ -101,14 +101,14 @@ then
 		fi
 	fi
 
-	# train
-	python utils/generate_depth.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_MIDAS --input_folder images_colmap --output_folder disp --output_img_folder disp_img 
-	python utils/generate_flow.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_RAFT --input_folder images_colmap --output_folder flow --output_img_folder flow_img 
-	python utils/generate_motion_mask.py --dataset_path $DATASET_PATH --input_folder images_colmap --output_sem_mask_folder semantic_mask --output_mot_seg_folder motion_segmentation --output_mot_mask_folder motion_masks
+	# # train
+	# python utils/generate_depth.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_MIDAS --input_folder images_colmap --output_folder disp --output_img_folder disp_img 
+	# python utils/generate_flow.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_RAFT --input_folder images_colmap --output_folder flow --output_img_folder flow_img 
+	# ####### python utils/generate_motion_mask.py --dataset_path $DATASET_PATH --input_folder images_colmap --output_sem_mask_folder semantic_mask --output_mot_seg_folder motion_segmentation --output_mot_mask_folder motion_masks
 
-	# val
-	python utils/generate_depth.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_MIDAS --input_folder val --output_folder disp_val --output_img_folder disp_img_val 
-	python utils/generate_flow.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_RAFT --input_folder val --output_folder flow_val --output_img_folder flow_img_val 
+	# # val
+	# python utils/generate_depth.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_MIDAS --input_folder val --output_folder disp_val --output_img_folder disp_img_val 
+	# python utils/generate_flow.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_RAFT --input_folder val --output_folder flow_val --output_img_folder flow_img_val 
 	python utils/generate_motion_mask.py --dataset_path $DATASET_PATH --input_folder val --output_sem_mask_folder semantic_mask_val --output_mot_seg_folder motion_segmentation_val --output_mot_mask_folder motion_masks_val
 
 fi
