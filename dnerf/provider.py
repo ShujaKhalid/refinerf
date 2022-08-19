@@ -321,7 +321,7 @@ class NeRFDataset:
             # sk_debug: used to be `motion_masks`
             mask_dir = os.path.join(basedir, 'motion_masks')
             maskfiles = [os.path.join(mask_dir, f)
-                         for f in sorted(os.listdir(mask_dir)) if f.endswith('jpg')]
+                         for f in sorted(os.listdir(mask_dir)) if f.endswith('png')]
 
             masks = [cv2.resize(cv2.imread(f)/255., (sh[1], sh[0]),
                                 interpolation=cv2.INTER_NEAREST) for f in maskfiles]
