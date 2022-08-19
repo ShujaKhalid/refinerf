@@ -931,21 +931,21 @@ class Trainer(object):
         cond = np.array([key for key in iter_states if self.global_step >= iter_states[key][0] and self.global_step <
                          iter_states[key][1]])
         # if ((self.global_step >= self.opt.max_static_iters) and self.opt_state != "dynamic"):
-        if ('d1' in cond or 'd2' in cond or 'd3' in cond or 'd4' in cond):
+        if (('d1' in cond or 'd2' in cond or 'd3' in cond or 'd4' in cond) and self.opt_state != "dynamic"):
             # print("\n\n========================================")
             # print("DYNAMIC MODEL ACTIVATED!!! - (optimizer)")
             # print("========================================\n\n")
             self.opt_state = "dynamic"
             self.optimizer = self.optimizer_func(self.model, self.opt_state)
             self.lr_scheduler = self.scheduler_func(self.optimizer)
-        elif ('b1' in cond or 'b2' in cond or 'b3' in cond or 'b4' in cond):
+        elif (('b1' in cond or 'b2' in cond or 'b3' in cond or 'b4' in cond) and self.opt_state != "all"):
             # print("\n\n========================================")
             # print("COMBINED MODEL ACTIVATED!!! - (optimizer)")
             # print("========================================\n\n")
             self.opt_state = "all"
             self.optimizer = self.optimizer_func(self.model, self.opt_state)
             self.lr_scheduler = self.scheduler_func(self.optimizer)
-        else:
+        elif ('b1' not in cond and 'b2' not in cond and 'b3' not in cond and 'b4' not in cond and 'd1' not in cond and 'd2' not in cond and 'd3' not in cond and 'd4' not in cond):
             # print("\n\n========================================")
             # print("STATIC MODEL ACTIVATED!!! - (optimizer)")
             # print("========================================\n\n")

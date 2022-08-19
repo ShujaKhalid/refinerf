@@ -21,7 +21,7 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, default=0)
 
     # training options
-    parser.add_argument('--iters', type=int, default=100000,
+    parser.add_argument('--iters', type=int, default=4096,
                         help="training iters")
     parser.add_argument('--lr', type=float, default=1e-2,  # 1e-2
                         help="initial learning rate")
@@ -32,7 +32,7 @@ if __name__ == '__main__':
     # =================================================================================
     # parser.add_argument('--num_rays', type=int, default=4096,
     # parser.add_argument('--num_rays', type=int, default=8192,
-    parser.add_argument('--num_rays', type=int, default=32000,
+    parser.add_argument('--num_rays', type=int, default=4096,
                         # parser.add_argument('--num_rays', type=int, default=4096,
                         help="num rays sampled per image for each training step")
     parser.add_argument('--cuda_ray', action='store_true',
