@@ -103,10 +103,10 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, dynamic_iter=
                 cond = np.array([key for key in dynamic_iters if dynamic_iter >= dynamic_iters[key][0] and dynamic_iter <
                                  dynamic_iters[key][1]])
                 if ('d1' in cond or 'd2' in cond or 'd3' in cond or 'd4' in cond):
-                    print("\n\n=======================================")
-                    print(
-                        "DYNAMIC MODEL ACTIVATED!!! - (get_rays) - iter: {}".format(dynamic_iter))
-                    print("=======================================\n\n")
+                    # print("\n\n=======================================")
+                    # print(
+                    #     "DYNAMIC MODEL ACTIVATED!!! - (get_rays) - iter: {}".format(dynamic_iter))
+                    # print("=======================================\n\n")
                     inds_s = torch.randint(
                         0, coords_s.shape[-1]-1, size=[0], device=device)  # may duplicate
                     inds_d = torch.randint(
@@ -118,10 +118,10 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, dynamic_iter=
                     results['inds_s'] = coords_s
                     results['inds_d'] = coords_d
                 elif ('b1' in cond or 'b2' in cond or 'b3' in cond or 'b4' in cond):
-                    print("\n\n=======================================")
-                    print(
-                        "COMBINED MODEL ACTIVATED!!! - (get_rays) - iter: {}".format(dynamic_iter))
-                    print("=======================================\n\n")
+                    # print("\n\n=======================================")
+                    # print(
+                    #     "COMBINED MODEL ACTIVATED!!! - (get_rays) - iter: {}".format(dynamic_iter))
+                    # print("=======================================\n\n")
                     inds_s = torch.randint(
                         0, coords_s.shape[-1]-1, size=[int(N//2)], device=device)  # may duplicate
                     inds_d = torch.randint(
@@ -134,10 +134,10 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, dynamic_iter=
                     results['inds_s'] = coords_s
                     results['inds_d'] = coords_d
                 else:
-                    print("\n\n=======================================")
-                    print(
-                        "STATIC MODEL ACTIVATED!!! - (get_rays) - iter: {}".format(dynamic_iter))
-                    print("=======================================\n\n")
+                    # print("\n\n=======================================")
+                    # print(
+                    #     "STATIC MODEL ACTIVATED!!! - (get_rays) - iter: {}".format(dynamic_iter))
+                    # print("=======================================\n\n")
                     inds_s = torch.randint(
                         0, coords_s.shape[-1]-1, size=[int(N)], device=device)  # may duplicate
                     inds_d = torch.randint(
@@ -925,30 +925,30 @@ class Trainer(object):
         print(" | self.global_step: {} | self.opt_state: {}".format(
             self.global_step,  self.opt_state))
         iter_states = eval(self.opt.dynamic_iters)
-        print(iter_states)
+        # print(iter_states)
         # cond = np.array([self.global_step > u and self.global_step <
         #                  v for (u, v) in eval(self.opt.dynamic_iters)]).sum()
         cond = np.array([key for key in iter_states if self.global_step >= iter_states[key][0] and self.global_step <
                          iter_states[key][1]])
         # if ((self.global_step >= self.opt.max_static_iters) and self.opt_state != "dynamic"):
         if ('d1' in cond or 'd2' in cond or 'd3' in cond or 'd4' in cond):
-            print("\n\n========================================")
-            print("DYNAMIC MODEL ACTIVATED!!! - (optimizer)")
-            print("========================================\n\n")
+            # print("\n\n========================================")
+            # print("DYNAMIC MODEL ACTIVATED!!! - (optimizer)")
+            # print("========================================\n\n")
             self.opt_state = "dynamic"
             self.optimizer = self.optimizer_func(self.model, self.opt_state)
             self.lr_scheduler = self.scheduler_func(self.optimizer)
         elif ('b1' in cond or 'b2' in cond or 'b3' in cond or 'b4' in cond):
-            print("\n\n========================================")
-            print("COMBINED MODEL ACTIVATED!!! - (optimizer)")
-            print("========================================\n\n")
+            # print("\n\n========================================")
+            # print("COMBINED MODEL ACTIVATED!!! - (optimizer)")
+            # print("========================================\n\n")
             self.opt_state = "all"
             self.optimizer = self.optimizer_func(self.model, self.opt_state)
             self.lr_scheduler = self.scheduler_func(self.optimizer)
         else:
-            print("\n\n========================================")
-            print("STATIC MODEL ACTIVATED!!! - (optimizer)")
-            print("========================================\n\n")
+            # print("\n\n========================================")
+            # print("STATIC MODEL ACTIVATED!!! - (optimizer)")
+            # print("========================================\n\n")
             self.opt_state = "static"
             self.optimizer = self.optimizer_func(self.model, self.opt_state)
             self.lr_scheduler = self.scheduler_func(self.optimizer)

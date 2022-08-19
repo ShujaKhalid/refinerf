@@ -165,13 +165,13 @@ class Trainer(_Trainer):
                 'deform_loss_lambda': 1.0
             }
 
-            # TODO: Combined loss
-            if ("rgb_map_full" in ret):
-                img_loss = img2mse(ret['rgb_map_full'], gt_rgb)
-                psnr = mse2psnr(img_loss)
-                loss_dict['psnr'] = psnr
-                loss_dict['img_loss'] = img_loss
-                loss += args['full_loss_lambda'] * loss_dict['img_loss']
+            # # TODO: Combined loss
+            # if ("rgb_map_full" in ret):
+            #     img_loss = img2mse(ret['rgb_map_full'], gt_rgb)
+            #     psnr = mse2psnr(img_loss)
+            #     loss_dict['psnr'] = psnr
+            #     loss_dict['img_loss'] = img_loss
+            #     loss += args['full_loss_lambda'] * loss_dict['img_loss']
 
             # Deformation Loss
             # loss_dict['deform_loss'] = ret['deform'].abs().mean()
@@ -309,8 +309,8 @@ class Trainer(_Trainer):
             #     loss_dict['sparse_loss'] = sparse_loss
             #     loss += args['sparse_loss_lambda'] * loss_dict['sparse_loss']
 
-            # # Depth constraint
-            # # Depth in NDC space equals to negative disparity in Euclidean space.
+            # Depth constraint
+            # Depth in NDC space equals to negative disparity in Euclidean space.
             # if ('depth_map_d' in ret):
             #     depth_loss = compute_depth_loss(
             #         ret['depth_map_d'], -batch_invdepth)

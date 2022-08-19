@@ -23,7 +23,7 @@ class NeRFNetwork(NeRFRenderer):
                  num_layers_bg=2,
                  hidden_dim_bg=64,
                  # a deeper MLP is very necessary for performance.
-                 num_layers_deform=16,
+                 num_layers_deform=2,
                  hidden_dim_deform=256,
                  bound=1,
                  **kwargs,
@@ -146,7 +146,7 @@ class NeRFNetwork(NeRFRenderer):
         print("\nINITIALIZING DYNAMIC MODEL!!!\n")
         self.input_ch = 3
         self.D = 8  # FIXME: used to be 8!
-        self.W = 128  # FIXME: used to be 256!
+        self.W = 64  # FIXME: used to be 256!
         self.skips = [4]
         self.pts_linears = nn.ModuleList(
             [nn.Linear(self.input_ch, self.W)] + [nn.Linear(self.W, self.W) if i not in self.skips else nn.Linear(self.W + self.input_ch, self.W) for i in range(self.D-1)])
@@ -155,9 +155,9 @@ class NeRFNetwork(NeRFRenderer):
         self.num_layers_deform = num_layers_deform
         self.hidden_dim_deform = hidden_dim_deform
         self.encoder_deform, self.in_dim_deform = get_encoder(
-            encoding_deform, multires=10)  # FIXME: used to be 6
+            encoding_deform, multires=6)  # FIXME: used to be 6
         self.encoder_time, self.in_dim_time = get_encoder(
-            encoding_time, input_dim=1, multires=128)  # FIXME: used to be 6
+            encoding_time, input_dim=1, multires=10)  # FIXME: used to be 6
 
         print("\nin_dim_deform: {}".format(self.in_dim_deform))
         print("in_dim_time: {}".format(self.in_dim_time))
@@ -302,6 +302,10 @@ class NeRFNetwork(NeRFRenderer):
         if enc_t.shape[0] == 1:
             enc_t = enc_t.repeat(x.shape[0], 1)  # [1, C'] --> [N, C']
 
+        # print("\nt: {}".format(t))
+        # print("enc_ori_x.shape: {}".format(enc_ori_x.shape))
+        # print("enc_t.shape: {}\n".format(enc_t.shape))
+
         # # TODO: Added -> confirm
         # if (len(x.shape) == 3):
         #     enc_t = torch.unsqueeze(
@@ -319,7 +323,7 @@ class NeRFNetwork(NeRFRenderer):
             if l != self.num_layers_deform - 1:
                 deform = F.relu(deform, inplace=True)
 
-        x_def = x + deform
+        x_def = x + deform  # FIXME: x + deform
 
         # sigma
         x_def = self.encoder(x_def, bound=self.bound)
@@ -339,9 +343,6 @@ class NeRFNetwork(NeRFRenderer):
 
         # color
         d = self.encoder_dir(d)
-        # # TODO: Added -> confirm
-        # if (len(x.shape) == 3):
-        #     d = torch.unsqueeze(d, 1).repeat(1, enc_t.shape[1], 1)
 
         h = torch.cat([d, geo_feat], dim=-1)
         for l in range(self.num_layers_color):
@@ -379,6 +380,9 @@ class NeRFNetwork(NeRFRenderer):
         enc_t = self.encoder_time(t)  # [1, 1] --> [1, C']
         if enc_t.shape[0] == 1:
             enc_t = enc_t.repeat(x.shape[0], 1)  # [1, C'] --> [N, C']
+        # print("t: {}".format(t))
+        # print("enc_ori_x.shape: {}".format(enc_ori_x.shape))
+        # print("enc_t.shape: {}".format(enc_t.shape))
 
         deform = torch.cat([enc_ori_x, enc_t], dim=1)  # [N, C + C']
         for l in range(self.num_layers_deform):
