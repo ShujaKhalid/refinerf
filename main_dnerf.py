@@ -32,7 +32,8 @@ if __name__ == '__main__':
     # =================================================================================
     # parser.add_argument('--num_rays', type=int, default=4096,
     # parser.add_argument('--num_rays', type=int, default=8192,
-    parser.add_argument('--num_rays', type=int, default=4096,
+    parser.add_argument('--num_rays', type=int, default=32000,
+                        # parser.add_argument('--num_rays', type=int, default=4096,
                         help="num rays sampled per image for each training step")
     parser.add_argument('--cuda_ray', action='store_true',
                         help="use CUDA raymarching instead of pytorch")

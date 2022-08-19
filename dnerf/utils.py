@@ -174,8 +174,8 @@ class Trainer(_Trainer):
             #     loss += args['full_loss_lambda'] * loss_dict['img_loss']
 
             # Deformation Loss
-            # loss_dict['deform_loss'] = ret['deform'].abs().mean()
-            # loss += args['deform_loss_lambda'] * loss_dict['deform_loss']
+            loss_dict['deform_loss'] = ret['deform'].abs().mean()
+            loss += args['deform_loss_lambda'] * loss_dict['deform_loss']
 
             # Compute MSE loss between rgb_s and true RGB.
             if ("rgb_map_s" in ret):
@@ -199,25 +199,25 @@ class Trainer(_Trainer):
 
             # print("\nDYNAMIC_loss_dict: {}\n".format(loss_dict))
 
-            # # FIXME: This should be looking at the next frame. gt_rgb_next
-            # # Compute MSE loss between rgb_d_f and true RGB.
-            # if ("rgb_map_d_f" in ret):
-            #     img_d_f_loss = img2mse(
-            #         ret['rgb_map_d_f'], gt_rgb_f[0, :ret['rgb_map_d_f'].shape[0], :])
-            #     psnr_d_f = mse2psnr(img_d_f_loss)
-            #     loss_dict['psnr_d_f'] = psnr_d_f
-            #     loss_dict['img_d_f_loss'] = img_d_f_loss
-            #     loss += args['dynamic_loss_lambda'] * loss_dict['img_d_f_loss']
+            # FIXME: This should be looking at the next frame. gt_rgb_next
+            # Compute MSE loss between rgb_d_f and true RGB.
+            if ("rgb_map_d_f" in ret):
+                img_d_f_loss = img2mse(
+                    ret['rgb_map_d_f'], gt_rgb_f[0, :ret['rgb_map_d_f'].shape[0], :])
+                psnr_d_f = mse2psnr(img_d_f_loss)
+                loss_dict['psnr_d_f'] = psnr_d_f
+                loss_dict['img_d_f_loss'] = img_d_f_loss
+                loss += args['dynamic_loss_lambda'] * loss_dict['img_d_f_loss']
 
-            # # FIXME: This should be looking at the next frame. gt_rgb_back
-            # if ("rgb_map_d_b" in ret):
-            #     # Compute MSE loss between rgb_d_b and true RGB.
-            #     img_d_b_loss = img2mse(
-            #         ret['rgb_map_d_b'], gt_rgb_b[0, :ret['rgb_map_d_b'].shape[0], :])
-            #     psnr_d_b = mse2psnr(img_d_b_loss)
-            #     loss_dict['psnr_d_b'] = psnr_d_b
-            #     loss_dict['img_d_b_loss'] = img_d_b_loss
-            #     loss += args['dynamic_loss_lambda'] * loss_dict['img_d_b_loss']
+            # FIXME: This should be looking at the next frame. gt_rgb_back
+            if ("rgb_map_d_b" in ret):
+                # Compute MSE loss between rgb_d_b and true RGB.
+                img_d_b_loss = img2mse(
+                    ret['rgb_map_d_b'], gt_rgb_b[0, :ret['rgb_map_d_b'].shape[0], :])
+                psnr_d_b = mse2psnr(img_d_b_loss)
+                loss_dict['psnr_d_b'] = psnr_d_b
+                loss_dict['img_d_b_loss'] = img_d_b_loss
+                loss += args['dynamic_loss_lambda'] * loss_dict['img_d_b_loss']
 
             # # Motion loss.
             # # FIXME: No idea...
@@ -256,21 +256,21 @@ class Trainer(_Trainer):
             #         loss += args['flow_loss_lambda'] * \
             #             Temp * loss_dict['flow_b_loss']
 
-            # # Slow scene flow. The forward and backward sceneflow should be small.
-            # if ('sceneflow_f' in ret and 'sceneflow_b' in ret):
-            #     slow_loss = L1(ret['sceneflow_b']) + \
-            #         L1(ret['sceneflow_f'])
-            #     loss_dict['slow_loss'] = slow_loss
-            #     loss += args['slow_loss_lambda'] * loss_dict['slow_loss']
+            # Slow scene flow. The forward and backward sceneflow should be small.
+            if ('sceneflow_f' in ret and 'sceneflow_b' in ret):
+                slow_loss = L1(ret['sceneflow_b']) + \
+                    L1(ret['sceneflow_f'])
+                loss_dict['slow_loss'] = slow_loss
+                loss += args['slow_loss_lambda'] * loss_dict['slow_loss']
 
-            # # Smooth scene flow. The summation of the forward and backward sceneflow should be small.
-            # if ('raw_pts' in ret and 'raw_pts_b' in ret and 'raw_pts_f' in ret):
-            #     smooth_loss = compute_sf_smooth_loss(ret['raw_pts'],
-            #                                          ret['raw_pts_f'],
-            #                                          ret['raw_pts_b'],
-            #                                          H, W, focal)
-            #     loss_dict['smooth_loss'] = smooth_loss
-            #     loss += args['smooth_loss_lambda'] * loss_dict['smooth_loss']
+            # Smooth scene flow. The summation of the forward and backward sceneflow should be small.
+            if ('raw_pts' in ret and 'raw_pts_b' in ret and 'raw_pts_f' in ret):
+                smooth_loss = compute_sf_smooth_loss(ret['raw_pts'],
+                                                     ret['raw_pts_f'],
+                                                     ret['raw_pts_b'],
+                                                     H, W, focal)
+                loss_dict['smooth_loss'] = smooth_loss
+                loss += args['smooth_loss_lambda'] * loss_dict['smooth_loss']
 
             # # Spatial smooth scene flow. (loss adapted from NSFF)
             # if ('raw_pts' in ret and 'raw_pts_b' in ret and 'raw_pts_f' in ret):
@@ -309,8 +309,8 @@ class Trainer(_Trainer):
             #     loss_dict['sparse_loss'] = sparse_loss
             #     loss += args['sparse_loss_lambda'] * loss_dict['sparse_loss']
 
-            # Depth constraint
-            # Depth in NDC space equals to negative disparity in Euclidean space.
+            # # Depth constraint
+            # # Depth in NDC space equals to negative disparity in Euclidean space.
             # if ('depth_map_d' in ret):
             #     depth_loss = compute_depth_loss(
             #         ret['depth_map_d'], -batch_invdepth)
