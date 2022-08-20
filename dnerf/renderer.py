@@ -677,25 +677,25 @@ class NeRFRenderer(nn.Module):
                 sf_f, pts_f,  = 0, 0
                 torch.cuda.empty_cache()
 
-                # # 5th pass
-                # # print("\nExecuting 5th pass...")
-                # sigmas_d_b_b, rgbs_d_b_b, _, _, _ = self(
-                #     pts_b_b, dirs_d, time, svd="dynamic")
-                # weights_sum_d_b_b, _, image_d_b_b = raymarching.composite_rays_train(
-                #     sigmas_d_b_b, rgbs_d_b_b, deltas_d, rays_d)
-                # image_d_b_b = image_d_b_b + \
-                #     (1 - weights_sum_d_b_b).unsqueeze(-1) * bg_color
-                # results['rgb_map_d_b_b'] = image_d_b_b
+                # 5th pass
+                # print("\nExecuting 5th pass...")
+                sigmas_d_b_b, rgbs_d_b_b, _, _, _ = self(
+                    pts_b_b, dirs_d, time-2 if time-2 >= 0 else torch.Tensor([[0]]).cuda(), svd="dynamic")
+                weights_sum_d_b_b, _, image_d_b_b = raymarching.composite_rays_train(
+                    sigmas_d_b_b, rgbs_d_b_b, deltas_d, rays_d)
+                image_d_b_b = image_d_b_b + \
+                    (1 - weights_sum_d_b_b).unsqueeze(-1) * bg_color
+                results['rgb_map_d_b_b'] = image_d_b_b
 
-                # # 6th pass
-                # # print("\nExecuting 6th pass...")
-                # sigmas_d_f_f, rgbs_d_f_f, _, _, _ = self(
-                #     pts_f_f, dirs_d, time, svd="dynamic")
-                # weights_sum_d_f_f, _, image_d_f_f = raymarching.composite_rays_train(
-                #     sigmas_d_f_f, rgbs_d_f_f, deltas_d, rays_d)
-                # image_d_f_f = image_d_f_f + \
-                #     (1 - weights_sum_d_f_f).unsqueeze(-1) * bg_color
-                # results['rgb_map_d_f_f'] = image_d_f_f
+                # 6th pass
+                # print("\nExecuting 6th pass...")
+                sigmas_d_f_f, rgbs_d_f_f, _, _, _ = self(
+                    pts_f_f, dirs_d, time+2 if time+2 < self.time_size else torch.Tensor([[self.time_size]]).cuda(), svd="dynamic")
+                weights_sum_d_f_f, _, image_d_f_f = raymarching.composite_rays_train(
+                    sigmas_d_f_f, rgbs_d_f_f, deltas_d, rays_d)
+                image_d_f_f = image_d_f_f + \
+                    (1 - weights_sum_d_f_f).unsqueeze(-1) * bg_color
+                results['rgb_map_d_f_f'] = image_d_f_f
 
             if (N_static > 0):
                 results['image'] = image_s
@@ -709,7 +709,12 @@ class NeRFRenderer(nn.Module):
                 # results['rgb_map_full'] = image_d
                 results['rgb_map_d'] = image_d
                 # FIXME: save weights from composite_ray_train
-                # results['weights_d'] = sigmas_d_f # TODO: These aren't the weights we are looking for - Get weights from CUDA kernel
+                # TODO: These aren't the weights we are looking for - Get weights from CUDA kernel
+                results['weights_d'] = weights_sum_d
+                results['weights_d_b'] = weights_sum_d_b
+                results['weights_d_f'] = weights_sum_d_f
+                results['weights_d_b_b'] = weights_sum_d_b_b
+                results['weights_d_f_f'] = weights_sum_d_f_f
             # results['dynamicness_map'] = torch.sum(weights_full * blending, -1)
 
         # [Inference]

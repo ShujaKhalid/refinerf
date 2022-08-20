@@ -23,7 +23,7 @@ class NeRFNetwork(NeRFRenderer):
                  num_layers_bg=2,
                  hidden_dim_bg=64,
                  # a deeper MLP is very necessary for performance.
-                 num_layers_deform=8,
+                 num_layers_deform=5,
                  hidden_dim_deform=128,
                  bound=1,
                  **kwargs,
@@ -157,7 +157,7 @@ class NeRFNetwork(NeRFRenderer):
         self.encoder_deform, self.in_dim_deform = get_encoder(
             encoding_deform, multires=10)  # FIXME: used to be 10
         self.encoder_time, self.in_dim_time = get_encoder(
-            encoding_time, input_dim=1, multires=128)  # FIXME: used to be 6
+            encoding_time, input_dim=1, multires=6)  # FIXME: used to be 6
 
         print("\nin_dim_deform: {}".format(self.in_dim_deform))
         print("in_dim_time: {}".format(self.in_dim_time))

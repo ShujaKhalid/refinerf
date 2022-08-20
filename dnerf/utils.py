@@ -181,7 +181,7 @@ class Trainer(_Trainer):
             # [Include] Compute MSE loss between rgb_s and true RGB.
             if ("rgb_map_s" in ret):
                 img_s_loss = img2mse(
-                    ret['rgb_map_s'], gt_rgb[0, :ret['rgb_map_s'].shape[0], :])
+                    ret['rgb_map_s'], gt_rgb)
                 psnr_s = mse2psnr(img_s_loss)
                 loss_dict['psnr_s'] = psnr_s
                 loss_dict['img_s_loss'] = img_s_loss
@@ -190,7 +190,7 @@ class Trainer(_Trainer):
             # [Include] Compute MSE loss between rgb_d and true RGB.
             if ("rgb_map_d" in ret):
                 img_d_loss = img2mse(
-                    ret['rgb_map_d'], gt_rgb[0, -ret['rgb_map_d'].shape[0]:, :])
+                    ret['rgb_map_d'], gt_rgb)
                 psnr_d = mse2psnr(img_d_loss)
                 loss_dict['psnr_d'] = psnr_d
                 loss_dict['img_d_loss'] = img_d_loss
@@ -199,7 +199,7 @@ class Trainer(_Trainer):
             # [Include] Compute MSE loss between rgb_d_f and true RGB.
             if ("rgb_map_d_f" in ret):
                 img_d_f_loss = img2mse(
-                    ret['rgb_map_d_f'], gt_rgb_f[0, :ret['rgb_map_d_f'].shape[0], :])
+                    ret['rgb_map_d_f'], gt_rgb_f)
                 psnr_d_f = mse2psnr(img_d_f_loss)
                 loss_dict['psnr_d_f'] = psnr_d_f
                 loss_dict['img_d_f_loss'] = img_d_f_loss
@@ -208,7 +208,7 @@ class Trainer(_Trainer):
             # [Include] Compute MSE loss between rgb_d_b and true RGB.
             if ("rgb_map_d_b" in ret):
                 img_d_b_loss = img2mse(
-                    ret['rgb_map_d_b'], gt_rgb_b[0, :ret['rgb_map_d_b'].shape[0], :])
+                    ret['rgb_map_d_b'], gt_rgb_b)
                 psnr_d_b = mse2psnr(img_d_b_loss)
                 loss_dict['psnr_d_b'] = psnr_d_b
                 loss_dict['img_d_b_loss'] = img_d_b_loss
@@ -253,7 +253,7 @@ class Trainer(_Trainer):
             #         loss += args['flow_loss_lambda'] * \
             #             Temp * loss_dict['flow_b_loss']
 
-            # Slow scene flow. The forward and backward sceneflow should be small.
+            # [Include] Slow scene flow. The forward and backward sceneflow should be small.
             if ('sceneflow_f' in ret and 'sceneflow_b' in ret):
                 slow_loss = L1(ret['sceneflow_b']) + \
                     L1(ret['sceneflow_f'])
@@ -278,14 +278,13 @@ class Trainer(_Trainer):
             #     loss += args['smooth_loss_lambda'] * \
             #         loss_dict['sp_smooth_loss']
 
-            # FIXME:This breaks everything :(
-            # # Consistency loss.
-            # if ('sceneflow_f' in ret and 'sceneflow_b' in ret and 'sceneflow_f_b' in ret):
-            #     consistency_loss = L1(ret['sceneflow_f'].cuda() + ret['sceneflow_f_b'].cuda()) + \
-            #         L1(ret['sceneflow_b'].cuda() + ret['sceneflow_b_f'].cuda())
-            #     loss_dict['consistency_loss'] = consistency_loss
-            #     loss += args['consistency_loss_lambda'] * \
-            #         loss_dict['consistency_loss']
+            # [Include] Consistency loss.
+            if ('sceneflow_f' in ret and 'sceneflow_b' in ret and 'sceneflow_f_b' in ret):
+                consistency_loss = L1(ret['sceneflow_f'] + ret['sceneflow_f_b']) + \
+                    L1(ret['sceneflow_b'] + ret['sceneflow_b_f'])
+                loss_dict['consistency_loss'] = consistency_loss
+                loss += args['consistency_loss_lambda'] * \
+                    loss_dict['consistency_loss']
 
             # FIXME: Blending has incorrect dimensions & Get dynamicness_map
             # Mask loss.
@@ -301,23 +300,29 @@ class Trainer(_Trainer):
 
             # Sparsity loss.
             if ('weights_d' in ret and 'blending' in ret):
-                sparse_loss = entropy(
-                    ret['weights_d']) + entropy(ret['blending'])
+                sparse_loss = \
+                    entropy(ret['weights_d']) + \
+                    entropy(ret['blending']) + \
+                    entropy(ret['weights_d_b']) + \
+                    entropy(ret['weights_d_f'])
+                # entropy(ret['weights_d_b_b']) + \
+                # entropy(ret['weights_d_f_f']) + \
                 loss_dict['sparse_loss'] = sparse_loss
                 loss += args['sparse_loss_lambda'] * loss_dict['sparse_loss']
 
             # Depth constraint
             # Depth in NDC space equals to negative disparity in Euclidean space.
-            if ('depth_map_d' in ret):
-                depth_loss = compute_depth_loss(
-                    ret['depth_map_d'], -batch_invdepth)
-                loss_dict['depth_loss'] = depth_loss
-                loss += args['depth_loss_lambda'] * \
-                    Temp * loss_dict['depth_loss']
+            # if ('depth_map_d' in ret):
+            #     depth_loss = compute_depth_loss(
+            #         ret['depth_map_d'], -batch_invdepth)
+            #     loss_dict['depth_loss'] = depth_loss
+            #     loss += args['depth_loss_lambda'] * \
+            #         Temp * loss_dict['depth_loss']
 
-            # FIXME: Order loss
-            # Not sure if the mask indices and the other indices correspond
+            # # FIXME: Order loss
+            # # Not sure if the mask indices and the other indices correspond
             # if ('depth_map_s' in ret and 'depth_map_d' in ret):
+            #     print("batch_mask: {}".format(batch_mask.shape))
             #     # print("batch_mask_s: {}".format(
             #     #     batch_mask[0, :ret['depth_map_s'].shape[0], 0].shape))
             #     # print("batch_mask_d: {}".format(
@@ -330,8 +335,8 @@ class Trainer(_Trainer):
             #     #     ret['depth_map_d'].shape))
             #     # print("ret['depth_map_s']: {}".format(
             #     #     ret['depth_map_s'].shape))
-            #     order_loss = torch.mean(torch.square(ret['depth_map_s'][batch_mask[0, :ret['depth_map_s'].shape[0], 0].type(torch.bool)] -
-            #                                          ret['depth_map_d'][batch_mask[0, :ret['depth_map_d'].shape[0], 0].type(torch.bool)]))
+            #     order_loss = torch.mean(torch.square(ret['depth_map_s'][batch_mask.type(torch.bool)] -
+            #                                          ret['depth_map_d'][batch_mask.type(torch.bool)]))
             #     loss_dict['order_loss'] = order_loss
             #     loss += args['order_loss_lambda'] * loss_dict['order_loss']
 
@@ -347,19 +352,19 @@ class Trainer(_Trainer):
             # loss_dict['sf_smooth_loss'] = sf_smooth_loss
             # loss += args['smooth_loss_lambda'] * loss_dict['sf_smooth_loss']
 
-            if chain_5frames:
-                if ('rgb_map_d_b_b' in ret and 'rgb_map_d_f_f' in ret):
-                    img_d_b_b_loss = img2mse(
-                        ret['rgb_map_d_b_b'], gt_rgb[:, :ret['rgb_map_d_b_b'].shape[0], :])
-                    loss_dict['img_d_b_b_loss'] = img_d_b_b_loss
-                    loss += args['dynamic_loss_lambda'] * \
-                        loss_dict['img_d_b_b_loss']
+            # if chain_5frames:
+            #     if ('rgb_map_d_b_b' in ret and 'rgb_map_d_f_f' in ret):
+            #         img_d_b_b_loss = img2mse(
+            #             ret['rgb_map_d_b_b'], gt_rgb[:, :ret['rgb_map_d_b_b'].shape[0], :])
+            #         loss_dict['img_d_b_b_loss'] = img_d_b_b_loss
+            #         loss += args['dynamic_loss_lambda'] * \
+            #             loss_dict['img_d_b_b_loss']
 
-                    img_d_f_f_loss = img2mse(
-                        ret['rgb_map_d_f_f'], gt_rgb[:, :ret['rgb_map_d_f_f'].shape[0], :])
-                    loss_dict['img_d_f_f_loss'] = img_d_f_f_loss
-                    loss += args['dynamic_loss_lambda'] * \
-                        loss_dict['img_d_f_f_loss']
+            #         img_d_f_f_loss = img2mse(
+            #             ret['rgb_map_d_f_f'], gt_rgb[:, :ret['rgb_map_d_f_f'].shape[0], :])
+            #         loss_dict['img_d_f_f_loss'] = img_d_f_f_loss
+            #         loss += args['dynamic_loss_lambda'] * \
+            #             loss_dict['img_d_f_f_loss']
 
             # print("\n{}\n".format(loss_dict))
 
