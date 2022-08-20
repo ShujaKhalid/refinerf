@@ -173,12 +173,12 @@ class Trainer(_Trainer):
             #     loss_dict['img_loss'] = img_loss
             #     loss += args['full_loss_lambda'] * loss_dict['img_loss']
 
-            # Deformation Loss
+            # [Include] Deformation Loss
             if ("deform" in ret):
                 loss_dict['deform_loss'] = ret['deform'].abs().mean()
                 loss += args['deform_loss_lambda'] * loss_dict['deform_loss']
 
-            # Compute MSE loss between rgb_s and true RGB.
+            # [Include] Compute MSE loss between rgb_s and true RGB.
             if ("rgb_map_s" in ret):
                 img_s_loss = img2mse(
                     ret['rgb_map_s'], gt_rgb[0, :ret['rgb_map_s'].shape[0], :])
@@ -187,7 +187,7 @@ class Trainer(_Trainer):
                 loss_dict['img_s_loss'] = img_s_loss
                 loss += args['static_loss_lambda'] * loss_dict['img_s_loss']
 
-            # Compute MSE loss between rgb_d and true RGB.
+            # [Include] Compute MSE loss between rgb_d and true RGB.
             if ("rgb_map_d" in ret):
                 img_d_loss = img2mse(
                     ret['rgb_map_d'], gt_rgb[0, -ret['rgb_map_d'].shape[0]:, :])
@@ -196,7 +196,7 @@ class Trainer(_Trainer):
                 loss_dict['img_d_loss'] = img_d_loss
                 loss += args['dynamic_loss_lambda'] * loss_dict['img_d_loss']
 
-            # Compute MSE loss between rgb_d_f and true RGB.
+            # [Include] Compute MSE loss between rgb_d_f and true RGB.
             if ("rgb_map_d_f" in ret):
                 img_d_f_loss = img2mse(
                     ret['rgb_map_d_f'], gt_rgb_f[0, :ret['rgb_map_d_f'].shape[0], :])
@@ -205,8 +205,8 @@ class Trainer(_Trainer):
                 loss_dict['img_d_f_loss'] = img_d_f_loss
                 loss += args['dynamic_loss_lambda'] * loss_dict['img_d_f_loss']
 
+            # [Include] Compute MSE loss between rgb_d_b and true RGB.
             if ("rgb_map_d_b" in ret):
-                # Compute MSE loss between rgb_d_b and true RGB.
                 img_d_b_loss = img2mse(
                     ret['rgb_map_d_b'], gt_rgb_b[0, :ret['rgb_map_d_b'].shape[0], :])
                 psnr_d_b = mse2psnr(img_d_b_loss)
@@ -253,12 +253,12 @@ class Trainer(_Trainer):
             #         loss += args['flow_loss_lambda'] * \
             #             Temp * loss_dict['flow_b_loss']
 
-            # # Slow scene flow. The forward and backward sceneflow should be small.
-            # if ('sceneflow_f' in ret and 'sceneflow_b' in ret):
-            #     slow_loss = L1(ret['sceneflow_b']) + \
-            #         L1(ret['sceneflow_f'])
-            #     loss_dict['slow_loss'] = slow_loss
-            #     loss += args['slow_loss_lambda'] * loss_dict['slow_loss']
+            # Slow scene flow. The forward and backward sceneflow should be small.
+            if ('sceneflow_f' in ret and 'sceneflow_b' in ret):
+                slow_loss = L1(ret['sceneflow_b']) + \
+                    L1(ret['sceneflow_f'])
+                loss_dict['slow_loss'] = slow_loss
+                loss += args['slow_loss_lambda'] * loss_dict['slow_loss']
 
             # # Smooth scene flow. The summation of the forward and backward sceneflow should be small.
             # if ('raw_pts' in ret and 'raw_pts_b' in ret and 'raw_pts_f' in ret):
@@ -299,21 +299,21 @@ class Trainer(_Trainer):
             #     if i_img < decay_iteration * 1000:
             #         loss += args['mask_loss_lambda'] * loss_dict['mask_loss']
 
-            # # Sparsity loss.
-            # if ('weights_d' in ret and 'blending' in ret):
-            #     sparse_loss = entropy(
-            #         ret['weights_d']) + entropy(ret['blending'])
-            #     loss_dict['sparse_loss'] = sparse_loss
-            #     loss += args['sparse_loss_lambda'] * loss_dict['sparse_loss']
+            # Sparsity loss.
+            if ('weights_d' in ret and 'blending' in ret):
+                sparse_loss = entropy(
+                    ret['weights_d']) + entropy(ret['blending'])
+                loss_dict['sparse_loss'] = sparse_loss
+                loss += args['sparse_loss_lambda'] * loss_dict['sparse_loss']
 
-            # # Depth constraint
-            # # Depth in NDC space equals to negative disparity in Euclidean space.
-            # if ('depth_map_d' in ret):
-            #     depth_loss = compute_depth_loss(
-            #         ret['depth_map_d'], -batch_invdepth)
-            #     loss_dict['depth_loss'] = depth_loss
-            #     loss += args['depth_loss_lambda'] * \
-            #         Temp * loss_dict['depth_loss']
+            # Depth constraint
+            # Depth in NDC space equals to negative disparity in Euclidean space.
+            if ('depth_map_d' in ret):
+                depth_loss = compute_depth_loss(
+                    ret['depth_map_d'], -batch_invdepth)
+                loss_dict['depth_loss'] = depth_loss
+                loss += args['depth_loss_lambda'] * \
+                    Temp * loss_dict['depth_loss']
 
             # FIXME: Order loss
             # Not sure if the mask indices and the other indices correspond
@@ -335,7 +335,7 @@ class Trainer(_Trainer):
             #     loss_dict['order_loss'] = order_loss
             #     loss += args['order_loss_lambda'] * loss_dict['order_loss']
 
-            # TODO: FIX
+            # # TODO: FIX
             # sf_smooth_loss = compute_sf_smooth_loss(ret['raw_pts_b'],
             #                                         ret['raw_pts'],
             #                                         ret['raw_pts_b_b'],
@@ -347,21 +347,31 @@ class Trainer(_Trainer):
             # loss_dict['sf_smooth_loss'] = sf_smooth_loss
             # loss += args['smooth_loss_lambda'] * loss_dict['sf_smooth_loss']
 
-            # if chain_5frames:
-            #     if ('rgb_map_d_b_b' in ret and 'rgb_map_d_f_f' in ret):
-            #         img_d_b_b_loss = img2mse(
-            #             ret['rgb_map_d_b_b'], gt_rgb[:, :ret['rgb_map_d_b_b'].shape[0], :])
-            #         loss_dict['img_d_b_b_loss'] = img_d_b_b_loss
-            #         loss += args['dynamic_loss_lambda'] * \
-            #             loss_dict['img_d_b_b_loss']
+            if chain_5frames:
+                if ('rgb_map_d_b_b' in ret and 'rgb_map_d_f_f' in ret):
+                    img_d_b_b_loss = img2mse(
+                        ret['rgb_map_d_b_b'], gt_rgb[:, :ret['rgb_map_d_b_b'].shape[0], :])
+                    loss_dict['img_d_b_b_loss'] = img_d_b_b_loss
+                    loss += args['dynamic_loss_lambda'] * \
+                        loss_dict['img_d_b_b_loss']
 
-            #         img_d_f_f_loss = img2mse(
-            #             ret['rgb_map_d_f_f'], gt_rgb[:, :ret['rgb_map_d_f_f'].shape[0], :])
-            #         loss_dict['img_d_f_f_loss'] = img_d_f_f_loss
-            #         loss += args['dynamic_loss_lambda'] * \
-            #             loss_dict['img_d_f_f_loss']
+                    img_d_f_f_loss = img2mse(
+                        ret['rgb_map_d_f_f'], gt_rgb[:, :ret['rgb_map_d_f_f'].shape[0], :])
+                    loss_dict['img_d_f_f_loss'] = img_d_f_f_loss
+                    loss += args['dynamic_loss_lambda'] * \
+                        loss_dict['img_d_f_f_loss']
 
             # print("\n{}\n".format(loss_dict))
+
+            # Write the losses to tensorboard
+            for key in loss_dict:
+                val = loss_dict[key]
+                if ("psnr" in key):
+                    self.writer.add_scalar(
+                        "psnr/"+key, val, self.global_step)
+                else:
+                    self.writer.add_scalar(
+                        "loss/"+key, val, self.global_step)
 
         else:
             # [B, N, 3] --> [B, N]

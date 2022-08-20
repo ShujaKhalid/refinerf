@@ -709,7 +709,7 @@ class NeRFRenderer(nn.Module):
                 # results['rgb_map_full'] = image_d
                 results['rgb_map_d'] = image_d
                 # FIXME: save weights from composite_ray_train
-                #results['weights_d'] = sigmas_d_f
+                # results['weights_d'] = sigmas_d_f # TODO: These aren't the weights we are looking for - Get weights from CUDA kernel
             # results['dynamicness_map'] = torch.sum(weights_full * blending, -1)
 
         # [Inference]

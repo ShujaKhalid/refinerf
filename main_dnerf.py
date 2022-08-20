@@ -20,29 +20,26 @@ if __name__ == '__main__':
     parser.add_argument('--workspace', type=str, default='workspace')
     parser.add_argument('--seed', type=int, default=0)
 
+    # =================================================================================
     # training options
-    parser.add_argument('--iters', type=int, default=144000,
+    parser.add_argument('--iters', type=int, default=6000,
                         help="training iters")
     parser.add_argument('--lr', type=float, default=1e-2,  # 1e-2
                         help="initial learning rate")
     parser.add_argument('--lr_net', type=float, default=1e-3,  # 1e-3
                         help="initial learning rate")
     parser.add_argument('--ckpt', type=str, default='latest')
-
-    # =================================================================================
-    # parser.add_argument('--num_rays', type=int, default=4096,
-    # parser.add_argument('--num_rays', type=int, default=8192,
     parser.add_argument('--num_rays', type=int, default=4096,
-                        # parser.add_argument('--num_rays', type=int, default=4096,
                         help="num rays sampled per image for each training step")
     parser.add_argument('--cuda_ray', action='store_true',
                         help="use CUDA raymarching instead of pytorch")
-    parser.add_argument('--max_steps', type=int, default=128,  # sk_debug: used to be 1024
+    parser.add_argument('--max_steps', type=int, default=64,  # sk_debug: used to be 1024
                         help="max num steps sampled per ray (only valid when using --cuda_ray)")
     # parser.add_argument('--dynamic_iters', type=str, default="[(204,312), (480,600), (2400, 3000)]",  # 2400 iters
     # parser.add_argument('--dynamic_iters', type=str, default="[(480, 960), (1200, 1440), (2400, 3600), (6000, 7200), (9600, 10800), (14400, 18000), (21600, 24000)]",  # 2400 iters
     # parser.add_argument('--dynamic_iters', type=str, default="{'d1': (2400, 3600), 'b1': (3600, 4800), 'd3': (6000, 7200), 'b3': (10800, 14400), 'd2': (15600, 16800)}",  # 2400 iters # BOOOO
-    parser.add_argument('--dynamic_iters', type=str, default="{'d1': (0, 4200), 'd2': (4800, 6000), 'd3': (7200, 8400), 'd4': (9600, 10800)}",  # 2400 iters
+    # parser.add_argument('--dynamic_iters', type=str, default="{'d2': (1200, 6000), 'd3': (7200, 8400), 'd4': (9600, 10800)}",  # 2400 iters
+    parser.add_argument('--dynamic_iters', type=str, default="{'d2': (0, 3000)}",  # 2400 iters
                         # parser.add_argument('--dynamic_iters', type=str, default="{'d1': (0, 12000)}",  # 24000 iters
                         help="intervals to train the dynamic model for")
     parser.add_argument('--update_extra_interval', type=int, default=100,  # TODO: used to be 100
@@ -175,7 +172,7 @@ if __name__ == '__main__':
             optimizer, lambda iter: 0.1 ** min(iter / opt.iters, 1))
 
         trainer = Trainer('ngp', opt, model, device=device, workspace=opt.workspace, optimizer=optimizer, criterion=criterion, ema_decay=0.95,
-                          fp16=opt.fp16, lr_scheduler=scheduler, scheduler_update_every_step=True, metrics=[PSNRMeter()], use_checkpoint=opt.ckpt, eval_interval=25)
+                          fp16=opt.fp16, lr_scheduler=scheduler, scheduler_update_every_step=True, metrics=[PSNRMeter()], use_checkpoint=opt.ckpt, eval_interval=10)
 
         if opt.gui:
             gui = NeRFGUI(opt, trainer, train_loader)
