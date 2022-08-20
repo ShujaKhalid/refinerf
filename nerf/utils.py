@@ -986,9 +986,9 @@ class Trainer(object):
 
                 if self.use_tensorboardX:
                     self.writer.add_scalar(
-                        "overall/loss", loss_val, self.global_step)
+                        "validation/loss", loss_val, self.global_step)
                     self.writer.add_scalar(
-                        "overall/lr", self.optimizer.param_groups[0]['lr'], self.global_step)
+                        "validation/lr", self.optimizer.param_groups[0]['lr'], self.global_step)
 
                 if self.scheduler_update_every_step:
                     pbar.set_description(

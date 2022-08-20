@@ -1,5 +1,4 @@
 import os
-from tkinter import TRUE
 import cv2
 import sys
 import glob
