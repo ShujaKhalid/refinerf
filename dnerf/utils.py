@@ -173,9 +173,10 @@ class Trainer(_Trainer):
             #     loss_dict['img_loss'] = img_loss
             #     loss += args['full_loss_lambda'] * loss_dict['img_loss']
 
-            # # Deformation Loss
-            # loss_dict['deform_loss'] = ret['deform'].abs().mean()
-            # loss += args['deform_loss_lambda'] * loss_dict['deform_loss']
+            # Deformation Loss
+            if ("deform" in ret):
+                loss_dict['deform_loss'] = ret['deform'].abs().mean()
+                loss += args['deform_loss_lambda'] * loss_dict['deform_loss']
 
             # Compute MSE loss between rgb_s and true RGB.
             if ("rgb_map_s" in ret):
@@ -186,8 +187,6 @@ class Trainer(_Trainer):
                 loss_dict['img_s_loss'] = img_s_loss
                 loss += args['static_loss_lambda'] * loss_dict['img_s_loss']
 
-            # print("STATIC_loss_dict: {}".format(loss_dict))
-
             # Compute MSE loss between rgb_d and true RGB.
             if ("rgb_map_d" in ret):
                 img_d_loss = img2mse(
@@ -197,27 +196,25 @@ class Trainer(_Trainer):
                 loss_dict['img_d_loss'] = img_d_loss
                 loss += args['dynamic_loss_lambda'] * loss_dict['img_d_loss']
 
+            # Compute MSE loss between rgb_d_f and true RGB.
+            if ("rgb_map_d_f" in ret):
+                img_d_f_loss = img2mse(
+                    ret['rgb_map_d_f'], gt_rgb_f[0, :ret['rgb_map_d_f'].shape[0], :])
+                psnr_d_f = mse2psnr(img_d_f_loss)
+                loss_dict['psnr_d_f'] = psnr_d_f
+                loss_dict['img_d_f_loss'] = img_d_f_loss
+                loss += args['dynamic_loss_lambda'] * loss_dict['img_d_f_loss']
+
+            if ("rgb_map_d_b" in ret):
+                # Compute MSE loss between rgb_d_b and true RGB.
+                img_d_b_loss = img2mse(
+                    ret['rgb_map_d_b'], gt_rgb_b[0, :ret['rgb_map_d_b'].shape[0], :])
+                psnr_d_b = mse2psnr(img_d_b_loss)
+                loss_dict['psnr_d_b'] = psnr_d_b
+                loss_dict['img_d_b_loss'] = img_d_b_loss
+                loss += args['dynamic_loss_lambda'] * loss_dict['img_d_b_loss']
+
             # print("\nDYNAMIC_loss_dict: {}\n".format(loss_dict))
-
-            # # FIXME: This should be looking at the next frame. gt_rgb_next
-            # # Compute MSE loss between rgb_d_f and true RGB.
-            # if ("rgb_map_d_f" in ret):
-            #     img_d_f_loss = img2mse(
-            #         ret['rgb_map_d_f'], gt_rgb_f[0, :ret['rgb_map_d_f'].shape[0], :])
-            #     psnr_d_f = mse2psnr(img_d_f_loss)
-            #     loss_dict['psnr_d_f'] = psnr_d_f
-            #     loss_dict['img_d_f_loss'] = img_d_f_loss
-            #     loss += args['dynamic_loss_lambda'] * loss_dict['img_d_f_loss']
-
-            # # FIXME: This should be looking at the next frame. gt_rgb_back
-            # if ("rgb_map_d_b" in ret):
-            #     # Compute MSE loss between rgb_d_b and true RGB.
-            #     img_d_b_loss = img2mse(
-            #         ret['rgb_map_d_b'], gt_rgb_b[0, :ret['rgb_map_d_b'].shape[0], :])
-            #     psnr_d_b = mse2psnr(img_d_b_loss)
-            #     loss_dict['psnr_d_b'] = psnr_d_b
-            #     loss_dict['img_d_b_loss'] = img_d_b_loss
-            #     loss += args['dynamic_loss_lambda'] * loss_dict['img_d_b_loss']
 
             # # Motion loss.
             # # FIXME: No idea...

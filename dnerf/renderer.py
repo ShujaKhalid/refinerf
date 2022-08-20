@@ -420,36 +420,6 @@ class NeRFRenderer(nn.Module):
             # for i in range(len(self.density_bitfield)):
             #     print(np.mean(self.density_bitfield[i, :].cpu().numpy()))
 
-            if (N_dynamic > 0):
-                # setup counter
-                counter = self.step_counter[self.local_step % 16]
-                counter.zero_()  # set to 0
-                self.local_step += 1
-                xyzs_d, dirs_d, deltas_d, rays_d = raymarching.march_rays_train(
-                    rays_o_d, rays_d_d, self.bound, self.density_bitfield[t], self.cascade, self.grid_size, nears_d, fars_d, counter, self.mean_count, perturb, 128, force_all_rays, dt_gamma, max_steps)
-
-                #print("\nxyzs_d.shape: {}".format(xyzs_d.shape))
-                # print("\nt: {}".format(t))
-                # print("time: {}\n".format(time))
-                sigmas_d, rgbs_d, deform_d, blend, sf = self(
-                    xyzs_d, dirs_d, time, svd="dynamic")
-                # Amazing visualization (POINT-CLOUDS)
-                # plot_pointcloud(xyzs_d.reshape(-1, 3).detach().cpu().numpy())
-                # We need the sceneflow from the dynamicNeRF.
-                sceneflow_b = sf[..., :3]
-                sceneflow_f = sf[..., 3:]
-
-                # # debug
-                # sigmas_d, rgbs_d = self(
-                #     xyzs_d, dirs_d, time, svd="static")
-                # deform_d, blend = torch.Tensor([0]).cuda(), 0
-
-                sigmas_d = self.density_scale * sigmas_d
-
-                results['deform'] = deform_d if N_dynamic > 1 else torch.Tensor([
-                    0]).cuda()
-                torch.cuda.empty_cache()
-
             if (N_static > 0):
                 # setup counter
                 counter = self.step_counter[self.local_step % 16]
@@ -519,6 +489,36 @@ class NeRFRenderer(nn.Module):
             #     # depth_full = image_full.view(prefix_s, 3)[:, 0]
 
             #     results['rgb_map_full'] = image_full
+
+            if (N_dynamic > 0):
+                # setup counter
+                counter = self.step_counter[self.local_step % 16]
+                counter.zero_()  # set to 0
+                self.local_step += 1
+                xyzs_d, dirs_d, deltas_d, rays_d = raymarching.march_rays_train(
+                    rays_o_d, rays_d_d, self.bound, self.density_bitfield[t], self.cascade, self.grid_size, nears_d, fars_d, counter, self.mean_count, perturb, 128, force_all_rays, dt_gamma, max_steps)
+
+                #print("\nxyzs_d.shape: {}".format(xyzs_d.shape))
+                # print("\nt: {}".format(t))
+                # print("time: {}\n".format(time))
+                sigmas_d, rgbs_d, deform_d, blend, sf = self(
+                    xyzs_d, dirs_d, time, svd="dynamic")
+                # Amazing visualization (POINT-CLOUDS)
+                # plot_pointcloud(xyzs_d.reshape(-1, 3).detach().cpu().numpy())
+                # We need the sceneflow from the dynamicNeRF.
+                sceneflow_b = sf[..., :3]
+                sceneflow_f = sf[..., 3:]
+
+                # # debug
+                # sigmas_d, rgbs_d = self(
+                #     xyzs_d, dirs_d, time, svd="static")
+                # deform_d, blend = torch.Tensor([0]).cuda(), 0
+
+                sigmas_d = self.density_scale * sigmas_d
+
+                results['deform'] = deform_d if N_dynamic > 1 else torch.Tensor([
+                    0]).cuda()
+                torch.cuda.empty_cache()
 
             # === STATIC ===
             # print("\nExecuting 1st pass...")
@@ -622,60 +622,60 @@ class NeRFRenderer(nn.Module):
                 torch.cuda.empty_cache()
                 # print("\n\n\nPHASE 4 COMPLETE!!!\n\n\n")
 
-                # # 3rd pass
-                # # print("\nExecuting 3rd pass...")
-                # sigmas_d_b, rgbs_d_b, _, _, sf_b = self(
-                #     pts_b, dirs_d, time, svd="dynamic")
-                # sceneflow_b_b = sf_b[..., :3]
-                # sceneflow_b_f = sf_b[..., 3:]
-                # results['raw_pts_b'] = pts_b
-                # # print("raymarching.composite_rays_train 3rd pass...")
-                # weights_sum_d_b, _, image_d_b = raymarching.composite_rays_train(
-                #     sigmas_d_b, rgbs_d_b, deltas_d, rays_d)
-                # results['sceneflow_b_f'] = sceneflow_b_f
-                # image_d_b = image_d_b + \
-                #     (1 - weights_sum_d_b).unsqueeze(-1) * bg_color
-                # results['rgb_map_d_b'] = image_d_b
-                # results['acc_map_d_b'] = torch.abs(
-                #     torch.sum(weights_sum_d_b - weights_sum_d, -1))
+                # 3rd pass
+                # print("\nExecuting 3rd pass...")
+                sigmas_d_b, rgbs_d_b, _, _, sf_b = self(
+                    pts_b, dirs_d, time-1 if time-1 >= 0 else torch.Tensor([[0]]).cuda(), svd="dynamic")
+                sceneflow_b_b = sf_b[..., :3]
+                sceneflow_b_f = sf_b[..., 3:]
+                results['raw_pts_b'] = pts_b
+                # print("raymarching.composite_rays_train 3rd pass...")
+                weights_sum_d_b, _, image_d_b = raymarching.composite_rays_train(
+                    sigmas_d_b, rgbs_d_b, deltas_d, rays_d)
+                results['sceneflow_b_f'] = sceneflow_b_f
+                image_d_b = image_d_b + \
+                    (1 - weights_sum_d_b).unsqueeze(-1) * bg_color
+                results['rgb_map_d_b'] = image_d_b
+                results['acc_map_d_b'] = torch.abs(
+                    torch.sum(weights_sum_d_b - weights_sum_d, -1))
 
-                # # Remove from GPU memory
-                # sceneflow_b_f = 0
-                # image_d_b = 0
-                # # dynamic prep -> frames 4 & 5
-                # pts_b_b = pts_b + sceneflow_b_b
-                # sceneflow_b_b = 0
-                # results['raw_pts_b_b'] = pts_b_b
-                # sf_b, pts_b = 0, 0
-                # torch.cuda.empty_cache()
+                # Remove from GPU memory
+                sceneflow_b_f = 0
+                image_d_b = 0
+                # dynamic prep -> frames 4 & 5
+                pts_b_b = pts_b + sceneflow_b_b
+                sceneflow_b_b = 0
+                results['raw_pts_b_b'] = pts_b_b
+                sf_b, pts_b = 0, 0
+                torch.cuda.empty_cache()
 
-                # # 4th pass
-                # # print("\nExecuting 4th pass...")
-                # # print("pts_f.shape: {}".format(pts_f.shape))
-                # sigmas_d_f, rgbs_d_f, _, _, sf_f = self(
-                #     pts_f, dirs_d, time, svd="dynamic")
-                # sceneflow_f_b = sf_f[..., :3]
-                # sceneflow_f_f = sf_f[..., 3:]
-                # results['raw_pts_f'] = pts_f
-                # # print("raymarching.composite_rays_train 4th pass...")
-                # weights_sum_d_f, _, image_d_f = raymarching.composite_rays_train(
-                #     sigmas_d_f, rgbs_d_f, deltas_d, rays_d)
-                # image_d_f = image_d_f + \
-                #     (1 - weights_sum_d_f).unsqueeze(-1) * bg_color
-                # results['sceneflow_f_b'] = sceneflow_f_b
-                # results['rgb_map_d_f'] = image_d_f
-                # results['acc_map_d_f'] = torch.abs(
-                #     torch.sum(weights_sum_d_f - weights_sum_d, -1))
+                # 4th pass
+                # print("\nExecuting 4th pass...")
+                sigmas_d_f, rgbs_d_f, _, _, sf_f = self(
+                    # print("time: {}".format(time))
+                    pts_f, dirs_d, time+1 if time+1 < self.time_size else torch.Tensor([[self.time_size]]).cuda(), svd="dynamic")
+                sceneflow_f_b = sf_f[..., :3]
+                sceneflow_f_f = sf_f[..., 3:]
+                results['raw_pts_f'] = pts_f
+                # print("raymarching.composite_rays_train 4th pass...")
+                weights_sum_d_f, _, image_d_f = raymarching.composite_rays_train(
+                    sigmas_d_f, rgbs_d_f, deltas_d, rays_d)
+                image_d_f = image_d_f + \
+                    (1 - weights_sum_d_f).unsqueeze(-1) * bg_color
+                results['sceneflow_f_b'] = sceneflow_f_b
+                results['rgb_map_d_f'] = image_d_f
+                results['acc_map_d_f'] = torch.abs(
+                    torch.sum(weights_sum_d_f - weights_sum_d, -1))
 
-                # # Remove from GPU memory
-                # sceneflow_f_b = 0
-                # image_d_f = 0
-                # # dynamic prep -> frames 4 & 5
-                # pts_f_f = pts_f + sceneflow_f_f
-                # sceneflow_f_f = 0
-                # results['raw_pts_f_f'] = pts_f_f
-                # sf_f, pts_f,  = 0, 0
-                # torch.cuda.empty_cache()
+                # Remove from GPU memory
+                sceneflow_f_b = 0
+                image_d_f = 0
+                # dynamic prep -> frames 4 & 5
+                pts_f_f = pts_f + sceneflow_f_f
+                sceneflow_f_f = 0
+                results['raw_pts_f_f'] = pts_f_f
+                sf_f, pts_f,  = 0, 0
+                torch.cuda.empty_cache()
 
                 # # 5th pass
                 # # print("\nExecuting 5th pass...")
