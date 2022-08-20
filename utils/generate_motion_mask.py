@@ -272,7 +272,7 @@ def motion_segmentation(input_folder,
 
         # FIXME:
         threshold = e_dist[e_dist.nonzero()].mean()
-        threshold = threshold*(120/75)
+        threshold = threshold*(0.75)
 
         motion_mask = skimage.morphology.binary_opening(
             e_dist > threshold, skimage.morphology.disk(1))
