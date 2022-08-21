@@ -184,20 +184,29 @@ def run_ffmpeg_images(args):
                 str(args.W)+":"+str(args.H) + " " + new_loc+fn
             #print("cmd: {}".format(cmd))
             os.system(cmd)
-        # query_loc = base + "mv_images"
-        # folders = glob.glob(query_loc+"/*")
-        # folders.sort()
-        # for indx, folder in enumerate(folders):
-        #     files = glob.glob(folder+"/*.jpg")
-        #     files.sort()
-        #     file = files[0]
-        #     # fn = "v000t0"+str(indx).zfill(2)+".jpg"
-        #     fn = "000"+str(indx).zfill(2)+".jpg"
-        #     # fn = file.split("/")[-1]
-        #     cmd = "ffmpeg -i "+file+" -vf scale=" + \
-        #         str(args.W)+":"+str(args.H) + " " + new_loc+fn
-        #     print("cmd: {}".format(cmd))
-        #     os.system(cmd)
+
+        # Use existing validation masks
+        query_loc = "/home/skhalid/Documents/datalake/dynamic_scene_data_full_bkp/nvidia_data_full/" + \
+            prod+"/dense/"
+        query_loc_val = "/home/skhalid/Documents/datalake/dynamic_scene_data_full/nvidia_data_full/" + \
+            prod+"/dense/"
+        query_loc_masks = query_loc + "mv_masks"
+        query_loc_val_masks = query_loc_val + "motion_masks_val/"
+        folders = glob.glob(query_loc_masks+"/*")
+        folders.sort()
+        os.system("mkdir -p "+query_loc_val_masks)
+        print(folders)
+        for indx, folder in enumerate(folders[::2]):
+            files = glob.glob(folder+"/*.png")
+            files.sort()
+            file = files[-1]
+            # fn = "v000t0"+str(indx).zfill(2)+".jpg"
+            fn = "000"+str(indx).zfill(2)+".jpg"
+            # fn = file.split("/")[-1]
+            cmd = "ffmpeg -i "+file+" -vf scale=" + \
+                str(args.W)+":"+str(args.H) + " " + query_loc_val_masks+fn
+            print("cmd: {}".format(cmd))
+            os.system(cmd)
         args.images = new_loc
 
 
@@ -220,7 +229,7 @@ def run_colmap(args):
         # f"colmap feature_extractor --ImageReader.camera_model OPENCV --SiftExtraction.estimate_affine_shape {flag_EAS} --SiftExtraction.domain_size_pooling {flag_EAS} --ImageReader.single_camera 1 --SiftExtraction.max_num_features 100000 --database_path {db} --image_path {images}")
         f"colmap feature_extractor --ImageReader.camera_model OPENCV --SiftExtraction.estimate_affine_shape {flag_EAS} --SiftExtraction.domain_size_pooling {flag_EAS} --ImageReader.single_camera 1 --database_path {db} --image_path {images}")
     do_system(
-        f"colmap {args.colmap_matcher}_matcher --SiftMatching.guided_matching {flag_EAS} --SiftMatching.confidence 0.01 --database_path {db}")
+        f"colmap {args.colmap_matcher}_matcher --SiftMatching.guided_matching {flag_EAS} --SiftMatching.confidence 0.000001 --database_path {db}")
     try:
         shutil.rmtree(sparse)
     except:
@@ -310,6 +319,7 @@ if __name__ == "__main__":
         root_dir = os.path.dirname(args.images)
         run_ffmpeg_images(args)
 
+    print(root_dir)
     args.colmap_db = os.path.join(root_dir, args.colmap_db)
     args.colmap_text = os.path.join(root_dir, args.colmap_text)
 

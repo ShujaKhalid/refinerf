@@ -16,15 +16,15 @@ class NeRFNetwork(NeRFRenderer):
                  encoding_deform="frequency",  # "hashgrid" seems worse
                  encoding_bg="hashgrid",
                  num_layers=2,
-                 hidden_dim=256,
+                 hidden_dim=512,
                  geo_feat_dim=15,
                  num_layers_color=3,
-                 hidden_dim_color=256,
+                 hidden_dim_color=512,
                  num_layers_bg=2,
                  hidden_dim_bg=64,
                  # a deeper MLP is very necessary for performance.
-                 num_layers_deform=5,
-                 hidden_dim_deform=256,
+                 num_layers_deform=8,
+                 hidden_dim_deform=512,
                  bound=1,
                  **kwargs,
                  ):

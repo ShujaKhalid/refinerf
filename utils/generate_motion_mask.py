@@ -272,7 +272,7 @@ def motion_segmentation(input_folder,
 
         # FIXME:
         threshold = e_dist[e_dist.nonzero()].mean()
-        threshold = threshold*(0.75)
+        threshold = threshold*(15.50)
 
         motion_mask = skimage.morphology.binary_opening(
             e_dist > threshold, skimage.morphology.disk(1))
@@ -333,7 +333,7 @@ def motion_segmentation(input_folder,
         semantic_mask = semantic_mask[:, :, 0] > 0.1
 
         if ("val" in save_mask_dir):
-            motion_mask = semantic_mask & motion_mask  # TODO: used to be |
+            motion_mask = semantic_mask | motion_mask  # TODO: used to be |
         else:
             motion_mask = semantic_mask & motion_mask  # TODO: used to be &
 
