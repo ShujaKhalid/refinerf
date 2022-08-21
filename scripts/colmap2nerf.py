@@ -201,7 +201,7 @@ def run_ffmpeg_images(args):
             files.sort()
             file = files[-1]
             # fn = "v000t0"+str(indx).zfill(2)+".jpg"
-            fn = "000"+str(indx).zfill(2)+".jpg"
+            fn = "000"+str(indx).zfill(2)+".png"
             # fn = file.split("/")[-1]
             cmd = "ffmpeg -i "+file+" -vf scale=" + \
                 str(args.W)+":"+str(args.H) + " " + query_loc_val_masks+fn

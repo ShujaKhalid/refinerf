@@ -94,8 +94,11 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, dynamic_iter=
             if (masks != None):
                 mask = masks[e:masks.shape[0]-e, 0].to(device)
 
+                thresh = 0.0
                 coords_s = torch.where(mask < 0.5)[0]
-                coords_d = torch.where(mask >= 0.5)[0]
+                coords_d = torch.where(mask >= thresh)[0]
+                coords_s_mask = torch.where(mask < 0.5)[0]
+                coords_d_mask = torch.where(mask >= 0.5)[0]
                 # print("\ncoords_s: {}".format(coords_s))
                 # print("coords_d: {}".format(coords_d))
 
@@ -115,8 +118,8 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, dynamic_iter=
                     coords_s = coords_s[inds_s]
                     coords_d = coords_d[inds_d]
                     inds = torch.cat([coords_d], 0)
-                    results['inds_s'] = coords_s
-                    results['inds_d'] = coords_d
+                    results['inds_s'] = coords_s_mask
+                    results['inds_d'] = coords_d_mask
                 elif ('b1' in cond or 'b2' in cond or 'b3' in cond or 'b4' in cond):
                     # print("\n\n=======================================")
                     # print(
@@ -131,8 +134,8 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, dynamic_iter=
                     coords_d = coords_d[inds_d]
                     inds = torch.cat([coords_s, coords_d], 0)
 
-                    results['inds_s'] = coords_s
-                    results['inds_d'] = coords_d
+                    results['inds_s'] = coords_s_mask
+                    results['inds_d'] = coords_d_mask
 
                     results["both"] = True
                 else:
@@ -148,8 +151,8 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, dynamic_iter=
                     coords_s = coords_s[inds_s]
                     coords_d = coords_d[inds_d]
                     inds = torch.cat([coords_s], 0)
-                    results['inds_s'] = coords_s
-                    results['inds_d'] = coords_d
+                    results['inds_s'] = coords_s_mask
+                    results['inds_d'] = coords_d_mask
 
                 # print("\ncoords_s: {}".format(coords_s))
                 # print("coords_d: {}".format(coords_d))
