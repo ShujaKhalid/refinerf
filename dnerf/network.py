@@ -16,15 +16,15 @@ class NeRFNetwork(NeRFRenderer):
                  encoding_deform="frequency",  # "hashgrid" seems worse
                  encoding_bg="hashgrid",
                  num_layers=2,
-                 hidden_dim=64,
+                 hidden_dim=256,
                  geo_feat_dim=15,
                  num_layers_color=3,
-                 hidden_dim_color=64,
+                 hidden_dim_color=256,
                  num_layers_bg=2,
                  hidden_dim_bg=64,
                  # a deeper MLP is very necessary for performance.
                  num_layers_deform=5,
-                 hidden_dim_deform=128,
+                 hidden_dim_deform=256,
                  bound=1,
                  **kwargs,
                  ):
@@ -146,7 +146,7 @@ class NeRFNetwork(NeRFRenderer):
         print("\nINITIALIZING DYNAMIC MODEL!!!\n")
         self.input_ch = 3
         self.D = 8  # FIXME: used to be 8!
-        self.W = 128  # FIXME: used to be 256!
+        self.W = 256  # FIXME: used to be 256!
         self.skips = [4]
         self.pts_linears = nn.ModuleList(
             [nn.Linear(self.input_ch, self.W)] + [nn.Linear(self.W, self.W) if i not in self.skips else nn.Linear(self.W + self.input_ch, self.W) for i in range(self.D-1)])

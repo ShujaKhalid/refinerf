@@ -95,7 +95,7 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, dynamic_iter=
                 mask = masks[e:masks.shape[0]-e, 0].to(device)
 
                 coords_s = torch.where(mask < 0.5)[0]
-                coords_d = torch.where(mask > 0.5)[0]
+                coords_d = torch.where(mask >= 0.5)[0]
                 # print("\ncoords_s: {}".format(coords_s))
                 # print("coords_d: {}".format(coords_d))
 
@@ -133,6 +133,8 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, dynamic_iter=
 
                     results['inds_s'] = coords_s
                     results['inds_d'] = coords_d
+
+                    results["both"] = True
                 else:
                     # print("\n\n=======================================")
                     # print(
