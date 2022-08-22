@@ -340,11 +340,11 @@ class NeRFRenderer(nn.Module):
 
             # NVIDIA - Dynamic Scenes dataset
             # segmentation assisted
-            rend_s = kwargs['inds_s']
-            rend_d = kwargs['inds_d']
+            # rend_s = kwargs['inds_s']
+            # rend_d = kwargs['inds_d']
             # no segmentation assistance
-            # rend_s = 0
-            # rend_d = [v for v in range(480*270)]
+            rend_s = 0
+            rend_d = [v for v in range(480*270)]
             inds_s = [v for v in range(480*270)]
             inds_d = [v for v in range(480*270)]
 
@@ -412,6 +412,8 @@ class NeRFRenderer(nn.Module):
                                                            max=self.time_size - 1).long()
 
         results = {}
+
+        time_delta = time/self.time_size
 
         if self.training:
 
@@ -625,7 +627,7 @@ class NeRFRenderer(nn.Module):
                 # 3rd pass
                 # print("\nExecuting 3rd pass...")
                 sigmas_d_b, rgbs_d_b, _, _, sf_b = self(
-                    pts_b, dirs_d, time-1 if time-1 >= 0 else torch.Tensor([[0]]).cuda(), svd="dynamic")
+                    pts_b, dirs_d, time-time_delta*1 if time-time_delta*1 >= 0 else torch.Tensor([[0]]).cuda(), svd="dynamic")
                 sceneflow_b_b = sf_b[..., :3]
                 sceneflow_b_f = sf_b[..., 3:]
                 results['raw_pts_b'] = pts_b
@@ -653,7 +655,7 @@ class NeRFRenderer(nn.Module):
                 # print("\nExecuting 4th pass...")
                 sigmas_d_f, rgbs_d_f, _, _, sf_f = self(
                     # print("time: {}".format(time))
-                    pts_f, dirs_d, time+1 if time+1 < self.time_size else torch.Tensor([[self.time_size]]).cuda(), svd="dynamic")
+                    pts_f, dirs_d, time+time_delta*1 if time+time_delta*1 < 1.0 else torch.Tensor([[1.0]]).cuda(), svd="dynamic")
                 sceneflow_f_b = sf_f[..., :3]
                 sceneflow_f_f = sf_f[..., 3:]
                 results['raw_pts_f'] = pts_f
@@ -680,7 +682,7 @@ class NeRFRenderer(nn.Module):
                 # 5th pass
                 # print("\nExecuting 5th pass...")
                 sigmas_d_b_b, rgbs_d_b_b, _, _, _ = self(
-                    pts_b_b, dirs_d, time-2 if time-2 >= 0 else torch.Tensor([[0]]).cuda(), svd="dynamic")
+                    pts_b_b, dirs_d, time-time_delta*2 if time-time_delta*2 >= 0 else torch.Tensor([[0]]).cuda(), svd="dynamic")
                 weights_sum_d_b_b, _, image_d_b_b = raymarching.composite_rays_train(
                     sigmas_d_b_b, rgbs_d_b_b, deltas_d, rays_d)
                 image_d_b_b = image_d_b_b + \
@@ -690,7 +692,7 @@ class NeRFRenderer(nn.Module):
                 # 6th pass
                 # print("\nExecuting 6th pass...")
                 sigmas_d_f_f, rgbs_d_f_f, _, _, _ = self(
-                    pts_f_f, dirs_d, time+2 if time+2 < self.time_size else torch.Tensor([[self.time_size]]).cuda(), svd="dynamic")
+                    pts_f_f, dirs_d, time+time_delta*2 if time+time_delta*2 < 1.0 else torch.Tensor([[1.0]]).cuda(), svd="dynamic")
                 weights_sum_d_f_f, _, image_d_f_f = raymarching.composite_rays_train(
                     sigmas_d_f_f, rgbs_d_f_f, deltas_d, rays_d)
                 image_d_f_f = image_d_f_f + \

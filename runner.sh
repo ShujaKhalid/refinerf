@@ -13,9 +13,9 @@ export CUDA_ROOT=/usr/local/cuda
 # SCENE="Umbrella"
 # SCENE="Jumping" #COLMAP ISSUES
 # SCENE="Skating"
-# SCENE="Playground"
+SCENE="Playground"
 # SCENE="Balloon1"
-SCENE="Balloon2"
+# SCENE="Balloon2"
 DATASET_PATH="/home/skhalid/Documents/datalake/dynamic_scene_data_full/nvidia_data_full/$SCENE/dense"
 
 NM_WEIGHTS="/home/skhalid/Documents/datalake/neural_motion_weights/"
