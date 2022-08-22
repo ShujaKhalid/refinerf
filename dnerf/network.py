@@ -478,6 +478,8 @@ class NeRFNetwork(NeRFRenderer):
             params = [
                 {'params': self.encoder.parameters(), 'lr': lr},
                 {'params': self.encoder_dir.parameters(), 'lr': lr},
+                {'params': self.sigma_s_net.parameters(), 'lr': lr_net},
+                {'params': self.color_s_net.parameters(), 'lr': lr_net},
                 {'params': self.encoder_deform.parameters(), 'lr': lr},
                 {'params': self.encoder_time.parameters(), 'lr': lr},
                 {'params': self.sigma_d_net.parameters(), 'lr': lr_net},
