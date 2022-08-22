@@ -299,7 +299,7 @@ class Trainer(_Trainer):
             #         loss += args['mask_loss_lambda'] * loss_dict['mask_loss']
 
             # Sparsity loss.
-            if ('weights_d' in ret and 'blending' in ret):
+            if ('weights_d' in ret and 'weights_d_b' in ret and 'weights_d_f' in ret and 'blending' in ret):
                 sparse_loss = \
                     entropy(ret['weights_d']) + \
                     entropy(ret['blending']) + \
