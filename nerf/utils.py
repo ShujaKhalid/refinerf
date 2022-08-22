@@ -154,8 +154,8 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, dynamic_iter=
                     results['inds_s'] = coords_s_mask
                     results['inds_d'] = coords_d_mask
 
-                # print("\ncoords_s: {}".format(coords_s))
-                # print("coords_d: {}".format(coords_d))
+                    # print("\ncoords_s: {}".format(coords_s))
+                    # print("coords_d: {}".format(coords_d))
 
             else:
                 # sk_debug - Random from anaywhere on grid
