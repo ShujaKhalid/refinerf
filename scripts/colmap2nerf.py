@@ -196,7 +196,7 @@ def run_ffmpeg_images(args):
         folders.sort()
         os.system("mkdir -p "+query_loc_val_masks)
         print(folders)
-        for indx, folder in enumerate(folders[::2]):
+        for indx, folder in enumerate(folders[:12]):
             files = glob.glob(folder+"/*.png")
             files.sort()
             file = files[-1]
