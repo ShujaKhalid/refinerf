@@ -435,8 +435,6 @@ class NeRFRenderer(nn.Module):
                     xyzs_s, dirs_s, time, svd="static")
                 sigmas_s = self.density_scale * sigmas_s
 
-            # plot_pointcloud(xyzs_s.reshape(-1, 3).detach().cpu().numpy())
-
             # Amazing visualization (POINT-CLOUDS)
             # plot_pointcloud(xyzs_d.reshape(-1, 3).detach().cpu().numpy())
 
