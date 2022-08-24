@@ -738,6 +738,44 @@ class NeRFRenderer(nn.Module):
                                             n_alive_s, 1, dtype=torch.int32, device=device)  # [N]
                 rays_t_s = nears_s.clone()  # [N]
 
+                step = 0
+                while step < max_steps:
+                    # count alive rays
+                    n_alive_s = rays_alive_s.shape[0]
+                    # exit loop
+                    if n_alive_s <= 0:
+                        break
+                    # decide compact_steps
+                    n_step = max(min(N_static // n_alive_s, 8), 1)
+                    xyzs_s, dirs_s, deltas_s = raymarching.march_rays(n_alive_s, n_step, rays_alive_s, rays_t_s, rays_o_s, rays_d_s, self.bound,
+                                                                      self.density_bitfield[t], self.cascade, self.grid_size, nears_s, fars_s, 128, perturb, dt_gamma, max_steps)
+
+                    # print("time: {}".format(time))
+                    # time = torch.Tensor([[0.9167]], device='cpu')  # FIXME
+                    sigmas_s, rgbs_s = self(
+                        xyzs_s, dirs_s, time, svd="static")
+                    sigmas_s = self.density_scale * sigmas_s
+
+                    # print("sigmas_s.mean: {}".format(sigmas_s.mean()))
+                    # print("rgbs_s.mean: {}".format(rgbs_s.mean()))
+                    # print("xyzs_s.mean: {}".format(xyzs_s.mean()))
+                    # print("dirs_s.mean: {}".format(dirs_s.mean()))
+
+                    if (DEBUG):
+                        print("rays_alive_s.shape (before): {}".format(
+                            rays_alive_s.shape))
+
+                    # static
+                    raymarching.composite_rays(
+                        n_alive_s, n_step, rays_alive_s, rays_t_s, sigmas_s, rgbs_s, deltas_s, weights_sum_s, depth_s, image_s)
+                    rays_alive_s = rays_alive_s[rays_alive_s >= 0]
+
+                    if (DEBUG):
+                        print("rays_alive_s.shape (after): {}".format(
+                            rays_alive_s.shape))
+
+                    step += n_step
+
             if (N_dynamic > 0):
                 weights_sum_d = torch.zeros(
                     N_dynamic, dtype=dtype, device=device)
@@ -749,20 +787,7 @@ class NeRFRenderer(nn.Module):
                                             n_alive_d, 1, dtype=torch.int32, device=device)  # [N]
                 rays_t_d = nears_d.clone()  # [N]
 
-                if (DEBUG):
-                    if (N_dynamic > 0):
-                        print("image_d.shape: {}".format(image_d.shape))
-                        print("rays_t_d.shape: {}".format(rays_t_d.shape))
-                        print("n_alive_d: {}".format(n_alive_d))
-                        print("rays_o_d.shape: {}".format(rays_o_d.shape))
-                        print("rays_d_d.shape: {}".format(rays_d_d.shape))
-                        print("nears_d.shape: {}".format(nears_d.shape))
-                        print("fars_d.shape: {}".format(fars_d.shape))
-            '''
-            DYNAMIC
-            '''
-            step = 0
-            if (N_dynamic > 0):
+                step = 0
                 while step < max_steps:
                     # count alive rays
                     n_alive_d = rays_alive_d.shape[0]
@@ -794,42 +819,15 @@ class NeRFRenderer(nn.Module):
 
                     step += n_step
 
-            '''
-            STATIC
-            '''
-            step = 0
-            if (N_static > 0):
-                while step < max_steps:
-                    # count alive rays
-                    n_alive_s = rays_alive_s.shape[0]
-                    # exit loop
-                    if n_alive_s <= 0:
-                        break
-                    # decide compact_steps
-                    n_step = max(min(N_static // n_alive_s, 8), 1)
-                    xyzs_s, dirs_s, deltas_s = raymarching.march_rays(n_alive_s, n_step, rays_alive_s, rays_t_s, rays_o_s, rays_d_s, self.bound,
-                                                                      self.density_bitfield[t], self.cascade, self.grid_size, nears_s, fars_s, 128, perturb, dt_gamma, max_steps)
-
-                    # print("time: {}".format(time))
-                    # time = torch.Tensor([[0.9167]], device='cpu')  # FIXME
-                    sigmas_s, rgbs_s = self(
-                        xyzs_s, dirs_s, time, svd="static")
-                    sigmas_s = self.density_scale * sigmas_s
-
-                    if (DEBUG):
-                        print("rays_alive_s.shape (before): {}".format(
-                            rays_alive_s.shape))
-
-                    # static
-                    raymarching.composite_rays(
-                        n_alive_s, n_step, rays_alive_s, rays_t_s, sigmas_s, rgbs_s, deltas_s, weights_sum_s, depth_s, image_s)
-                    rays_alive_s = rays_alive_s[rays_alive_s >= 0]
-
-                    if (DEBUG):
-                        print("rays_alive_s.shape (after): {}".format(
-                            rays_alive_s.shape))
-
-                    step += n_step
+                if (DEBUG):
+                    if (N_dynamic > 0):
+                        print("image_d.shape: {}".format(image_d.shape))
+                        print("rays_t_d.shape: {}".format(rays_t_d.shape))
+                        print("n_alive_d: {}".format(n_alive_d))
+                        print("rays_o_d.shape: {}".format(rays_o_d.shape))
+                        print("rays_d_d.shape: {}".format(rays_d_d.shape))
+                        print("nears_d.shape: {}".format(nears_d.shape))
+                        print("fars_d.shape: {}".format(fars_d.shape))
 
             if (N_static > 0 and N_dynamic > 0):
                 # print("\n\nBLENDING!!!\n\n")

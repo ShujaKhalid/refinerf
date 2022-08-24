@@ -65,15 +65,15 @@ class NeRFNetwork(NeRFRenderer):
         self.num_layers = num_layers
         self.hidden_dim = hidden_dim
         self.geo_feat_dim = geo_feat_dim
-        self.encoder, self.in_dim = get_encoder(
+        self.encoder_s, self.in_dim_s = get_encoder(
             encoding, desired_resolution=2048 * bound)
-
-        print("self.in_dim: {}".format(self.in_dim))
+        self.encoder_d, self.in_dim_d = get_encoder(
+            encoding, desired_resolution=2048 * bound)
 
         sigma_s_net = []
         for l in range(num_layers):
             if l == 0:
-                in_dim = self.in_dim
+                in_dim = self.in_dim_s
             else:
                 in_dim = hidden_dim
 
@@ -89,15 +89,13 @@ class NeRFNetwork(NeRFRenderer):
         # color network ============================================
         self.num_layers_color = num_layers_color
         self.hidden_dim_color = hidden_dim_color
-        self.encoder_dir, self.in_dim_dir = get_encoder(encoding_dir)
-
-        print("self.in_dim_dir: {}".format(self.in_dim_dir))
-        print("self.geo_feat_dim: {}".format(self.geo_feat_dim))
+        self.encoder_dir_s, self.in_dim_dir_s = get_encoder(encoding_dir)
+        self.encoder_dir_d, self.in_dim_dir_d = get_encoder(encoding_dir)
 
         color_s_net = []
         for l in range(num_layers_color):
             if l == 0:
-                in_dim = self.in_dim_dir + self.geo_feat_dim
+                in_dim = self.in_dim_dir_s + self.geo_feat_dim
             else:
                 in_dim = hidden_dim
 
@@ -157,7 +155,7 @@ class NeRFNetwork(NeRFRenderer):
         self.encoder_deform, self.in_dim_deform = get_encoder(
             encoding_deform, multires=10)  # FIXME: used to be 10
         self.encoder_time, self.in_dim_time = get_encoder(
-            encoding_time, input_dim=1, multires=6)  # FIXME: used to be 6
+            encoding_time, input_dim=1, multires=128)  # FIXME: used to be 6
 
         print("\nin_dim_deform: {}".format(self.in_dim_deform))
         print("in_dim_time: {}".format(self.in_dim_time))
@@ -182,13 +180,11 @@ class NeRFNetwork(NeRFRenderer):
         self.num_layers = num_layers
         self.hidden_dim = hidden_dim
         self.geo_feat_dim = geo_feat_dim
-        self.encoder, self.in_dim = get_encoder(
-            encoding, desired_resolution=2048 * bound)
 
         sigma_d_net = []
         for l in range(num_layers):
             if l == 0:
-                in_dim = self.in_dim + self.in_dim_time + \
+                in_dim = self.in_dim_d + self.in_dim_time + \
                     self.in_dim_deform  # concat everything
             else:
                 in_dim = hidden_dim
@@ -205,12 +201,11 @@ class NeRFNetwork(NeRFRenderer):
         # color network ============================================
         self.num_layers_color = num_layers_color
         self.hidden_dim_color = hidden_dim_color
-        self.encoder_dir, self.in_dim_dir = get_encoder(encoding_dir)
 
         color_d_net = []
         for l in range(num_layers_color):
             if l == 0:
-                in_dim = self.in_dim_dir + self.geo_feat_dim
+                in_dim = self.in_dim_dir_d + self.geo_feat_dim
             else:
                 in_dim = hidden_dim
 
@@ -268,7 +263,7 @@ class NeRFNetwork(NeRFRenderer):
     def run_snerf(self, x, d):
 
         # sigma
-        h = self.encoder(x, bound=self.bound)
+        h = self.encoder_s(x, bound=self.bound)
 
         for l in range(self.num_layers):
             h = self.sigma_s_net[l](h)
@@ -279,7 +274,7 @@ class NeRFNetwork(NeRFRenderer):
         geo_feat = h[..., 1:]
 
         # color
-        d = self.encoder_dir(d)
+        d = self.encoder_dir_s(d)
 
         h = torch.cat([d, geo_feat], dim=-1)
         for l in range(self.num_layers_color):
@@ -326,7 +321,7 @@ class NeRFNetwork(NeRFRenderer):
         x_def = x + deform  # FIXME: x + deform
 
         # sigma
-        x_def = self.encoder(x_def, bound=self.bound)
+        x_def = self.encoder_d(x_def, bound=self.bound)
         # TODO: Added -> confirm
         if (len(x.shape) == 3):
             h = torch.cat([x_def, enc_ori_x, enc_t], dim=-1)
@@ -342,7 +337,7 @@ class NeRFNetwork(NeRFRenderer):
         geo_feat = h[..., 1:]
 
         # color
-        d = self.encoder_dir(d)
+        d = self.encoder_dir_d(d)
 
         h = torch.cat([d, geo_feat], dim=-1)
         for l in range(self.num_layers_color):
@@ -394,7 +389,7 @@ class NeRFNetwork(NeRFRenderer):
         results['deform'] = deform
 
         # sigma
-        x = self.encoder(x, bound=self.bound)
+        x = self.encoder_d(x, bound=self.bound)
         h = torch.cat([x, enc_ori_x, enc_t], dim=1)
         for l in range(self.num_layers):
             h = self.sigma_d_net[l](h)
@@ -443,7 +438,7 @@ class NeRFNetwork(NeRFRenderer):
             d = d[mask]
             geo_feat = geo_feat[mask]
 
-        d = self.encoder_dir(d)
+        d = self.encoder_dir_d(d)
         h = torch.cat([d, geo_feat], dim=-1)
         for l in range(self.num_layers_color):
             h = self.color_d_net[l](h)
@@ -464,8 +459,8 @@ class NeRFNetwork(NeRFRenderer):
     def get_params(self, lr, lr_net, svd):
         if (svd == "static"):
             params = [
-                {'params': self.encoder.parameters(), 'lr': lr},
-                {'params': self.encoder_dir.parameters(), 'lr': lr},
+                {'params': self.encoder_s.parameters(), 'lr': lr},
+                {'params': self.encoder_dir_s.parameters(), 'lr': lr},
                 {'params': self.sigma_s_net.parameters(), 'lr': lr_net},
                 {'params': self.color_s_net.parameters(), 'lr': lr_net},
             ]
@@ -476,8 +471,8 @@ class NeRFNetwork(NeRFRenderer):
                     {'params': self.bg_s_net.parameters(), 'lr': lr_net})
         elif (svd == "dynamic"):
             params = [
-                # {'params': self.encoder.parameters(), 'lr': lr},
-                # {'params': self.encoder_dir.parameters(), 'lr': lr},
+                {'params': self.encoder_d.parameters(), 'lr': lr},
+                {'params': self.encoder_dir_d.parameters(), 'lr': lr},
                 # {'params': self.sigma_s_net.parameters(), 'lr': lr_net},
                 # {'params': self.color_s_net.parameters(), 'lr': lr_net},
                 {'params': self.encoder_deform.parameters(), 'lr': lr},
@@ -495,8 +490,10 @@ class NeRFNetwork(NeRFRenderer):
                     {'params': self.bg_s_net.parameters(), 'lr': lr_net})
         elif (svd == "all"):
             params = [
-                {'params': self.encoder.parameters(), 'lr': lr},
-                {'params': self.encoder_dir.parameters(), 'lr': lr},
+                {'params': self.encoder_s.parameters(), 'lr': lr},
+                {'params': self.encoder_dir_s.parameters(), 'lr': lr},
+                {'params': self.encoder_d.parameters(), 'lr': lr},
+                {'params': self.encoder_dir_d.parameters(), 'lr': lr},
                 {'params': self.encoder_deform.parameters(), 'lr': lr},
                 {'params': self.encoder_time.parameters(), 'lr': lr},
                 {'params': self.sigma_s_net.parameters(), 'lr': lr_net},

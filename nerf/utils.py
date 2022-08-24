@@ -197,8 +197,12 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, dynamic_iter=
         if (masks != None):
             mask = masks[:masks.shape[0], 0].to(device)
 
+            # print("0: {}".format(masks[:masks.shape[0], 0].mean()))
+            # print("1: {}".format(masks[:masks.shape[0], 1].mean()))
+            # print("2: {}".format(masks[:masks.shape[0], 2].mean()))
+
             coords_s = torch.where(mask < 0.5)[0]
-            coords_d = torch.where(mask > 0.5)[0]
+            coords_d = torch.where(mask >= 0.5)[0]
 
             # no segmentation assistance
             # coords_s = torch.randint(
@@ -465,6 +469,7 @@ class Trainer(object):
             self.lr_scheduler = lr_scheduler(self.optimizer)
 
         if ema_decay is not None:
+            self.opt_state = "static"
             self.ema = ExponentialMovingAverage(
                 self.model.parameters(), decay=ema_decay)
         else:
@@ -943,6 +948,11 @@ class Trainer(object):
             self.opt_state = "dynamic"
             self.optimizer = self.optimizer_func(self.model, self.opt_state)
             self.lr_scheduler = self.scheduler_func(self.optimizer)
+
+            for name, param in self.model.named_parameters():
+                if param.requires_grad:
+                    print(name)
+
         elif (('b1' in cond or 'b2' in cond or 'b3' in cond or 'b4' in cond) and self.opt_state != "all"):
             # print("\n\n========================================")
             # print("COMBINED MODEL ACTIVATED!!! - (optimizer)")
