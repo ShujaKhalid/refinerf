@@ -3,7 +3,7 @@
 export CC=/usr/bin/gcc-10
 export CXX=/usr/bin/g++-10
 export CUDA_ROOT=/usr/local/cuda
-export CUDA_HOME=/usr/local/cuda/bin
+#export CUDA_HOME=/usr/local/cuda
 
 # DATASET_PATH="../datalake/dnerf/bouncingballs"
 # SCENE="bouncingballs"
