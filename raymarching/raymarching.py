@@ -311,74 +311,74 @@ class _composite_rays_train(Function):
 
 composite_rays_train = _composite_rays_train.apply
 
-'''
-sk_debug - FULL
-'''
+# '''
+# sk_debug - FULL
+# '''
 
 
-class _composite_rays_train_full(Function):
-    @staticmethod
-    @custom_fwd(cast_inputs=torch.float32)
-    def forward(ctx, sigmas_s, rgbs_s, sigmas_d, rgbs_d, blending, deltas, rays):
-        ''' composite rays' rgbs, according to the ray marching formula.
-        Args:
-            rgbs: float, [M, 3]
-            sigmas: float, [M,]
-            deltas: float, [M, 2]
-            rays: int32, [N, 3]
-        Returns:
-            weights_sum: float, [N,], the alpha channel
-            depth: float, [N, ], the Depth
-            image: float, [N, 3], the RGB channel (after multiplying alpha!)
-        '''
+# class _composite_rays_train_full(Function):
+#     @staticmethod
+#     @custom_fwd(cast_inputs=torch.float32)
+#     def forward(ctx, sigmas_s, rgbs_s, sigmas_d, rgbs_d, blending, deltas, rays):
+#         ''' composite rays' rgbs, according to the ray marching formula.
+#         Args:
+#             rgbs: float, [M, 3]
+#             sigmas: float, [M,]
+#             deltas: float, [M, 2]
+#             rays: int32, [N, 3]
+#         Returns:
+#             weights_sum: float, [N,], the alpha channel
+#             depth: float, [N, ], the Depth
+#             image: float, [N, 3], the RGB channel (after multiplying alpha!)
+#         '''
 
-        sigmas_s = sigmas_s.contiguous()
-        rgbs_s = rgbs_s.contiguous()
-        sigmas_d = sigmas_d.contiguous()
-        rgbs_d = rgbs_d.contiguous()
-        blending = blending.contiguous()
+#         sigmas_s = sigmas_s.contiguous()
+#         rgbs_s = rgbs_s.contiguous()
+#         sigmas_d = sigmas_d.contiguous()
+#         rgbs_d = rgbs_d.contiguous()
+#         blending = blending.contiguous()
 
-        M = sigmas_s.shape[0]
-        N = rays.shape[0]
+#         M = sigmas_s.shape[0]
+#         N = rays.shape[0]
 
-        weights_sum = torch.empty(
-            N, dtype=sigmas_s.dtype, device=sigmas_s.device)
-        depth = torch.empty(N, dtype=sigmas_s.dtype, device=sigmas_s.device)
-        image = torch.empty(N, 3, dtype=sigmas_s.dtype, device=sigmas_s.device)
+#         weights_sum = torch.empty(
+#             N, dtype=sigmas_s.dtype, device=sigmas_s.device)
+#         depth = torch.empty(N, dtype=sigmas_s.dtype, device=sigmas_s.device)
+#         image = torch.empty(N, 3, dtype=sigmas_s.dtype, device=sigmas_s.device)
 
-        _backend.composite_rays_train_full_forward(
-            sigmas_s, rgbs_s, sigmas_d, rgbs_d, blending,  deltas, rays, M, N, weights_sum, depth, image)
+#         _backend.composite_rays_train_full_forward(
+#             sigmas_s, rgbs_s, sigmas_d, rgbs_d, blending,  deltas, rays, M, N, weights_sum, depth, image)
 
-        ctx.save_for_backward(sigmas_s, rgbs_s, sigmas_d, rgbs_d, blending, deltas, rays,
-                              weights_sum, depth, image)
-        ctx.dims = [M, N]
+#         ctx.save_for_backward(sigmas_s, rgbs_s, sigmas_d, rgbs_d, blending, deltas, rays,
+#                               weights_sum, depth, image)
+#         ctx.dims = [M, N]
 
-        return weights_sum, depth, image
+#         return weights_sum, depth, image
 
-    @staticmethod
-    @custom_bwd
-    def backward(ctx, grad_weights_sum, grad_depth, grad_image):
+#     @staticmethod
+#     @custom_bwd
+#     def backward(ctx, grad_weights_sum, grad_depth, grad_image):
 
-        # NOTE: grad_depth is not used now! It won't be propagated to sigmas.
+#         # NOTE: grad_depth is not used now! It won't be propagated to sigmas.
 
-        grad_weights_sum = grad_weights_sum.contiguous()
-        grad_image = grad_image.contiguous()
+#         grad_weights_sum = grad_weights_sum.contiguous()
+#         grad_image = grad_image.contiguous()
 
-        sigmas_s, rgbs_s, sigmas_d, rgbs_d, blending, deltas, rays, weights_sum, depth, image = ctx.saved_tensors
-        M, N = ctx.dims
+#         sigmas_s, rgbs_s, sigmas_d, rgbs_d, blending, deltas, rays, weights_sum, depth, image = ctx.saved_tensors
+#         M, N = ctx.dims
 
-        grad_sigmas_s = torch.zeros_like(sigmas_s)
-        grad_rgbs_s = torch.zeros_like(rgbs_s)
-        grad_sigmas_d = torch.zeros_like(sigmas_d)
-        grad_rgbs_d = torch.zeros_like(rgbs_d)
+#         grad_sigmas_s = torch.zeros_like(sigmas_s)
+#         grad_rgbs_s = torch.zeros_like(rgbs_s)
+#         grad_sigmas_d = torch.zeros_like(sigmas_d)
+#         grad_rgbs_d = torch.zeros_like(rgbs_d)
 
-        _backend.composite_rays_train_full_backward(
-            grad_weights_sum, grad_image, sigmas_s, rgbs_s, sigmas_d, rgbs_d, blending, deltas, rays, weights_sum, image, M, N, grad_sigmas_s, grad_rgbs_s, grad_sigmas_d, grad_rgbs_d)
+#         _backend.composite_rays_train_full_backward(
+#             grad_weights_sum, grad_image, sigmas_s, rgbs_s, sigmas_d, rgbs_d, blending, deltas, rays, weights_sum, image, M, N, grad_sigmas_s, grad_rgbs_s, grad_sigmas_d, grad_rgbs_d)
 
-        return grad_sigmas_s, grad_rgbs_s, grad_sigmas_d, grad_rgbs_d, None, None, None
+#         return grad_sigmas_s, grad_rgbs_s, grad_sigmas_d, grad_rgbs_d, None, None, None
 
 
-composite_rays_train_full = _composite_rays_train_full.apply
+# composite_rays_train_full = _composite_rays_train_full.apply
 
 # ----------------------------------------
 # infer functions

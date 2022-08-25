@@ -3,6 +3,7 @@
 export CC=/usr/bin/gcc-10
 export CXX=/usr/bin/g++-10
 export CUDA_ROOT=/usr/local/cuda
+export CUDA_HOME=/usr/local/cuda/bin
 
 # DATASET_PATH="../datalake/dnerf/bouncingballs"
 # SCENE="bouncingballs"
@@ -23,9 +24,9 @@ WEIGHTS_MIDAS=$NM_WEIGHTS"midas_v21-f6b98070.pt"
 WEIGHTS_RAFT=$NM_WEIGHTS"raft-things.pth"
 
 # Run when making changes to the CUDA kernels
-#cd raymarching 
-#pip install .
-#cd ..
+cd raymarching 
+pip install .
+cd ..
 
 if [[ "$1" == "--gui" || "$2" == "--gui" || "$3" == "--gui" ]]
 then

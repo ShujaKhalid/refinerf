@@ -569,7 +569,6 @@ class NeRFDataset:
             results['images_b'] = images_b
             results['images_f'] = images_f
 
-        # FLOW_FLAG = False
         if (self.FLOW_FLAG):
             if self.masks is not None:
                 index = index[0]

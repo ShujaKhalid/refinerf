@@ -94,11 +94,11 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, dynamic_iter=
             if (masks != None):
                 mask = masks[e:masks.shape[0]-e, 0].to(device)
 
-                thresh = 0.0
+                thresh = 0.5  # training threshold
                 coords_s = torch.where(mask < 0.5)[0]
-                coords_d = torch.where(mask >= thresh)[0]
+                coords_d = torch.where(mask >= thresh)[0]  # For training
                 coords_s_mask = torch.where(mask < 0.5)[0]
-                coords_d_mask = torch.where(mask >= 0.5)[0]
+                coords_d_mask = torch.where(mask >= 0.5)[0]  # For inference
                 # print("\ncoords_s: {}".format(coords_s))
                 # print("coords_d: {}".format(coords_d))
 
