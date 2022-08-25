@@ -720,7 +720,7 @@ class Trainer(object):
     def train(self, train_loader, valid_loader, max_epochs):
         if self.use_tensorboardX and self.local_rank == 0:
             self.writer = tensorboardX.SummaryWriter(
-                os.path.join(self.workspace, "run", self.name))
+                os.path.join(self.workspace, "run", self.name, str(int(time.time()))))
 
         # mark untrained region (i.e., not covered by any camera from the training dataset)
         if self.model.cuda_ray:

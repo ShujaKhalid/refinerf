@@ -180,6 +180,8 @@ class Trainer(_Trainer):
 
             # [Include] Compute MSE loss between rgb_s and true RGB.
             if ("rgb_map_s" in ret):
+                # print("ret['rgb_map_s']: {}".format(ret['rgb_map_s'].shape))
+                # print("ret['gt_rgb']: {}".format(gt_rgb.shape))
                 img_s_loss = img2mse(
                     ret['rgb_map_s'], gt_rgb)
                 psnr_s = mse2psnr(img_s_loss)
@@ -189,6 +191,8 @@ class Trainer(_Trainer):
 
             # [Include] Compute MSE loss between rgb_d and true RGB.
             if ("rgb_map_d" in ret):
+                # print("ret['rgb_map_d']: {}".format(ret['rgb_map_d'].shape))
+                # print("ret['gt_rgb']: {}".format(gt_rgb.shape))
                 img_d_loss = img2mse(
                     ret['rgb_map_d'], gt_rgb)
                 psnr_d = mse2psnr(img_d_loss)
@@ -196,23 +200,23 @@ class Trainer(_Trainer):
                 loss_dict['img_d_loss'] = img_d_loss
                 loss += args['dynamic_loss_lambda'] * loss_dict['img_d_loss']
 
-            # # [Include] Compute MSE loss between rgb_d_f and true RGB.
-            # if ("rgb_map_d_f" in ret):
-            #     img_d_f_loss = img2mse(
-            #         ret['rgb_map_d_f'], gt_rgb_f)
-            #     psnr_d_f = mse2psnr(img_d_f_loss)
-            #     loss_dict['psnr_d_f'] = psnr_d_f
-            #     loss_dict['img_d_f_loss'] = img_d_f_loss
-            #     loss += args['dynamic_loss_lambda'] * loss_dict['img_d_f_loss']
+            # [Include] Compute MSE loss between rgb_d_f and true RGB.
+            if ("rgb_map_d_f" in ret):
+                img_d_f_loss = img2mse(
+                    ret['rgb_map_d_f'], gt_rgb_f)
+                psnr_d_f = mse2psnr(img_d_f_loss)
+                loss_dict['psnr_d_f'] = psnr_d_f
+                loss_dict['img_d_f_loss'] = img_d_f_loss
+                loss += args['dynamic_loss_lambda'] * loss_dict['img_d_f_loss']
 
-            # # [Include] Compute MSE loss between rgb_d_b and true RGB.
-            # if ("rgb_map_d_b" in ret):
-            #     img_d_b_loss = img2mse(
-            #         ret['rgb_map_d_b'], gt_rgb_b)
-            #     psnr_d_b = mse2psnr(img_d_b_loss)
-            #     loss_dict['psnr_d_b'] = psnr_d_b
-            #     loss_dict['img_d_b_loss'] = img_d_b_loss
-            #     loss += args['dynamic_loss_lambda'] * loss_dict['img_d_b_loss']
+            # [Include] Compute MSE loss between rgb_d_b and true RGB.
+            if ("rgb_map_d_b" in ret):
+                img_d_b_loss = img2mse(
+                    ret['rgb_map_d_b'], gt_rgb_b)
+                psnr_d_b = mse2psnr(img_d_b_loss)
+                loss_dict['psnr_d_b'] = psnr_d_b
+                loss_dict['img_d_b_loss'] = img_d_b_loss
+                loss += args['dynamic_loss_lambda'] * loss_dict['img_d_b_loss']
 
             # print("\nDYNAMIC_loss_dict: {}\n".format(loss_dict))
 
@@ -382,8 +386,9 @@ class Trainer(_Trainer):
             # [B, N, 3] --> [B, N]
             # FIXME: uncomment the line below if necessary
             loss = self.criterion(pred_rgb, gt_rgb).mean(-1)
-
-        # print("loss: {}".format(loss))
+            # print("pred_rgb: {}".format(pred_rgb.shape))
+            # print("gt_rgb: {}".format(gt_rgb.shape))
+            # print("loss: {}".format(loss))
 
         # special case for CCNeRF's rank-residual training
         if len(loss.shape) == 3:  # [K, B, N]
@@ -468,8 +473,12 @@ class Trainer(_Trainer):
         if bg_color is not None:
             bg_color = bg_color.to(self.device)
 
-        self.opt.inds_s = data['inds_s']
-        self.opt.inds_d = data['inds_d']
+        if ('inds_s' in data and 'inds_d' in data):
+            self.opt.inds_s = data['inds_s']
+            self.opt.inds_d = data['inds_d']
+        else:
+            self.opt.inds_s = 0
+            self.opt.inds_d = 0
 
         outputs = self.model.render(
             rays_o, rays_d, time, staged=True, bg_color=bg_color, perturb=perturb, **vars(self.opt))

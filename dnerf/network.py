@@ -15,16 +15,16 @@ class NeRFNetwork(NeRFRenderer):
                  encoding_time="frequency",
                  encoding_deform="frequency",  # "hashgrid" seems worse
                  encoding_bg="hashgrid",
-                 num_layers=2,
-                 hidden_dim=64,
-                 geo_feat_dim=15,
-                 num_layers_color=3,
-                 hidden_dim_color=64,
+                 num_layers=8,
+                 hidden_dim=256,
+                 geo_feat_dim=128,
+                 num_layers_color=8,
+                 hidden_dim_color=256,
                  num_layers_bg=2,
                  hidden_dim_bg=64,
                  # a deeper MLP is very necessary for performance.
                  num_layers_deform=8,
-                 hidden_dim_deform=128,
+                 hidden_dim_deform=256,
                  bound=1,
                  **kwargs,
                  ):
@@ -155,10 +155,12 @@ class NeRFNetwork(NeRFRenderer):
         self.encoder_deform, self.in_dim_deform = get_encoder(
             encoding_deform, multires=10)  # FIXME: used to be 10
         self.encoder_time, self.in_dim_time = get_encoder(
-            encoding_time, input_dim=1, multires=128)  # FIXME: used to be 6
+            encoding_time, input_dim=1, multires=6)  # FIXME: used to be 6
 
         print("\nin_dim_deform: {}".format(self.in_dim_deform))
         print("in_dim_time: {}".format(self.in_dim_time))
+        print("in_dim_dir_d: {}".format(self.in_dim_dir_d))
+        print("geo_feat_dim: {}".format(self.geo_feat_dim))
 
         deform_d_net = []
         for l in range(num_layers_deform):

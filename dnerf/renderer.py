@@ -340,11 +340,11 @@ class NeRFRenderer(nn.Module):
 
             # NVIDIA - Dynamic Scenes dataset
             # segmentation assisted
-            rend_s = kwargs['inds_s']
-            rend_d = kwargs['inds_d']
+            # rend_s = kwargs['inds_s']
+            # rend_d = kwargs['inds_d']
             # no segmentation assistance
-            # rend_s = 0
-            # rend_d = [v for v in range(480*270)]
+            rend_s = 0
+            rend_d = [v for v in range(480*270)]
             inds_s = [v for v in range(480*270)]
             inds_d = [v for v in range(480*270)]
 
@@ -443,27 +443,6 @@ class NeRFRenderer(nn.Module):
             # print("rays_d.mean: {}".format(rays_d.mean()))
             # print("time: {}".format(time))
 
-            if (DEBUG):
-                print("\n\n\nPHASE 1 COMPLETE!!!\n\n\n")
-                if (N_static > 0):
-                    print("sigmas_s.shape: {}".format(sigmas_s.shape))
-                    print("rgbs_s.shape: {}".format(rgbs_s.shape))
-                    print("xyzs_s.shape: {}".format(xyzs_s.shape))
-                    print("sigmas_s.sum(): {}".format(sigmas_s.sum()))
-                    print("rgbs_s.sum(): {}".format(rgbs_s.sum()))
-                    print("xyzs_s.sum(): {}".format(xyzs_s.sum()))
-                if (N_dynamic > 0):
-                    print("sigmas_d.shape: {}".format(sigmas_d.shape))
-                    print("rgbs_d.shape: {}".format(rgbs_d.shape))
-                    print("xyzs_d.shape: {}".format(xyzs_d.shape))
-                    print("blend.shape: {}".format(blend.shape))
-                    print("sf.shape: {}".format(sf.shape))
-                    print("sigmas_d.sum(): {}".format(sigmas_d.sum()))
-                    print("rgbs_d.sum(): {}".format(rgbs_d.sum()))
-                    print("xyzs_d.sum(): {}".format(xyzs_d.sum()))
-                    print("blend.sum(): {}".format(blend.sum()))
-                    print("sf.sum(): {}".format(sf.sum()))
-
             # FIXME
             # counter = self.step_counter[self.local_step % 16]
             # counter.zero_()  # set to 0
@@ -519,6 +498,27 @@ class NeRFRenderer(nn.Module):
                 results['deform'] = deform_d if N_dynamic > 1 else torch.Tensor([
                     0]).cuda()
                 torch.cuda.empty_cache()
+
+            if (DEBUG):
+                print("\n\n\nPHASE 1 COMPLETE!!!\n\n\n")
+                if (N_static > 0):
+                    print("sigmas_s.shape: {}".format(sigmas_s.shape))
+                    print("rgbs_s.shape: {}".format(rgbs_s.shape))
+                    print("xyzs_s.shape: {}".format(xyzs_s.shape))
+                    print("sigmas_s.sum(): {}".format(sigmas_s.sum()))
+                    print("rgbs_s.sum(): {}".format(rgbs_s.sum()))
+                    print("xyzs_s.sum(): {}".format(xyzs_s.sum()))
+                if (N_dynamic > 0):
+                    print("sigmas_d.shape: {}".format(sigmas_d.shape))
+                    print("rgbs_d.shape: {}".format(rgbs_d.shape))
+                    print("xyzs_d.shape: {}".format(xyzs_d.shape))
+                    print("blend.shape: {}".format(blend.shape))
+                    print("sf.shape: {}".format(sf.shape))
+                    print("sigmas_d.sum(): {}".format(sigmas_d.sum()))
+                    print("rgbs_d.sum(): {}".format(rgbs_d.sum()))
+                    print("xyzs_d.sum(): {}".format(xyzs_d.sum()))
+                    print("blend.sum(): {}".format(blend.sum()))
+                    print("sf.sum(): {}".format(sf.sum()))
 
             # === STATIC ===
             # print("\nExecuting 1st pass...")
@@ -610,17 +610,17 @@ class NeRFRenderer(nn.Module):
                 # #          - weights_full
                 # #          - dynamicness_map
 
-                # # dynamic prep -> frames 2 & 3
-                # pts_b = xyzs_d + sceneflow_b
-                # pts_f = xyzs_d + sceneflow_f
-                # results['sceneflow_f'] = sceneflow_f
-                # results['sceneflow_b'] = sceneflow_b
-                # sceneflow_b, sceneflow_f, sf = 0, 0, 0
+                # dynamic prep -> frames 2 & 3
+                pts_b = xyzs_d + sceneflow_b
+                pts_f = xyzs_d + sceneflow_f
+                results['sceneflow_f'] = sceneflow_f
+                results['sceneflow_b'] = sceneflow_b
+                sceneflow_b, sceneflow_f, sf = 0, 0, 0
 
-                # results['raw_pts'] = xyzs_d
-                # xyzs_s, xyzs_d = 0, 0
-                # torch.cuda.empty_cache()
-                # # print("\n\n\nPHASE 4 COMPLETE!!!\n\n\n")
+                results['raw_pts'] = xyzs_d
+                xyzs_s, xyzs_d = 0, 0
+                torch.cuda.empty_cache()
+                # print("\n\n\nPHASE 4 COMPLETE!!!\n\n\n")
 
                 # # 3rd pass
                 # # print("\nExecuting 3rd pass...")
