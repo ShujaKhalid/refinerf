@@ -24,7 +24,7 @@ class NeRFNetwork(NeRFRenderer):
                  hidden_dim_bg=64,
                  # a deeper MLP is very necessary for performance.
                  num_layers_deform=2,
-                 hidden_dim_deform=128,
+                 hidden_dim_deform=32,
                  bound=1,
                  **kwargs,
                  ):
@@ -143,8 +143,8 @@ class NeRFNetwork(NeRFRenderer):
         # Added for dynamic NeRF ============================================
         print("\nINITIALIZING DYNAMIC MODEL!!!\n")
         self.input_ch = 3
-        self.D = 4  # FIXME: used to be 8!
-        self.W = 64  # FIXME: used to be 256!
+        self.D = 8  # FIXME: used to be 8!
+        self.W = 256  # FIXME: used to be 256!
         self.skips = [4]
         self.pts_linears = nn.ModuleList(
             [nn.Linear(self.input_ch, self.W)] + [nn.Linear(self.W, self.W) if i not in self.skips else nn.Linear(self.W + self.input_ch, self.W) for i in range(self.D-1)])

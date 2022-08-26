@@ -972,7 +972,7 @@ class Trainer(object):
 
             # update grid every 16 steps
             # FIXME: Not sure exactly how this works
-            if self.model.cuda_ray and self.global_step % self.opt.update_extra_interval == 0:
+            if self.model.cuda_ray and self.global_step % self.opt.update_extra_interval == 0 and self.global_step < 2000:  # FIXME: Add to defaults
                 with torch.cuda.amp.autocast(enabled=self.fp16):
                     self.model.update_extra_state()
 
