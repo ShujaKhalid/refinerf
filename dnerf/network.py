@@ -66,9 +66,9 @@ class NeRFNetwork(NeRFRenderer):
         self.hidden_dim = hidden_dim
         self.geo_feat_dim = geo_feat_dim
         self.encoder_s, self.in_dim_s = get_encoder(
-            encoding, desired_resolution=4096 * bound)
+            encoding, desired_resolution=2048 * bound)
         self.encoder_d, self.in_dim_d = get_encoder(
-            encoding, desired_resolution=4096 * bound)
+            encoding, desired_resolution=2048 * bound)
 
         sigma_s_net = []
         for l in range(num_layers):
