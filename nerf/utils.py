@@ -947,7 +947,7 @@ class Trainer(object):
             # print("========================================\n\n")
             self.opt_state = "dynamic"
             self.optimizer = self.optimizer_func(self.model, self.opt_state)
-            self.lr_scheduler = self.scheduler_func(self.optimizer)
+            # self.lr_scheduler = self.scheduler_func(self.optimizer)
 
             for name, param in self.model.named_parameters():
                 if param.requires_grad:
@@ -959,14 +959,14 @@ class Trainer(object):
             # print("========================================\n\n")
             self.opt_state = "all"
             self.optimizer = self.optimizer_func(self.model, self.opt_state)
-            self.lr_scheduler = self.scheduler_func(self.optimizer)
+            # self.lr_scheduler = self.scheduler_func(self.optimizer)
         elif ('b1' not in cond and 'b2' not in cond and 'b3' not in cond and 'b4' not in cond and 'd1' not in cond and 'd2' not in cond and 'd3' not in cond and 'd4' not in cond):
             # print("\n\n========================================")
             # print("STATIC MODEL ACTIVATED!!! - (optimizer)")
             # print("========================================\n\n")
             self.opt_state = "static"
             self.optimizer = self.optimizer_func(self.model, self.opt_state)
-            self.lr_scheduler = self.scheduler_func(self.optimizer)
+            # self.lr_scheduler = self.scheduler_func(self.optimizer)
 
         for data in loader:
 

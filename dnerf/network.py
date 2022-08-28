@@ -17,7 +17,7 @@ class NeRFNetwork(NeRFRenderer):
                  encoding_bg="hashgrid",
                  num_layers=2,
                  hidden_dim=64,
-                 geo_feat_dim=12,
+                 geo_feat_dim=15,
                  num_layers_color=3,
                  hidden_dim_color=64,
                  num_layers_bg=2,
@@ -142,12 +142,15 @@ class NeRFNetwork(NeRFRenderer):
 
         # Added for dynamic NeRF ============================================
         print("\nINITIALIZING DYNAMIC MODEL!!!\n")
-        self.input_ch = 3
+        self.input_ch = 63
+        self.input_ch_time = 25
         self.D = 8  # FIXME: used to be 8!
         self.W = 256  # FIXME: used to be 256!
         self.skips = [4]
-        self.pts_linears = nn.ModuleList(
-            [nn.Linear(self.input_ch, self.W)] + [nn.Linear(self.W, self.W) if i not in self.skips else nn.Linear(self.W + self.input_ch, self.W) for i in range(self.D-1)])
+        # self.pts_linears = nn.ModuleList(
+        #     [nn.Linear(self.input_ch, self.W)] + [nn.Linear(self.W, self.W) if i not in self.skips else nn.Linear(self.W + self.input_ch, self.W) for i in range(self.D-1)])
+        # self.views_linears = nn.ModuleList(
+        #     [nn.Linear(self.input_ch_views + self.W, self.W//2)])
 
         # deformation network ============================================
         self.num_layers_deform = num_layers_deform
@@ -245,8 +248,8 @@ class NeRFNetwork(NeRFRenderer):
         # else:
         #     self.bg_d_net = None
 
-        self.sf_net = nn.Linear(self.W, 6)
-        self.blend_net = nn.Linear(self.W, 1)
+        self.sf_net = nn.Linear(self.input_ch + self.input_ch_time, 6)
+        self.blend_net = nn.Linear(self.input_ch + self.input_ch_time, 1)
 
     def forward(self, x, d, t, svd):
         # x: [N, 3], in [-bound, bound]
@@ -299,10 +302,6 @@ class NeRFNetwork(NeRFRenderer):
         if enc_t.shape[0] == 1:
             enc_t = enc_t.repeat(x.shape[0], 1)  # [1, C'] --> [N, C']
 
-        # print("\nt: {}".format(t))
-        # print("enc_ori_x.shape: {}".format(enc_ori_x.shape))
-        # print("enc_t.shape: {}\n".format(enc_t.shape))
-
         # # TODO: Added -> confirm
         # if (len(x.shape) == 3):
         #     enc_t = torch.unsqueeze(
@@ -310,6 +309,8 @@ class NeRFNetwork(NeRFRenderer):
         #     deform = torch.cat([enc_ori_x, enc_t], dim=-1)  # [N, C + C']
         # else:
         deform = torch.cat([enc_ori_x, enc_t], dim=1)  # [N, C + C']
+        sf = torch.tanh(self.sf_net(deform))
+        blending = torch.sigmoid(self.blend_net(deform))
         # print("x.shape: {}".format(x.shape))
         # print("enc_t.shape: {}".format(enc_t.shape))
         # print("enc_ori_x.shape: {}".format(enc_ori_x.shape))
@@ -349,18 +350,6 @@ class NeRFNetwork(NeRFRenderer):
 
         # sigmoid activation for rgb
         rgbs = torch.sigmoid(h)
-
-        # dynamic
-        input_pts, _ = x, d
-        h = input_pts
-        for i, _ in enumerate(self.pts_linears):
-            h = self.pts_linears[i](h)
-            h = F.relu(h)
-            if i in self.skips:
-                h = torch.cat([input_pts, h], -1)
-
-        sf = torch.tanh(self.sf_net(h))
-        blending = torch.sigmoid(self.blend_net(h))
 
         return sigma, rgbs, deform, blending, sf
 
