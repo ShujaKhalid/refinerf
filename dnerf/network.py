@@ -15,16 +15,16 @@ class NeRFNetwork(NeRFRenderer):
                  encoding_time="frequency",
                  encoding_deform="frequency",  # "hashgrid" seems worse
                  encoding_bg="hashgrid",
-                 num_layers=2,
+                 num_layers=1,
                  hidden_dim=64,
                  geo_feat_dim=15,
-                 num_layers_color=3,
+                 num_layers_color=1,
                  hidden_dim_color=64,
                  num_layers_bg=2,
                  hidden_dim_bg=64,
                  # a deeper MLP is very necessary for performance.
                  num_layers_deform=3,
-                 hidden_dim_deform=128,
+                 hidden_dim_deform=1024,
                  bound=1,
                  **kwargs,
                  ):
@@ -33,33 +33,6 @@ class NeRFNetwork(NeRFRenderer):
         # ==================
         # STATIC
         # ==================
-
-        # deformation network ============================================
-        # self.num_layers_deform = num_layers_deform
-        # self.hidden_dim_deform = hidden_dim_deform
-        # self.encoder_deform, self.in_dim_deform = get_encoder(
-        #     encoding_deform, multires=10)
-        # self.encoder_time, self.in_dim_time = get_encoder(
-        #     encoding_time, input_dim=1, multires=6)
-
-        # print("self.in_dim_deform: {}".format(self.in_dim_deform))
-        # print("self.in_dim_time: {}".format(self.in_dim_time))
-
-        # deform_s_net = []
-        # for l in range(num_layers_deform):
-        #     if l == 0:
-        #         in_dim = self.in_dim_deform + self.in_dim_time  # grid dim + time
-        #     else:
-        #         in_dim = hidden_dim_deform
-
-        #     if l == num_layers_deform - 1:
-        #         out_dim = 3  # deformation for xyz
-        #     else:
-        #         out_dim = hidden_dim_deform
-
-        #     deform_s_net.append(nn.Linear(in_dim, out_dim, bias=False))
-
-        # self.deform_s_net = nn.ModuleList(deform_s_net)
 
         # sigma network ============================================
         self.num_layers = num_layers
@@ -108,34 +81,6 @@ class NeRFNetwork(NeRFRenderer):
 
         self.color_s_net = nn.ModuleList(color_s_net)
 
-        # # background network ============================================
-        # if self.bg_radius > 0:
-        #     self.num_layers_bg = num_layers_bg
-        #     self.hidden_dim_bg = hidden_dim_bg
-        #     self.encoder_bg, self.in_dim_bg = get_encoder(
-        #         encoding_bg, input_dim=2, num_levels=4, log2_hashmap_size=19, desired_resolution=2048)  # much smaller hashgrid
-
-        #     # print("self.in_dim_bg: {}".format(self.in_dim_bg))
-        #     # print("self.in_dim_dir: {}".format(self.in_dim_dir))
-
-        #     bg_s_net = []
-        #     for l in range(num_layers_bg):
-        #         if l == 0:
-        #             in_dim = self.in_dim_bg + self.in_dim_dir
-        #         else:
-        #             in_dim = hidden_dim_bg
-
-        #         if l == num_layers_bg - 1:
-        #             out_dim = 3  # 3 rgb
-        #         else:
-        #             out_dim = hidden_dim_bg
-
-        #         bg_s_net.append(nn.Linear(in_dim, out_dim, bias=False))
-
-        #     self.bg_s_net = nn.ModuleList(bg_s_net)
-        # else:
-        #     self.bg_s_net = None
-
         # ==================
         # DYNAMIC
         # ==================
@@ -143,10 +88,10 @@ class NeRFNetwork(NeRFRenderer):
         # Added for dynamic NeRF ============================================
         print("\nINITIALIZING DYNAMIC MODEL!!!\n")
         self.input_ch = 63
-        self.input_ch_time = 25
-        self.D = 8  # FIXME: used to be 8!
-        self.W = 256  # FIXME: used to be 256!
-        self.skips = [4]
+        self.input_ch_time = 257
+        # self.D = 8  # FIXME: used to be 8!
+        # self.W = 256  # FIXME: used to be 256!
+        # self.skips = [4]
         # self.pts_linears = nn.ModuleList(
         #     [nn.Linear(self.input_ch, self.W)] + [nn.Linear(self.W, self.W) if i not in self.skips else nn.Linear(self.W + self.input_ch, self.W) for i in range(self.D-1)])
         # self.views_linears = nn.ModuleList(
@@ -158,7 +103,7 @@ class NeRFNetwork(NeRFRenderer):
         self.encoder_deform, self.in_dim_deform = get_encoder(
             encoding_deform, multires=10)  # FIXME: used to be 10
         self.encoder_time, self.in_dim_time = get_encoder(
-            encoding_time, input_dim=1, multires=12)  # FIXME: used to be 6
+            encoding_time, input_dim=1, multires=6)  # FIXME: used to be 6
 
         print("\nin_dim_deform: {}".format(self.in_dim_deform))
         print("in_dim_time: {}".format(self.in_dim_time))
@@ -223,33 +168,8 @@ class NeRFNetwork(NeRFRenderer):
 
         self.color_d_net = nn.ModuleList(color_d_net)
 
-        # # background network ============================================
-        # if self.bg_radius > 0:
-        #     self.num_layers_bg = num_layers_bg
-        #     self.hidden_dim_bg = hidden_dim_bg
-        #     self.encoder_bg, self.in_dim_bg = get_encoder(
-        #         encoding_bg, input_dim=2, num_levels=4, log2_hashmap_size=19, desired_resolution=2048)  # much smaller hashgrid
-
-        #     bg_d_net = []
-        #     for l in range(num_layers_bg):
-        #         if l == 0:
-        #             in_dim = self.in_dim_bg + self.in_dim_dir
-        #         else:
-        #             in_dim = hidden_dim_bg
-
-        #         if l == num_layers_bg - 1:
-        #             out_dim = 3  # 3 rgb
-        #         else:
-        #             out_dim = hidden_dim_bg
-
-        #         bg_d_net.append(nn.Linear(in_dim, out_dim, bias=False))
-
-        #     self.bg_d_net = nn.ModuleList(bg_d_net)
-        # else:
-        #     self.bg_d_net = None
-
-        self.sf_net = nn.Linear(self.input_ch + self.input_ch_time, 6)
-        self.blend_net = nn.Linear(self.input_ch + self.input_ch_time, 1)
+        # self.sf_net = nn.Linear(self.input_ch + self.input_ch_time, 6)
+        # self.blend_net = nn.Linear(self.input_ch + self.input_ch_time, 1)
 
     def forward(self, x, d, t, svd):
         # x: [N, 3], in [-bound, bound]
@@ -302,15 +222,12 @@ class NeRFNetwork(NeRFRenderer):
         if enc_t.shape[0] == 1:
             enc_t = enc_t.repeat(x.shape[0], 1)  # [1, C'] --> [N, C']
 
-        # # TODO: Added -> confirm
-        # if (len(x.shape) == 3):
-        #     enc_t = torch.unsqueeze(
-        #         enc_t, -1).repeat(1, 1, enc_t.shape[1])
-        #     deform = torch.cat([enc_ori_x, enc_t], dim=-1)  # [N, C + C']
-        # else:
         deform = torch.cat([enc_ori_x, enc_t], dim=1)  # [N, C + C']
-        sf = torch.tanh(self.sf_net(deform))
-        blending = torch.sigmoid(self.blend_net(deform))
+        # sf = torch.tanh(self.sf_net(deform))
+        # blending = torch.sigmoid(self.blend_net(deform))
+        # FIXME
+        sf = deform[..., :6]
+        blending = deform[..., 0]
         # print("x.shape: {}".format(x.shape))
         # print("enc_t.shape: {}".format(enc_t.shape))
         # print("enc_ori_x.shape: {}".format(enc_ori_x.shape))
@@ -471,8 +388,8 @@ class NeRFNetwork(NeRFRenderer):
                 {'params': self.sigma_d_net.parameters(), 'lr': lr_net},
                 {'params': self.color_d_net.parameters(), 'lr': lr_net},
                 {'params': self.deform_d_net.parameters(), 'lr': lr_net},
-                {'params': self.blend_net.parameters(), 'lr': lr_net},
-                {'params': self.sf_net.parameters(), 'lr': lr_net},
+                # {'params': self.blend_net.parameters(), 'lr': lr_net},
+                # {'params': self.sf_net.parameters(), 'lr': lr_net},
             ]
             if self.bg_radius > 0:
                 params.append(
@@ -492,8 +409,8 @@ class NeRFNetwork(NeRFRenderer):
                 {'params': self.sigma_d_net.parameters(), 'lr': lr_net},
                 {'params': self.color_d_net.parameters(), 'lr': lr_net},
                 {'params': self.deform_d_net.parameters(), 'lr': lr_net},
-                {'params': self.blend_net.parameters(), 'lr': lr_net},
-                {'params': self.sf_net.parameters(), 'lr': lr_net},
+                # {'params': self.blend_net.parameters(), 'lr': lr_net},
+                # {'params': self.sf_net.parameters(), 'lr': lr_net},
             ]
             if self.bg_radius > 0:
                 params.append(
