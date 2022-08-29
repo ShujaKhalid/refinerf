@@ -10,21 +10,21 @@ from .renderer import NeRFRenderer
 
 class NeRFNetwork(NeRFRenderer):
     def __init__(self,
-                 encoding="tiledgrid",
-                 encoding_dir="sphere_harmonics",
+                 encoding="frequency",  # tiledgrid
+                 encoding_dir="frequency",  # sphere_harmonics
                  encoding_time="frequency",
                  encoding_deform="frequency",  # "hashgrid" seems worse
                  encoding_bg="hashgrid",
                  num_layers=1,
                  hidden_dim=64,
-                 geo_feat_dim=15,
+                 geo_feat_dim=128,  # change me
                  num_layers_color=1,
                  hidden_dim_color=64,
                  num_layers_bg=2,
                  hidden_dim_bg=64,
                  # a deeper MLP is very necessary for performance.
                  num_layers_deform=3,
-                 hidden_dim_deform=1024,
+                 hidden_dim_deform=2048,
                  bound=1,
                  **kwargs,
                  ):
@@ -38,10 +38,14 @@ class NeRFNetwork(NeRFRenderer):
         self.num_layers = num_layers
         self.hidden_dim = hidden_dim
         self.geo_feat_dim = geo_feat_dim
+        # self.encoder_s, self.in_dim_s = get_encoder(
+        #     encoding, desired_resolution=2048 * bound)
+        # self.encoder_d, self.in_dim_d = get_encoder(
+        #     encoding, desired_resolution=2048 * bound)
         self.encoder_s, self.in_dim_s = get_encoder(
-            encoding, desired_resolution=2048 * bound)
+            encoding, multires=10)
         self.encoder_d, self.in_dim_d = get_encoder(
-            encoding, desired_resolution=2048 * bound)
+            encoding, multires=10)
 
         sigma_s_net = []
         for l in range(num_layers):
@@ -62,8 +66,12 @@ class NeRFNetwork(NeRFRenderer):
         # color network ============================================
         self.num_layers_color = num_layers_color
         self.hidden_dim_color = hidden_dim_color
-        self.encoder_dir_s, self.in_dim_dir_s = get_encoder(encoding_dir)
-        self.encoder_dir_d, self.in_dim_dir_d = get_encoder(encoding_dir)
+        # self.encoder_dir_s, self.in_dim_dir_s = get_encoder(encoding_dir)
+        # self.encoder_dir_d, self.in_dim_dir_d = get_encoder(encoding_dir)
+        self.encoder_dir_s, self.in_dim_dir_s = get_encoder(
+            encoding_dir, multires=4)
+        self.encoder_dir_d, self.in_dim_dir_d = get_encoder(
+            encoding_dir, multires=4)
 
         color_s_net = []
         for l in range(num_layers_color):
