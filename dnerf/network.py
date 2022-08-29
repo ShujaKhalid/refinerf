@@ -24,7 +24,7 @@ class NeRFNetwork(NeRFRenderer):
                  hidden_dim_bg=64,
                  # a deeper MLP is very necessary for performance.
                  num_layers_deform=3,
-                 hidden_dim_deform=256,
+                 hidden_dim_deform=512,
                  bound=1,
                  **kwargs,
                  ):

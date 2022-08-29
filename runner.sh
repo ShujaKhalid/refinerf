@@ -11,10 +11,10 @@ export CUDA_ROOT=/usr/local/cuda
 # DATASET_PATH="../datalake/dnerf/custom"
 # SCENE="DynamicFace-2"
 # SCENE="Truck"
-# SCENE="Umbrella"
+SCENE="Umbrella" 
 # SCENE="Jumping" #COLMAP ISSUES
 # SCENE="Skating"
-SCENE="Playground"
+# SCENE="Playground" #DONE
 # SCENE="Balloon1"
 # SCENE="Balloon2"
 DATASET_PATH="/home/skhalid/Documents/datalake/dynamic_scene_data_full/nvidia_data_full/$SCENE/dense"
@@ -111,7 +111,7 @@ then
 	# python utils/generate_depth.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_MIDAS --input_folder val --output_folder disp_val --output_img_folder disp_img_val 
 	# python utils/generate_flow.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_RAFT --input_folder val --output_folder flow_val --output_img_folder flow_img_val 
 	python utils/generate_motion_mask.py --dataset_path $DATASET_PATH --input_folder val --output_sem_mask_folder semantic_mask_val \
-	 	--output_mot_seg_folder motion_segmentation_val --output_mot_mask_folder motion_masks_val
+	  	--output_mot_seg_folder motion_segmentation_val --output_mot_mask_folder motion_masks_val
 fi
 
 if [[ "$1" == "--run" || "$2" == "--run" || "$3" == "--run"  ]]

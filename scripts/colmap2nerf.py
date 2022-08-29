@@ -133,6 +133,14 @@ def run_ffmpeg_images(args):
         all_imgs.sort()
         all_imgs_qty = len(all_imgs)
 
+        # Copy over all of the images
+        for img in all_imgs:
+            new_img = "00" + img.split("/")[-1].split(".")[0] + ".jpg"
+            #cmd = "cp -pr " + img + " " + base+"images"
+            cmd = "ffmpeg -i " + img + " -vf scale=" + \
+                str(1280)+":"+str(720) + " " + base+"images/"+new_img
+            os.system(cmd)
+
         if (MULTI_IMG_TRN):
             for index in range(max_imgs):
                 fn = all_imgs[index//(all_imgs_qty+1)]
@@ -167,7 +175,8 @@ def run_ffmpeg_images(args):
                         str(args.W)+":"+str(args.H) + " " + out
                     print(cmd)
                     os.system(cmd)
-        args.images = new_loc
+        # TODO: validate
+        #args.images = new_loc
     else:
         new_loc = base + args.mode + "/"
         prod = base.split("/")[-3]
@@ -225,11 +234,12 @@ def run_colmap(args):
     #     sys.exit(1)
     if os.path.exists(db):
         os.remove(db)
+
     do_system(
         # f"colmap feature_extractor --ImageReader.camera_model OPENCV --SiftExtraction.estimate_affine_shape {flag_EAS} --SiftExtraction.domain_size_pooling {flag_EAS} --ImageReader.single_camera 1 --SiftExtraction.max_num_features 100000 --database_path {db} --image_path {images}")
         f"colmap feature_extractor --ImageReader.camera_model OPENCV --SiftExtraction.estimate_affine_shape {flag_EAS} --SiftExtraction.domain_size_pooling {flag_EAS} --ImageReader.single_camera 1 --database_path {db} --image_path {images}")
     do_system(
-        f"colmap {args.colmap_matcher}_matcher --SiftMatching.guided_matching {flag_EAS} --SiftMatching.confidence 0.99 --database_path {db}")
+        f"colmap {args.colmap_matcher}_matcher --SiftMatching.guided_matching {flag_EAS} --SiftMatching.confidence 0.001 --database_path {db}")
     try:
         shutil.rmtree(sparse)
     except:
@@ -278,7 +288,8 @@ def qvec2rotmat(qvec):
 
 
 def rotmat(a, b):
-    a, b = a / np.linalg.norm(a), b / np.linalg.norm(b)
+    a = a / np.linalg.norm(a)
+    b = b / np.linalg.norm(b)
     v = np.cross(a, b)
     c = np.dot(a, b)
     # handle exception for the opposite direction input
@@ -317,14 +328,16 @@ if __name__ == "__main__":
         args.images = args.images[:-
                                   1] if args.images[-1] == '/' else args.images
         root_dir = os.path.dirname(args.images)
+        print(root_dir)
+        print(args.images)
         run_ffmpeg_images(args)
 
-    print(root_dir)
     args.colmap_db = os.path.join(root_dir, args.colmap_db)
     args.colmap_text = os.path.join(root_dir, args.colmap_text)
 
     if args.run_colmap and args.mode != "val":
         # if args.run_colmap:
+        # print(root_dir)
         run_colmap(args)
 
     SKIP_EARLY = int(args.skip_early)
@@ -525,8 +538,8 @@ if __name__ == "__main__":
             "p2": p2,
             "cx": cx,
             "cy": cy,
-            "w": w,
-            "h": h,
+            "w": "480",  # TODO
+            "h": "270",  # TODO
             "frames": frames,
         }
 
