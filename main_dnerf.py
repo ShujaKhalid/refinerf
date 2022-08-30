@@ -40,7 +40,7 @@ if __name__ == '__main__':
     # parser.add_argument('--dynamic_iters', type=str, default="{'d1': (2400, 3600), 'b1': (3600, 4800), 'd3': (6000, 7200), 'b3': (10800, 14400), 'd2': (15600, 16800)}",  # 2400 iters # BOOOO
     # parser.add_argument('--dynamic_iters', type=str, default="{'d2': (1200, 6000), 'd3': (7200, 8400), 'd4': (9600, 10800)}",  # 2400 iters
     # parser.add_argument('--dynamic_iters', type=str, default="{'d1': (1200, 2400), 'd2': (3600, 100000)}",  # 2400 iters
-    parser.add_argument('--dynamic_iters', type=str, default="{'d1': (600, 1800)}",  # 2400 iters
+    parser.add_argument('--dynamic_iters', type=str, default="{'d1': (0, 1800)}",  # 2400 iters
                         # parser.add_argument('--dynamic_iters', type=str, default="{'d1': (0, 12000)}",  # 24000 iters
                         help="intervals to train the dynamic model for")
     parser.add_argument('--update_extra_interval', type=int, default=120,  # TODO: used to be 100

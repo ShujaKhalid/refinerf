@@ -98,7 +98,7 @@ def run_ffmpeg(args):
         time_slice_value = f",select='between(t\,{start}\,{end})'"
 
     do_system(
-        f"ffmpeg -i {video} -qscale:v 1 -qmin 1 -vf \"fps={fps}{time_slice_value}\" {images}/%03d.jpg")
+        f"ffmpeg -i {video} -qscale:v 1 -qmin 1 -vf \"fps={fps}{time_slice_value}\" {images}/%05d.jpg")
 
 
 def run_ffmpeg_images(args):

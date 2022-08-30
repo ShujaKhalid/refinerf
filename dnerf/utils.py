@@ -390,6 +390,10 @@ class Trainer(_Trainer):
             # print("pred_rgb: {}".format(pred_rgb.shape))
             # print("gt_rgb: {}".format(gt_rgb.shape))
             # print("loss: {}".format(loss))
+            # print("loss: {}".format(loss.min()))
+            # print("loss: {}".format(loss.max()))
+            # print("loss: {}".format(loss.isinf()))
+            # print("loss: {}".format(loss.isinf().sum()))
 
         # special case for CCNeRF's rank-residual training
         if len(loss.shape) == 3:  # [K, B, N]

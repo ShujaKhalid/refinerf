@@ -17,9 +17,10 @@ export CUDA_ROOT=/usr/local/cuda
 # SCENE="Playground" #COLMAP: DONE & RECON: DONE 
 # SCENE="Balloon1" #COLMAP: DONE & RECON: DONE 
 # SCENE="Balloon2" #COLMAP: DONE & RECON: DONE 
+DATASET_PATH="/home/skhalid/Documents/datalake/dynamic_scene_data_full/nvidia_data_full/$SCENE/dense"
 
 SCENE="custom"
-DATASET_PATH="/home/skhalid/Documents/datalake/dynamic_scene_data_full/nvidia_data_full/$SCENE/dense"
+DATASET_PATH="../datalake/dnerf/custom"
 
 NM_WEIGHTS="/home/skhalid/Documents/datalake/neural_motion_weights/"
 WEIGHTS_MIDAS=$NM_WEIGHTS"midas_v21-f6b98070.pt"
@@ -48,9 +49,9 @@ then
 	then
 		echo "Running custom module..."
 	    # We're dealing with a custom video
-		DATASET_PATH="../datalake/dnerf/custom"
-		FILENAME=$(basename "$2" .mp4)
-		IMAGE_PTH="images"
+		# DATASET_PATH="../datalake/dnerf/custom"
+		# FILENAME=$(basename "$2" .mp4)
+		# IMAGE_PTH="images"
 
 		# mv "$2" /tmp
 		# rm -rf $DATASET_PATH/*
@@ -58,10 +59,8 @@ then
 		# mkdir -p $DATASET_PATH/images_colmap
 		# mv /tmp/"clippy.mp4" $DATASET_PATH
 		
-		#python ./utils/generate_data.py --videopath $2 --data_dir $DATASET_PATH
-		# cp -pr "$2" $DATASET_PATH
 		# python scripts/colmap2nerf.py --video "$2" --run_colmap --dynamic --mode train --dataset custom
-		python scripts/colmap2nerf.py --images $DATASET_PATH/$IMAGE_PTH --run_colmap --dynamic --mode val --dataset custom
+		# python scripts/colmap2nerf.py --images $DATASET_PATH/$IMAGE_PTH --run_colmap --dynamic --mode val --dataset custom
 
 		echo $FILENAME
 		# for i in $DATASET_PATH/images/*.png ; do convert "$i" "${i%.*}.jpg" ; done
@@ -115,9 +114,9 @@ then
 
 	# # # train
 	echo "===> TRAINING!!!"
-	# python utils/generate_depth.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_MIDAS --input_folder images_colmap --output_folder disp --output_img_folder disp_img 
-	# python utils/generate_flow.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_RAFT --input_folder images_colmap --output_folder flow --output_img_folder flow_img 
-	# python utils/generate_motion_mask.py --dataset_path $DATASET_PATH --input_folder images_colmap --output_sem_mask_folder semantic_mask --output_mot_seg_folder motion_segmentation --output_mot_mask_folder motion_masks
+	python utils/generate_depth.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_MIDAS --input_folder images_colmap --output_folder disp --output_img_folder disp_img 
+	python utils/generate_flow.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_RAFT --input_folder images_colmap --output_folder flow --output_img_folder flow_img 
+	python utils/generate_motion_mask.py --dataset_path $DATASET_PATH --input_folder images_colmap --output_sem_mask_folder semantic_mask --output_mot_seg_folder motion_segmentation --output_mot_mask_folder motion_masks
 
 	# # val
 	echo "===> VALIDATING!!!"
