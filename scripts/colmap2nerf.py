@@ -42,7 +42,7 @@ def parse_args():
     parser.add_argument("--video_fps", default=3)
     parser.add_argument("--time_slice", default="", help="time (in seconds) in the format t1,t2 within which the images should be generated from the video. eg: \"--time_slice '10,300'\" will generate images only from 10th second to 300th second of the video")
 
-    parser.add_argument("--colmap_matcher", default="exhaustive", choices=["exhaustive", "sequential", "spatial", "transitive",
+    parser.add_argument("--colmap_matcher", default="sequential", choices=["exhaustive", "sequential", "spatial", "transitive",
                         "vocab_tree"], help="select which matcher colmap should use. sequential for videos, exhaustive for adhoc images")
     parser.add_argument("--skip_early", default=0,
                         help="skip this many images from the start")
@@ -77,6 +77,7 @@ def run_ffmpeg(args):
     video = args.video
     images = args.images
     fps = float(args.video_fps) or 1.0
+    args.MULTI_IMG_TRN = False
 
     print(
         f"running ffmpeg with input video file={video}, output image folder={images}, fps={fps}.")
@@ -108,6 +109,7 @@ def run_ffmpeg_images(args):
     MULTI_IMG_TRN = False
     args.MULTI_IMG_TRN = MULTI_IMG_TRN
     LARGE_DATASET_TRN = False
+
     if (args.mode == "train"):
         new_loc = base + "images_scaled"
         new_loc_mask = base + "motion_masks"
@@ -178,45 +180,65 @@ def run_ffmpeg_images(args):
         # TODO: validate
         #args.images = new_loc
     else:
-        new_loc = base + args.mode + "/"
-        prod = base.split("/")[-3]
-        trn_base = "/home/skhalid/Documents/torch-ngp/results/gt/" + prod
-        query_loc = trn_base
-        os.system("mkdir -p "+new_loc)
-        files = glob.glob(query_loc+"/*.png")
-        files.sort()
-        for indx, file in enumerate(files):
-            # fn = "v000t0"+str(indx).zfill(2)+".jpg"
-            fn = "000"+str(indx).zfill(2)+".jpg"
-            # fn = file.split("/")[-1]
-            cmd = "ffmpeg -i "+file+" -vf scale=" + \
-                str(args.W)+":"+str(args.H) + " " + new_loc+fn
-            #print("cmd: {}".format(cmd))
-            os.system(cmd)
-
-        # Use existing validation masks
-        query_loc = "/home/skhalid/Documents/datalake/dynamic_scene_data_full_bkp/nvidia_data_full/" + \
-            prod+"/dense/"
-        query_loc_val = "/home/skhalid/Documents/datalake/dynamic_scene_data_full/nvidia_data_full/" + \
-            prod+"/dense/"
-        query_loc_masks = query_loc + "mv_masks"
-        query_loc_val_masks = query_loc_val + "motion_masks_val/"
-        folders = glob.glob(query_loc_masks+"/*")
-        folders.sort()
-        os.system("mkdir -p "+query_loc_val_masks)
-        print(folders)
-        for indx, folder in enumerate(folders[:12]):
-            files = glob.glob(folder+"/*.png")
+        if (args.dataset == "nvidia"):
+            new_loc = base + args.mode + "/"
+            prod = base.split("/")[-3]
+            trn_base = "/home/skhalid/Documents/torch-ngp/results/gt/" + prod
+            query_loc = trn_base
+            os.system("mkdir -p "+new_loc)
+            files = glob.glob(query_loc+"/*.png")
             files.sort()
-            file = files[-1]
-            # fn = "v000t0"+str(indx).zfill(2)+".jpg"
-            fn = "000"+str(indx).zfill(2)+".png"
-            # fn = file.split("/")[-1]
-            cmd = "ffmpeg -i "+file+" -vf scale=" + \
-                str(args.W)+":"+str(args.H) + " " + query_loc_val_masks+fn
-            print("cmd: {}".format(cmd))
-            os.system(cmd)
-        args.images = new_loc
+            for indx, file in enumerate(files):
+                # fn = "v000t0"+str(indx).zfill(2)+".jpg"
+                fn = "000"+str(indx).zfill(2)+".jpg"
+                # fn = file.split("/")[-1]
+                cmd = "ffmpeg -i "+file+" -vf scale=" + \
+                    str(args.W)+":"+str(args.H) + " " + new_loc+fn
+                #print("cmd: {}".format(cmd))
+                os.system(cmd)
+
+            # Use existing validation masks
+            query_loc = "/home/skhalid/Documents/datalake/dynamic_scene_data_full_bkp/nvidia_data_full/" + \
+                prod+"/dense/"
+            query_loc_val = "/home/skhalid/Documents/datalake/dynamic_scene_data_full/nvidia_data_full/" + \
+                prod+"/dense/"
+            query_loc_masks = query_loc + "mv_masks"
+            query_loc_val_masks = query_loc_val + "motion_masks_val/"
+            folders = glob.glob(query_loc_masks+"/*")
+            folders.sort()
+            os.system("mkdir -p "+query_loc_val_masks)
+            print(folders)
+            for indx, folder in enumerate(folders[:12]):
+                files = glob.glob(folder+"/*.png")
+                files.sort()
+                file = files[-1]
+                # fn = "v000t0"+str(indx).zfill(2)+".jpg"
+                fn = "000"+str(indx).zfill(2)+".png"
+                # fn = file.split("/")[-1]
+                cmd = "ffmpeg -i "+file+" -vf scale=" + \
+                    str(args.W)+":"+str(args.H) + " " + query_loc_val_masks+fn
+                print("cmd: {}".format(cmd))
+                os.system(cmd)
+            args.images = new_loc
+        elif (args.dataset == "custom"):
+            new_loc = base + args.mode + "/"
+            query_loc = "/home/skhalid/Documents/datalake/dnerf/" + args.dataset + "/images/"
+            print()
+            print()
+            print(query_loc)
+            print()
+            print()
+            os.system("mkdir -p "+new_loc)
+            files = glob.glob(query_loc+"/*.jpg")
+            files.sort()
+            for indx, file in enumerate(files):
+                # fn = "v000t0"+str(indx).zfill(2)+".jpg"
+                fn = "000"+str(indx).zfill(2)+".jpg"
+                # fn = file.split("/")[-1]
+                cmd = "ffmpeg -i "+file+" -vf scale=" + \
+                    str(960)+":"+str(540) + " " + new_loc+fn
+                #print("cmd: {}".format(cmd))
+                os.system(cmd)
 
 
 def run_colmap(args):
@@ -319,10 +341,18 @@ def closest_point_2_lines(oa, da, ob, db):
 if __name__ == "__main__":
     args = parse_args()
 
-    if args.video != "":
+    if args.video != "" and args.mode == "train":
         root_dir = os.path.dirname(args.video)
         args.images = os.path.join(root_dir, "images")  # override args.images
         run_ffmpeg(args)
+    elif (args.mode == "val"):
+        print(args.images)
+        args.images = args.images[:-
+                                  1] if args.images[-1] == '/' else args.images
+        root_dir = os.path.dirname(args.images)
+        print(root_dir)
+
+        run_ffmpeg_images(args)
     else:
         # remove trailing / (./a/b/ --> ./a/b)
         args.images = args.images[:-
@@ -545,7 +575,7 @@ if __name__ == "__main__":
 
         output_path = os.path.join(root_dir, filename)
         # print("frames: {}".format(frames))
-        if (args.dataset == "nvidia"):
+        if (args.dataset == "nvidia" or args.dataset == "custom"):
             BASE = args.images.split("images_")[0]
             imgs = [v["file_path"] for v in frames]
             #folder = output_path.split("/")[-1].split(".")[0].split("_")[-1]
@@ -584,7 +614,7 @@ if __name__ == "__main__":
         W = args.W
         H = args.H
 
-        if (args.dataset == "nvidia"):
+        if (args.dataset == "nvidia" or args.dataset == "custom"):
             frames_all = [f for i, f in enumerate(frames) if i in all_ids]
             # frames_all = glob.glob(args.images+"/*.jpg")
             print(frames_all)

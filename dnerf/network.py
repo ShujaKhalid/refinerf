@@ -17,14 +17,14 @@ class NeRFNetwork(NeRFRenderer):
                  encoding_bg="hashgrid",
                  num_layers=2,
                  hidden_dim=256,
-                 geo_feat_dim=15,  # change me
+                 geo_feat_dim=64,  # change me
                  num_layers_color=3,
                  hidden_dim_color=256,
                  num_layers_bg=2,
                  hidden_dim_bg=64,
                  # a deeper MLP is very necessary for performance.
                  num_layers_deform=3,
-                 hidden_dim_deform=512,
+                 hidden_dim_deform=128,
                  bound=1,
                  **kwargs,
                  ):
@@ -38,14 +38,14 @@ class NeRFNetwork(NeRFRenderer):
         self.num_layers = num_layers
         self.hidden_dim = hidden_dim
         self.geo_feat_dim = geo_feat_dim
-        self.encoder_s, self.in_dim_s = get_encoder(
-            encoding, desired_resolution=2048 * bound)
-        self.encoder_d, self.in_dim_d = get_encoder(
-            encoding, desired_resolution=2048 * bound)
         # self.encoder_s, self.in_dim_s = get_encoder(
-        #     encoding, multires=10)
+        #     encoding, desired_resolution=2048 * bound)
         # self.encoder_d, self.in_dim_d = get_encoder(
-        #     encoding, multires=10)
+        #     encoding, desired_resolution=2048 * bound)
+        self.encoder_s, self.in_dim_s = get_encoder(
+            encoding, multires=10)
+        self.encoder_d, self.in_dim_d = get_encoder(
+            encoding, multires=10)
 
         sigma_s_net = []
         for l in range(num_layers):

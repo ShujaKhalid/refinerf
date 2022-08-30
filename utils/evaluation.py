@@ -73,9 +73,9 @@ if __name__ == '__main__':
 
     lpips_loss = lpips.LPIPS(net='alex')  # best forward scores
     data_dir = '../results'
-    # sequences = ['Balloon1', 'Balloon2', 'Jumping',
-    #              'Playground', 'Skating', 'Truck', 'Umbrella']
-    sequences = ['Umbrella']
+    sequences = ['Balloon1', 'Balloon2', 'Jumping',
+                 'Playground', 'Skating', 'Truck', 'Umbrella']
+    # sequences = ['Balloon1']
     methods = ['NeRF', 'NeRF_t', 'Yoon', 'NR', 'NSFF', 'dnerf', 'Ours']
     # methods = ['NeRF', 'NeRF_t', 'NR', 'NSFF', 'dnerf']
 

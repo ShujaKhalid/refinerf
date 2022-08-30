@@ -9,14 +9,16 @@ export CUDA_ROOT=/usr/local/cuda
 # SCENE="bouncingballs"
 
 # DATASET_PATH="../datalake/dnerf/custom"
-# SCENE="DynamicFace-2"
-# SCENE="Truck"
-# SCENE="Umbrella" 
-# SCENE="Jumping" #COLMAP ISSUES
-# SCENE="Skating"
-# SCENE="Playground" #DONE
-SCENE="Balloon1"
-# SCENE="Balloon2"
+# SCENE="DynamicFace-2" # IGNORE
+# SCENE="Truck" #COLMAP ISSUES 
+# SCENE="Umbrella" #COLMAP: DONE & RECON: DONE 
+# SCENE="Jumping" #COLMAP: DONE & RECON: DONE 
+# SCENE="Skating" #COLMAP: DONE & RECON: INCOMPLETE 
+# SCENE="Playground" #COLMAP: DONE & RECON: DONE 
+# SCENE="Balloon1" #COLMAP: DONE & RECON: DONE 
+# SCENE="Balloon2" #COLMAP: DONE & RECON: DONE 
+
+SCENE="custom"
 DATASET_PATH="/home/skhalid/Documents/datalake/dynamic_scene_data_full/nvidia_data_full/$SCENE/dense"
 
 NM_WEIGHTS="/home/skhalid/Documents/datalake/neural_motion_weights/"
@@ -48,9 +50,18 @@ then
 	    # We're dealing with a custom video
 		DATASET_PATH="../datalake/dnerf/custom"
 		FILENAME=$(basename "$2" .mp4)
+		IMAGE_PTH="images"
 
+		# mv "$2" /tmp
+		# rm -rf $DATASET_PATH/*
+		# mkdir -p $DATASET_PATH/images
+		# mkdir -p $DATASET_PATH/images_colmap
+		# mv /tmp/"clippy.mp4" $DATASET_PATH
+		
 		#python ./utils/generate_data.py --videopath $2 --data_dir $DATASET_PATH
-		python scripts/colmap2nerf.py --video "$2" --run_colmap --dynamic
+		# cp -pr "$2" $DATASET_PATH
+		# python scripts/colmap2nerf.py --video "$2" --run_colmap --dynamic --mode train --dataset custom
+		python scripts/colmap2nerf.py --images $DATASET_PATH/$IMAGE_PTH --run_colmap --dynamic --mode val --dataset custom
 
 		echo $FILENAME
 		# for i in $DATASET_PATH/images/*.png ; do convert "$i" "${i%.*}.jpg" ; done
@@ -60,16 +71,16 @@ then
 		if [[ "$2" == "--nvidia" ]]
 		then
 			echo "\\n\\n COLMAP2NERF \\n\\n"
-			mv $DATASET_PATH/sparse /tmp
-			rm -rf $DATASET_PATH/*
-			mv /tmp/sparse $DATASET_PATH/
-			cp -pr $DATASET_PATH/sparse $DATASET_PATH/colmap_sparse
-			mkdir -p $DATASET_PATH/images
-			mkdir -p $DATASET_PATH/images_colmap
-			IMAGE_PTH="images"
-			python scripts/colmap2nerf.py --images $DATASET_PATH/$IMAGE_PTH --run_colmap --dynamic --dataset nvidia --mode train
-			python scripts/colmap2nerf.py --images $DATASET_PATH/$IMAGE_PTH --run_colmap --dynamic --dataset nvidia --mode val
-			cp -pr $DATASET_PATH/images_scaled/*.jpg $DATASET_PATH/images_colmap
+			# mv $DATASET_PATH/sparse /tmp
+			# rm -rf $DATASET_PATH/*
+			# mv /tmp/sparse $DATASET_PATH/
+			# cp -pr $DATASET_PATH/sparse $DATASET_PATH/colmap_sparse
+			# mkdir -p $DATASET_PATH/images
+			# mkdir -p $DATASET_PATH/images_colmap
+			# IMAGE_PTH="images"
+			# python scripts/colmap2nerf.py --images $DATASET_PATH/$IMAGE_PTH --run_colmap --dynamic --dataset nvidia --mode train
+			# python scripts/colmap2nerf.py --images $DATASET_PATH/$IMAGE_PTH --run_colmap --dynamic --dataset nvidia --mode val
+			# cp -pr $DATASET_PATH/images_scaled/*.jpg $DATASET_PATH/images_colmap
 		else
 			mkdir -p $DATASET_PATH/images_colmap
 			for i in $DATASET_PATH/train/*.png ; do convert "$i" "${i%.*}.jpg" ; done
@@ -102,16 +113,18 @@ then
 		fi
 	fi
 
-	# # train
-	python utils/generate_depth.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_MIDAS --input_folder images_colmap --output_folder disp --output_img_folder disp_img 
-	python utils/generate_flow.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_RAFT --input_folder images_colmap --output_folder flow --output_img_folder flow_img 
-	###### python utils/generate_motion_mask.py --dataset_path $DATASET_PATH --input_folder images_colmap --output_sem_mask_folder semantic_mask --output_mot_seg_folder motion_segmentation --output_mot_mask_folder motion_masks
+	# # # train
+	echo "===> TRAINING!!!"
+	# python utils/generate_depth.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_MIDAS --input_folder images_colmap --output_folder disp --output_img_folder disp_img 
+	# python utils/generate_flow.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_RAFT --input_folder images_colmap --output_folder flow --output_img_folder flow_img 
+	# python utils/generate_motion_mask.py --dataset_path $DATASET_PATH --input_folder images_colmap --output_sem_mask_folder semantic_mask --output_mot_seg_folder motion_segmentation --output_mot_mask_folder motion_masks
 
 	# # val
+	echo "===> VALIDATING!!!"
 	python utils/generate_depth.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_MIDAS --input_folder val --output_folder disp_val --output_img_folder disp_img_val 
 	python utils/generate_flow.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_RAFT --input_folder val --output_folder flow_val --output_img_folder flow_img_val 
-	# python utils/generate_motion_mask.py --dataset_path $DATASET_PATH --input_folder val --output_sem_mask_folder semantic_mask_val \
-	#   	--output_mot_seg_folder motion_segmentation_val --output_mot_mask_folder motion_masks_val
+	python utils/generate_motion_mask.py --dataset_path $DATASET_PATH --input_folder val --output_sem_mask_folder semantic_mask_val \
+	  	--output_mot_seg_folder motion_segmentation_val --output_mot_mask_folder motion_masks_val
 fi
 
 if [[ "$1" == "--run" || "$2" == "--run" || "$3" == "--run"  ]]
