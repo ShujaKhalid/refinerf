@@ -568,8 +568,8 @@ if __name__ == "__main__":
             "p2": p2,
             "cx": cx,
             "cy": cy,
-            "w": "480",  # TODO
-            "h": "270",  # TODO
+            "w": "960",  # TODO - 480/270 or 960/540
+            "h": "540",  # TODO - 480/270 or 960/540
             "frames": frames,
         }
 
