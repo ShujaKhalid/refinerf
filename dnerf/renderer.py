@@ -340,19 +340,25 @@ class NeRFRenderer(nn.Module):
 
             # NVIDIA - Dynamic Scenes dataset
             # segmentation assisted
-            rend_s = kwargs['inds_s']
-            rend_d = kwargs['inds_d']
+            # rend_s = kwargs['inds_s']
+            # rend_d = kwargs['inds_d']
             # no segmentation assistance
             # rend_s = 0
             # rend_d = [v for v in range(480*270)]
-            inds_s = [v for v in range(480*270)]
-            inds_d = [v for v in range(480*270)]
+            # inds_s = [v for v in range(480*270)]
+            # inds_d = [v for v in range(480*270)]
 
             # dNeRF (Bouncing_Balls)
             # rend_s = 0
             # rend_d = [v for v in range(800*800)]
             # inds_s = [v for v in range(800*800)]
             # inds_d = [v for v in range(800*800)]
+
+            # custom (cholec80)
+            rend_s = 0
+            rend_d = [v for v in range(960*540)]
+            inds_s = [v for v in range(960*540)]
+            inds_d = [v for v in range(960*540)]
 
             N_static = len(inds_s) if type(inds_s) != int else 0
             N_dynamic = len(inds_d) if type(inds_d) != int else 0
