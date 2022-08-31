@@ -11,7 +11,7 @@ export CUDA_ROOT=/usr/local/cuda
 # DATASET_PATH="../datalake/dnerf/custom"
 # SCENE="DynamicFace-2" # IGNORE
 # SCENE="Truck" #COLMAP ISSUES 
-# SCENE="Umbrella" #COLMAP: DONE & RECON: DONE 
+SCENE="Umbrella" #COLMAP: DONE & RECON: DONE 
 # SCENE="Jumping" #COLMAP: DONE & RECON: DONE 
 # SCENE="Skating" #COLMAP: DONE & RECON: INCOMPLETE 
 # SCENE="Playground" #COLMAP: DONE & RECON: DONE 
@@ -49,18 +49,18 @@ then
 	then
 		echo "Running custom module..."
 	    # We're dealing with a custom video
-		# DATASET_PATH="../datalake/dnerf/custom"
-		# FILENAME=$(basename "$2" .mp4)
-		# IMAGE_PTH="images"
+		DATASET_PATH="../datalake/dnerf/custom"
+		FILENAME=$(basename "$2" .mp4)
+		IMAGE_PTH="images"
 
-		# mv "$2" /tmp
-		# rm -rf $DATASET_PATH/*
-		# mkdir -p $DATASET_PATH/images
-		# mkdir -p $DATASET_PATH/images_colmap
-		# mv /tmp/"clippy.mp4" $DATASET_PATH
+		mv "$2" /tmp
+		rm -rf $DATASET_PATH/*
+		mkdir -p $DATASET_PATH/images
+		mkdir -p $DATASET_PATH/images_colmap
+		mv /tmp/"clippy.mp4" $DATASET_PATH
 		
-		# python scripts/colmap2nerf.py --video "$2" --run_colmap --dynamic --mode train --dataset custom
-		# python scripts/colmap2nerf.py --images $DATASET_PATH/$IMAGE_PTH --run_colmap --dynamic --mode val --dataset custom
+		python scripts/colmap2nerf.py --video "$2" --run_colmap --dynamic --mode train --dataset custom
+		python scripts/colmap2nerf.py --images $DATASET_PATH/$IMAGE_PTH --run_colmap --dynamic --mode val --dataset custom
 
 		echo $FILENAME
 		# for i in $DATASET_PATH/images/*.png ; do convert "$i" "${i%.*}.jpg" ; done
