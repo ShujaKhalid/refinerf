@@ -29,7 +29,7 @@ if __name__ == '__main__':
     parser.add_argument('--lr_net', type=float, default=1e-3,  # 1e-3
                         help="initial learning rate")
     parser.add_argument('--ckpt', type=str, default='latest')
-    parser.add_argument('--num_rays', type=int, default=8192,
+    parser.add_argument('--num_rays', type=int, default=1024,
                         help="num rays sampled per image for each training step")
     parser.add_argument('--cuda_ray', action='store_true',
                         help="use CUDA raymarching instead of pytorch")
