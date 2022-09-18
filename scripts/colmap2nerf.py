@@ -39,7 +39,7 @@ def parse_args():
     parser.add_argument('--hold', type=int, default=8,
                         help="hold out for validation every $ images")
 
-    parser.add_argument("--video_fps", default=20)
+    parser.add_argument("--video_fps", default=5)
     parser.add_argument("--time_slice", default="", help="time (in seconds) in the format t1,t2 within which the images should be generated from the video. eg: \"--time_slice '10,300'\" will generate images only from 10th second to 300th second of the video")
 
     parser.add_argument("--colmap_matcher", default="sequential", choices=["exhaustive", "sequential", "spatial", "transitive",
@@ -98,7 +98,7 @@ def run_ffmpeg(args):
         time_slice_value = f",select='between(t\,{start}\,{end})'"
 
     do_system(
-        f"ffmpeg -i {video} -qscale:v 1 -qmin 1 -vf \"fps={fps}{time_slice_value}\" {images}/%05d.jpg")
+        f"ffmpeg -i {video} -qscale:v 1 -qmin 1 -vf \"fps={fps}{time_slice_value}, scale={str(args.W)}:{str(args.H)}\" {images}/%05d.jpg")
 
 
 def run_ffmpeg_images(args):
@@ -261,7 +261,7 @@ def run_colmap(args):
         # f"colmap feature_extractor --ImageReader.camera_model OPENCV --SiftExtraction.estimate_affine_shape {flag_EAS} --SiftExtraction.domain_size_pooling {flag_EAS} --ImageReader.single_camera 1 --SiftExtraction.max_num_features 100000 --database_path {db} --image_path {images}")
         f"colmap feature_extractor --ImageReader.camera_model OPENCV --SiftExtraction.estimate_affine_shape {flag_EAS} --SiftExtraction.domain_size_pooling {flag_EAS} --ImageReader.single_camera 1 --database_path {db} --image_path {images}")
     do_system(
-        f"colmap {args.colmap_matcher}_matcher --SiftMatching.guided_matching {flag_EAS} --SiftMatching.confidence 0.01 --database_path {db}")
+        f"colmap {args.colmap_matcher}_matcher --SiftMatching.guided_matching {flag_EAS} --SiftMatching.confidence 0.90 --database_path {db}")
     try:
         shutil.rmtree(sparse)
     except:
@@ -568,8 +568,8 @@ if __name__ == "__main__":
             "p2": p2,
             "cx": cx,
             "cy": cy,
-            "w": "960",  # TODO - 480/270 or 960/540
-            "h": "540",  # TODO - 480/270 or 960/540
+            "w": str(args.W),  # TODO - 480/270 or 960/540 or 320/240
+            "h": str(args.H),  # TODO - 480/270 or 960/540 or 320/240
             "frames": frames,
         }
 

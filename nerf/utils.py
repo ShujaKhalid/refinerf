@@ -94,7 +94,7 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, dynamic_iter=
             if (masks != None):
                 mask = masks[e:masks.shape[0]-e, 0].to(device)
 
-                thresh = 0.5  # training threshold
+                thresh = 0.0  # training threshold
                 coords_s = torch.where(mask < 0.5)[0]
                 coords_d = torch.where(mask >= thresh)[0]  # For training
                 coords_s_mask = torch.where(mask < 0.5)[0]
@@ -110,10 +110,17 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, dynamic_iter=
                     # print(
                     #     "DYNAMIC MODEL ACTIVATED!!! - (get_rays) - iter: {}".format(dynamic_iter))
                     # print("=======================================\n\n")
+                    # if (coords_d.shape[-1]-1 >= N):
                     inds_s = torch.randint(
                         0, coords_s.shape[-1]-1, size=[0], device=device)  # may duplicate
                     inds_d = torch.randint(
                         0, coords_d.shape[-1]-1, size=[int(N)], device=device)  # may duplicate
+                    # else:
+                    #     inds_s = torch.randint(
+                    #         0, 10, size=[5], device=device)  # may duplicate
+                    #     inds_d = torch.randint(
+                    #         0, 10, size=[5], device=device)  # may duplicate
+                    #     coords_d = coords_s
 
                     coords_s = coords_s[inds_s]
                     coords_d = coords_d[inds_d]
@@ -1129,8 +1136,10 @@ class Trainer(object):
                     if (EVAL_FLAG):
                         save_path = os.path.join(
                             "results", 'Ours', self.workspace, f'v{0:03d}_t{self.local_step-1:03d}.png')
-                        # save_path_gt = os.path.join(
-                        #     "results", 'gt', self.workspace, f'v{0:03d}_t{self.local_step:03d}.png')
+                        save_path_gt = os.path.join(
+                            "results", 'Ours', self.workspace, f'v{0:03d}_t{self.local_step-1:03d}_gt.png')
+                        save_path_depth = os.path.join(
+                            "results", 'Ours', self.workspace, f'v{0:03d}_t{self.local_step-1:03d}_depth.png')
 
                         # self.log(f"==> Saving validation image to {save_path}")
                         os.makedirs(os.path.dirname(save_path), exist_ok=True)
@@ -1141,7 +1150,8 @@ class Trainer(object):
                             preds = linear_to_srgb(preds)
 
                         pred = preds[0].detach().cpu().numpy()
-                        # truth = truths[0].detach().cpu().numpy()
+                        depth = preds_depth[0].detach().cpu().numpy()
+                        truth = truths[0].detach().cpu().numpy()
                         # print("\npreds.shape: {}".format(preds.shape))
                         # print("truth.shape: {}".format(truth.shape))
                         # print("preds.mean: {}".format(preds.mean()))
@@ -1150,8 +1160,10 @@ class Trainer(object):
 
                         cv2.imwrite(save_path, cv2.cvtColor(
                             (pred * 255).astype(np.uint8), cv2.COLOR_RGB2BGR))
-                        # cv2.imwrite(save_path, cv2.cvtColor(
-                        #     (truth * 255).astype(np.uint8), cv2.COLOR_RGB2BGR))
+                        cv2.imwrite(save_path_depth,
+                                    (depth * 255).astype(np.uint8))
+                        cv2.imwrite(save_path_gt, cv2.cvtColor(
+                            (truth * 255).astype(np.uint8), cv2.COLOR_RGB2BGR))
                         # cv2.imwrite(save_path_gt, cv2.cvtColor(
                         #     (truth * 255).astype(np.uint8), cv2.COLOR_RGB2BGR))
 

@@ -22,14 +22,14 @@ if __name__ == '__main__':
 
     # =================================================================================
     # training options
-    parser.add_argument('--iters', type=int, default=100000,
+    parser.add_argument('--iters', type=int, default=7200,
                         help="training iters")
     parser.add_argument('--lr', type=float, default=1e-2,  # 1e-2
                         help="initial learning rate")
     parser.add_argument('--lr_net', type=float, default=1e-3,  # 1e-3
                         help="initial learning rate")
     parser.add_argument('--ckpt', type=str, default='latest')
-    parser.add_argument('--num_rays', type=int, default=1024,
+    parser.add_argument('--num_rays', type=int, default=4096,
                         help="num rays sampled per image for each training step")
     parser.add_argument('--cuda_ray', action='store_true',
                         help="use CUDA raymarching instead of pytorch")
@@ -40,10 +40,10 @@ if __name__ == '__main__':
     # parser.add_argument('--dynamic_iters', type=str, default="{'d1': (2400, 3600), 'b1': (3600, 4800), 'd3': (6000, 7200), 'b3': (10800, 14400), 'd2': (15600, 16800)}",  # 2400 iters # BOOOO
     # parser.add_argument('--dynamic_iters', type=str, default="{'d2': (1200, 6000), 'd3': (7200, 8400), 'd4': (9600, 10800)}",  # 2400 iters
     # parser.add_argument('--dynamic_iters', type=str, default="{'d1': (1200, 2400), 'd2': (3600, 100000)}",  # 2400 iters
-    parser.add_argument('--dynamic_iters', type=str, default="{'d1': (0, 100000)}",  # 2400 iters
+    parser.add_argument('--dynamic_iters', type=str, default="{'d1': (0, 7200)}",  # 2400 iters
                         # parser.add_argument('--dynamic_iters', type=str, default="{'d1': (0, 12000)}",  # 24000 iters
                         help="intervals to train the dynamic model for")
-    parser.add_argument('--update_extra_interval', type=int, default=120,  # TODO: used to be 100
+    parser.add_argument('--update_extra_interval', type=int, default=12000000,  # TODO: used to be 100
                         help="iter interval to update extra status (only valid when using --cuda_ray)")
     # =================================================================================
 
@@ -173,7 +173,7 @@ if __name__ == '__main__':
             optimizer, lambda iter: 0.1 ** min(iter / opt.iters, 1))
 
         trainer = Trainer('ngp', opt, model, device=device, workspace=opt.workspace, optimizer=optimizer, criterion=criterion, ema_decay=None,
-                          fp16=opt.fp16, lr_scheduler=scheduler, scheduler_update_every_step=True, metrics=[PSNRMeter()], use_checkpoint=opt.ckpt, eval_interval=25)
+                          fp16=opt.fp16, lr_scheduler=scheduler, scheduler_update_every_step=True, metrics=[PSNRMeter()], use_checkpoint=opt.ckpt, eval_interval=1)
 
         if opt.gui:
             gui = NeRFGUI(opt, trainer, train_loader)
@@ -186,15 +186,15 @@ if __name__ == '__main__':
             max_epoch = np.ceil(opt.iters / len(train_loader)).astype(np.int32)
             trainer.train(train_loader, valid_loader, max_epoch)
 
-            # also test
-            test_loader = NeRFDataset(
-                opt, device=device, type='test').dataloader()
+            # # also test
+            # test_loader = NeRFDataset(
+            #     opt, device=device, type='test').dataloader()
 
-            if test_loader.has_gt:
-                # blender has gt, so evaluate it.
-                trainer.evaluate(test_loader)
-            else:
-                # colmap doesn't have gt, so just test.
-                trainer.test(test_loader)
+            # if test_loader.has_gt:
+            #     # blender has gt, so evaluate it.
+            #     trainer.evaluate(test_loader)
+            # else:
+            #     # colmap doesn't have gt, so just test.
+            #     trainer.test(test_loader)
 
             # trainer.save_mesh(resolution=256, threshold=10)

@@ -11,15 +11,15 @@ from .renderer import NeRFRenderer
 class NeRFNetwork(NeRFRenderer):
     def __init__(self,
                  encoding="tiledgrid",  # tiledgrid
-                 encoding_dir="sphere_harmonics",  # sphere_harmonics
+                 encoding_dir="frequency",  # sphere_harmonics
                  encoding_time="frequency",
                  encoding_deform="frequency",  # "hashgrid" seems worse
                  encoding_bg="hashgrid",
-                 num_layers=2,
-                 hidden_dim=256,
+                 num_layers=3,
+                 hidden_dim=128,
                  geo_feat_dim=64,  # change me
-                 num_layers_color=3,
-                 hidden_dim_color=256,
+                 num_layers_color=4,
+                 hidden_dim_color=128,
                  num_layers_bg=2,
                  hidden_dim_bg=64,
                  # a deeper MLP is very necessary for performance.

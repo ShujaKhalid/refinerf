@@ -77,7 +77,7 @@ class NeRFRenderer(nn.Module):
 
         self.bound = bound
         self.cascade = 1 + math.ceil(math.log2(bound))
-        self.time_size = 60  # FIXME 64
+        self.time_size = 12  # FIXME 64
         self.grid_size = 128  # FIXME 128
         self.density_scale = density_scale * 1  # TODO: used to be 1
         self.min_near = min_near
@@ -340,11 +340,11 @@ class NeRFRenderer(nn.Module):
 
             # NVIDIA - Dynamic Scenes dataset
             # segmentation assisted
-            rend_s = kwargs['inds_s']
-            rend_d = kwargs['inds_d']
+            # rend_s = kwargs['inds_s']
+            # rend_d = kwargs['inds_d']
             # no segmentation assistance
-            # rend_s = 0
-            # rend_d = [v for v in range(480*270)]
+            rend_s = 0
+            rend_d = [v for v in range(480*270)]
             inds_s = [v for v in range(480*270)]
             inds_d = [v for v in range(480*270)]
 
@@ -360,6 +360,12 @@ class NeRFRenderer(nn.Module):
             # inds_s = [v for v in range(960*540)]
             # inds_d = [v for v in range(960*540)]
 
+            # custom (sa160)
+            # rend_s = 0
+            # rend_d = [v for v in range(320*240)]
+            # inds_s = [v for v in range(320*240)]
+            # inds_d = [v for v in range(320*240)]
+
             N_static = len(inds_s) if type(inds_s) != int else 0
             N_dynamic = len(inds_d) if type(inds_d) != int else 0
 
@@ -368,8 +374,8 @@ class NeRFRenderer(nn.Module):
             rays_o_d = rays_o
             rays_d_s = rays_d
             rays_d_d = rays_d
-            prefix_s = (rays_o.shape[0])
-            prefix_d = (rays_o.shape[0])
+            prefix_s = (rays_o.shape[0])//2
+            prefix_d = (rays_o.shape[0])//2
 
         if (DEBUG):
             print("\nN_static: {}".format(N_static))
@@ -858,30 +864,14 @@ class NeRFRenderer(nn.Module):
                 image_d_tmp[rend_d, :] = image_d[rend_d, :] + \
                     (1 - weights_sum_d).unsqueeze(-1)[rend_d, :] * bg_color
 
-                # print("image_s_tmp.min: {}".format(image_s_tmp.min()))
-                # print("image_s_tmp.max: {}".format(image_s_tmp.max()))
-                # print("image_s.min: {}".format(image_s.min()))
-                # print("image_s.max: {}".format(image_s.max()))
-                # print("weights_sum_s.min: {}".format(weights_sum_s.min()))
-                # print("weights_sum_s.max: {}".format(weights_sum_s.max()))
-                # print("image_d_tmp.min: {}".format(image_d_tmp.min()))
-                # print("image_d_tmp.max: {}".format(image_d_tmp.max()))
-                # print("image_d.min: {}".format(image_d.min()))
-                # print("image_d.max: {}".format(image_d.max()))
-                # print("weights_sum_d.min: {}".format(weights_sum_d.min()))
-                # print("weights_sum_d.max: {}".format(weights_sum_d.max()))
-                # print("bg_color: {}".format(bg_color))
-                # print("image_s_tmp.shape: {}".format(image_s_tmp.shape))
-                # print("image_d.shape: {}".format(image_d.shape))
-                # print("image_d_tmp.shape: {}".format(image_d_tmp.shape))
-                # image = image_d + (1 - weights_sum_d).unsqueeze(-1) * bg_color
+                image = image_d + (1 - weights_sum_d).unsqueeze(-1) * bg_color
                 image = image_s_tmp + image_d_tmp
                 # FIXME: nears and fars are logically incorrect
-                # depth = torch.clamp(depth_d - nears_d,
-                #                     min=0) / (fars_d - nears_d)
+                depth = torch.clamp(depth_d - nears_d,
+                                    min=0) / (fars_d - nears_d)
                 image = image.view(N, 3)
-                depth = image[:, 0]  # FIXME
-                # depth = depth.view(prefix_s + prefix_d)
+                # depth = image[:, 0]  # FIXME
+                depth = depth.view(prefix_s + prefix_d)
 
             elif (N_static > 0):
                 image = image_s + (1 - weights_sum_s).unsqueeze(-1) * bg_color
@@ -895,15 +885,15 @@ class NeRFRenderer(nn.Module):
             elif (N_dynamic > 0):
                 #image = image_d + (1 - weights_sum_d).unsqueeze(-1) * bg_color
                 # FIXME: nears and fars are logically incorrect
-                # depth = torch.clamp(depth_d - nears_d,
-                #                     min=0) / (fars_d - nears_d)
+                depth = torch.clamp(depth_d - nears_d,
+                                    min=0) / (fars_d - nears_d)
                 image_d_tmp = torch.zeros(
                     N, 3, dtype=dtype, device=device)
                 image_d_tmp[inds_d, :] = image_d + \
                     (1 - weights_sum_d).unsqueeze(-1) * bg_color
                 image = image_d_tmp.view(N, 3)
-                # depth = depth.view(prefix_d)
-                depth = image[:, 0]  # FIXME
+                depth = depth.view(prefix_d)
+                # depth = image[:, 0]  # FIXME
 
             # Only run during inference
             results['image'] = image

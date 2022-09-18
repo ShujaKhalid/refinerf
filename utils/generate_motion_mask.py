@@ -34,7 +34,7 @@ def load_colmap_data(realdir, mode):
     camerasfile = os.path.join(realdir, 'colmap_sparse/0/cameras.bin')
     camdata = read_cameras_binary(camerasfile)
 
-    print("\ncamdata: {}".format(camdata))
+    #print("\ncamdata: {}".format(camdata))
 
     list_of_keys = list(camdata.keys())
     cam = camdata[list_of_keys[0]]
@@ -47,8 +47,8 @@ def load_colmap_data(realdir, mode):
     imagesfile = os.path.join(realdir, 'colmap_sparse/0/images.bin')
     imdata = read_images_binary(imagesfile)
 
-    print("\nimdata: {}".format(imdata))
-    print("\nimdata.keys: {}".format(imdata.keys()))
+    #print("\nimdata: {}".format(imdata))
+    #print("\nimdata.keys: {}".format(imdata.keys()))
 
     # corrections for validation
     # Fix the camera
@@ -214,7 +214,7 @@ def motion_segmentation(input_folder,
     create_dir(save_mask_dir)
 
     print("num_frames: {}".format(num_frames))
-    for i in range(0, num_frames):
+    for i in range(0, num_frames-2):  # TODO
         print("i: {}".format(i))
         im_prev = imdata[img_keys[perm[max(0, i - 1)]]]
         im_ref = imdata[img_keys[perm[i]]]
