@@ -77,7 +77,7 @@ class NeRFRenderer(nn.Module):
 
         self.bound = bound
         self.cascade = 1 + math.ceil(math.log2(bound))
-        self.time_size = 12  # FIXME 64
+        self.time_size = 15  # FIXME 64
         self.grid_size = 128  # FIXME 128
         self.density_scale = density_scale * 1  # TODO: used to be 1
         self.min_near = min_near
@@ -868,7 +868,7 @@ class NeRFRenderer(nn.Module):
                 image = image_s_tmp + image_d_tmp
                 # FIXME: nears and fars are logically incorrect
                 depth = torch.clamp(depth_d - nears_d,
-                                    min=0) / (fars_d - nears_d)
+                                    min=0, max=1) / (fars_d - nears_d)
                 image = image.view(N, 3)
                 # depth = image[:, 0]  # FIXME
                 depth = depth.view(prefix_s + prefix_d)
