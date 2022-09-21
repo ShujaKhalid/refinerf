@@ -29,8 +29,8 @@ DATASET_PATH="/home/skhalid/Documents/datalake/dynamic_scene_data_full/nvidia_da
 
 
 # Run custom scene
-SCENE="custom"
-DATASET_PATH="../datalake/dnerf/custom"
+# SCENE="custom"
+# DATASET_PATH="../datalake/dnerf/custom"
 
 NM_WEIGHTS="/home/skhalid/Documents/datalake/neural_motion_weights/"
 WEIGHTS_MIDAS=$NM_WEIGHTS"midas_v21-f6b98070.pt"
@@ -81,15 +81,19 @@ then
 		then
 			echo "\\n\\n COLMAP2NERF \\n\\n"
 			# mv $DATASET_PATH/sparse /tmp
+			# #mv $DATASET_PATH/transforms_val.json /tmp
+			# #mv $DATASET_PATH/val /tmp
 			# rm -rf $DATASET_PATH/*
 			# mv /tmp/sparse $DATASET_PATH/
+			# #mv /tmp/transforms_val.json $DATASET_PATH/
+			# #mv /tmp/val $DATASET_PATH/
 			# cp -pr $DATASET_PATH/sparse $DATASET_PATH/colmap_sparse
 			# mkdir -p $DATASET_PATH/images
 			# mkdir -p $DATASET_PATH/images_colmap
 			# IMAGE_PTH="images"
 			# python scripts/colmap2nerf.py --images $DATASET_PATH/$IMAGE_PTH --run_colmap --dynamic --dataset nvidia --mode train
-			# python scripts/colmap2nerf.py --images $DATASET_PATH/$IMAGE_PTH --run_colmap --dynamic --dataset nvidia --mode val
-			# cp -pr $DATASET_PATH/images_scaled/*.jpg $DATASET_PATH/images_colmap
+			python scripts/colmap2nerf.py --images $DATASET_PATH/$IMAGE_PTH --run_colmap --dynamic --dataset nvidia --mode val
+			cp -pr $DATASET_PATH/images_scaled/*.jpg $DATASET_PATH/images_colmap
 		else
 			mkdir -p $DATASET_PATH/images_colmap
 			for i in $DATASET_PATH/train/*.png ; do convert "$i" "${i%.*}.jpg" ; done

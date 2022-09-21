@@ -108,7 +108,7 @@ def run_ffmpeg_images(args):
     max_imgs = 120
     MULTI_IMG_TRN = False
     args.MULTI_IMG_TRN = MULTI_IMG_TRN
-    LARGE_DATASET_TRN = False
+    LARGE_DATASET_TRN = True  # 24 images to train
 
     if (args.mode == "train"):
         new_loc = base + "images_scaled"
@@ -117,9 +117,19 @@ def run_ffmpeg_images(args):
         if (LARGE_DATASET_TRN):
             query_loc = "/home/skhalid/Documents/datalake/dynamic_scene_data_full_bkp/nvidia_data_full/" + \
                 prod+"/dense/mv_images"
+            query_loc_masks = "/home/skhalid/Documents/datalake/dynamic_scene_data_full_bkp/nvidia_data_full/" + \
+                prod+"/dense/mv_masks"
             print("query_loc: {}".format(query_loc))
             os.system("mkdir -p "+new_loc)
-            all_imgs = glob.glob(query_loc+"/*/*.jpg")
+            os.system("mkdir -p "+new_loc_mask)
+            all_imgs = [glob.glob(query_loc+"/"+str(v).zfill(5)+"/cam"+str((v//2)+1).zfill(2)+".jpg")[0]
+                        if (v % 2 == 0)
+                        else glob.glob(query_loc+"/"+str(v).zfill(5)+"/cam"+str((v//2)+1).zfill(2)+".jpg")[0]
+                        for v in range(24)]
+            all_masks = [glob.glob(query_loc_masks+"/"+str(v).zfill(5)+"/cam"+str((v//2)+1).zfill(2)+".png")[0]
+                         if (v % 2 == 0)
+                         else glob.glob(query_loc_masks+"/"+str(v).zfill(5)+"/cam"+str((v//2)+1).zfill(2)+".png")[0]
+                         for v in range(24)]
             print(all_imgs)
             # all_imgs = [v for v in glob.glob(query_loc+"/*")]
         else:
@@ -132,16 +142,10 @@ def run_ffmpeg_images(args):
             all_imgs = glob.glob(query_loc+"/*.png")
             all_masks = glob.glob(query_loc_mask+"/*.png")
         print(all_imgs)
+        print(all_masks)
         all_imgs.sort()
+        all_masks.sort()
         all_imgs_qty = len(all_imgs)
-
-        # Copy over all of the images
-        for img in all_imgs:
-            new_img = "00" + img.split("/")[-1].split(".")[0] + ".jpg"
-            #cmd = "cp -pr " + img + " " + base+"images"
-            cmd = "ffmpeg -i " + img + " -vf scale=" + \
-                str(1280)+":"+str(720) + " " + base+"images/"+new_img
-            os.system(cmd)
 
         if (MULTI_IMG_TRN):
             for index in range(max_imgs):
@@ -154,13 +158,35 @@ def run_ffmpeg_images(args):
         else:
             if (LARGE_DATASET_TRN):
                 for k, img in enumerate(all_imgs):
-                    fn = img.split("_images")[-1].replace("/", "_")
+                    fn = img.split("/")[-2]
+                    fn = fn + ".jpg"
                     out = new_loc+"/"+fn  # Original count
+
+                    cmd = "ffmpeg -i " + img + " -vf scale=" + \
+                        str(args.W)+":"+str(args.H) + " " + base+"images/"+fn
+                    os.system(cmd)
+
                     cmd = "ffmpeg -i "+img+" -vf scale=" + \
                         str(args.W)+":"+str(args.H) + " " + out
                     print(cmd)
                     os.system(cmd)
+                for k, mask in enumerate(all_masks):
+                    fn = mask.split("/")[-2]
+                    fn = fn + ".png"
+                    out = new_loc+"/"+fn  # Original count
+                    cmd = "ffmpeg -i "+mask+" -vf scale=" + \
+                        str(args.W)+":"+str(args.H) + " " + out
+                    print(cmd)
+                    os.system(cmd)
             else:
+                # Copy over all of the images
+                for img in all_imgs:
+                    new_img = "00" + img.split("/")[-1].split(".")[0] + ".jpg"
+                    #cmd = "cp -pr " + img + " " + base+"images"
+                    cmd = "ffmpeg -i " + img + " -vf scale=" + \
+                        str(1280)+":"+str(720) + " " + base+"images/"+new_img
+                    os.system(cmd)
+
                 for k, img in enumerate(all_imgs):
                     fn = img.split("/")[-1]
                     out = new_loc+"/"+"00" + \
@@ -181,7 +207,7 @@ def run_ffmpeg_images(args):
         #args.images = new_loc
     else:
         if (args.dataset == "nvidia"):
-            new_loc = base + args.mode + "/"
+            new_loc = base + "/" + args.mode + "/"
             prod = base.split("/")[-3]
             trn_base = "/home/skhalid/Documents/torch-ngp/results/gt/" + prod
             query_loc = trn_base
@@ -207,7 +233,11 @@ def run_ffmpeg_images(args):
             folders = glob.glob(query_loc_masks+"/*")
             folders.sort()
             os.system("mkdir -p "+query_loc_val_masks)
+            print()
+            print()
             print(folders)
+            print()
+            print()
             for indx, folder in enumerate(folders[:12]):
                 files = glob.glob(folder+"/*.png")
                 files.sort()
@@ -261,7 +291,7 @@ def run_colmap(args):
         # f"colmap feature_extractor --ImageReader.camera_model OPENCV --SiftExtraction.estimate_affine_shape {flag_EAS} --SiftExtraction.domain_size_pooling {flag_EAS} --ImageReader.single_camera 1 --SiftExtraction.max_num_features 100000 --database_path {db} --image_path {images}")
         f"colmap feature_extractor --ImageReader.camera_model OPENCV --SiftExtraction.estimate_affine_shape {flag_EAS} --SiftExtraction.domain_size_pooling {flag_EAS} --ImageReader.single_camera 1 --database_path {db} --image_path {images}")
     do_system(
-        f"colmap {args.colmap_matcher}_matcher --SiftMatching.guided_matching {flag_EAS} --SiftMatching.confidence 0.01 --database_path {db}")
+        f"colmap {args.colmap_matcher}_matcher --SiftMatching.guided_matching {flag_EAS} --SiftMatching.confidence 0.1 --database_path {db}")
     try:
         shutil.rmtree(sparse)
     except:
@@ -362,12 +392,15 @@ if __name__ == "__main__":
         print(args.images)
         run_ffmpeg_images(args)
 
+    if (args.mode == "val"):
+        root_dir = root_dir + "/dense/"
+
     args.colmap_db = os.path.join(root_dir, args.colmap_db)
     args.colmap_text = os.path.join(root_dir, args.colmap_text)
 
     if args.run_colmap and args.mode != "val":
         # if args.run_colmap:
-        # print(root_dir)
+        print("RUNNING COLMAP!!!")
         run_colmap(args)
 
     SKIP_EARLY = int(args.skip_early)
@@ -436,6 +469,8 @@ if __name__ == "__main__":
 
         up = np.zeros(3)
 
+        MAX_VAL = 12  # (FOR NVIDIA only)
+
         for line in f:
             line = line.strip()
 
@@ -443,6 +478,8 @@ if __name__ == "__main__":
                 continue
 
             i = i + 1
+
+            # The NVIDIA assertion
             if i < SKIP_EARLY*2:
                 continue
 
@@ -452,21 +489,25 @@ if __name__ == "__main__":
 
                 name = '_'.join(elems[9:])
                 full_name = os.path.join(args.images, name)
-                rel_name = full_name[len(root_dir) + 1:]
+                rel_name = full_name[len(root_dir):]
 
-                if (args.MULTI_IMG_TRN):
-                    # sk_debug <======================================
-                    img_qty = 12+1
-                    dm = int(full_name.split("/")[-1].split(".")[0])
-                    if (dm % img_qty != 0):
-                        continue
-                    factor = dm//img_qty
-                    full_name = full_name.split(
-                        "/00")[0]+"/"+str(factor).zfill(5)+".jpg"
-                    rel_name = full_name[len(root_dir) + 1:]
-                    print("\n\n\ndm: {}".format(dm))
-                    print("full_name: {}\n\n\n".format(full_name))
-                    # sk_debug <======================================
+                # if (args.MULTI_IMG_TRN):
+                #     # sk_debug <======================================
+                #     img_qty = 12+1
+                #     dm = int(full_name.split("/")[-1].split(".")[0])
+                #     if (dm % img_qty != 0):
+                #         continue
+                #     factor = dm//img_qty
+                #     full_name = full_name.split(
+                #         "/00")[0]+"/"+str(factor).zfill(5)+".jpg"
+                #     rel_name = full_name[len(root_dir) + 1:]
+                #     print("\n\n\ndm: {}".format(dm))
+                #     print("full_name: {}\n\n\n".format(full_name))
+                #     # sk_debug <======================================
+
+                print(args.images)
+                if (not os.path.isfile(full_name)):
+                    continue
 
                 b = sharpness(full_name)
                 # print(name, "sharpness =",b)
@@ -491,6 +532,8 @@ if __name__ == "__main__":
                     "sharpness": b,
                     "transform_matrix": c2w
                 }
+
+                print(frame)
 
                 frames.append(frame)
 
@@ -517,7 +560,8 @@ if __name__ == "__main__":
             mg = g["transform_matrix"][0:3, :]
             p, weight = closest_point_2_lines(
                 mf[:, 3], mf[:, 2], mg[:, 3], mg[:, 2])
-            if weight > 0.01:
+            print(weight)
+            if weight > 0.001:  # TODO: used to be 0.01
                 totp += p * weight
                 totw += weight
     totp /= totw
