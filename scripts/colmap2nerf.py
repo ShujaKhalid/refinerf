@@ -208,8 +208,8 @@ def run_ffmpeg_images(args):
     else:
         if (args.dataset == "nvidia"):
             new_loc = base + "/" + args.mode + "/"
-            prod = base.split("/")[-3]
-            trn_base = "/home/skhalid/Documents/torch-ngp/results/gt/" + prod
+            prod = base.split("/")[-2]
+            trn_base = "/home/skhalid/Documents/torch-ngp/results/gt/" + prod + "/"
             query_loc = trn_base
             os.system("mkdir -p "+new_loc)
             files = glob.glob(query_loc+"/*.png")
@@ -228,20 +228,39 @@ def run_ffmpeg_images(args):
                 prod+"/dense/"
             query_loc_val = "/home/skhalid/Documents/datalake/dynamic_scene_data_full/nvidia_data_full/" + \
                 prod+"/dense/"
+            query_loc_imgs = query_loc + "mv_images"
             query_loc_masks = query_loc + "mv_masks"
             query_loc_val_masks = query_loc_val + "motion_masks_val/"
-            folders = glob.glob(query_loc_masks+"/*")
+
+            # gt
+            # COMMENT TO KEEP OLD GT
+            folders = glob.glob(query_loc_imgs+"/*")
+            print("prod: {}".format(prod))
+            print("query_loc: {}".format(query_loc))
+            print("folders: {}".format(folders))
             folders.sort()
+            for indx, folder in enumerate(folders[:24]):
+                pose = 0
+                files = glob.glob(folder+"/*.jpg")
+                files.sort()
+                file = files[pose]
+                # fn = "v000t0"+str(indx).zfill(2)+".jpg"
+                fn = "v0"+str(pose).zfill(2)+"t0"+str(indx).zfill(2)+".png"
+                # fn = file.split("/")[-1]
+                cmd = "ffmpeg -i "+file+" -vf scale=" + \
+                    str(args.W)+":"+str(args.H) + " " + trn_base + fn
+                print("cmd: {}".format(cmd))
+                os.system(cmd)
+
+            # masks
+            folders_masks = glob.glob(query_loc_masks+"/*")
+            folders_masks.sort()
             os.system("mkdir -p "+query_loc_val_masks)
-            print()
-            print()
-            print(folders)
-            print()
-            print()
-            for indx, folder in enumerate(folders[:12]):
+
+            for indx, folder in enumerate(folders_masks[:24]):
                 files = glob.glob(folder+"/*.png")
                 files.sort()
-                file = files[-1]
+                file = files[0]
                 # fn = "v000t0"+str(indx).zfill(2)+".jpg"
                 fn = "000"+str(indx).zfill(2)+".png"
                 # fn = file.split("/")[-1]
@@ -249,15 +268,11 @@ def run_ffmpeg_images(args):
                     str(args.W)+":"+str(args.H) + " " + query_loc_val_masks+fn
                 print("cmd: {}".format(cmd))
                 os.system(cmd)
+
             args.images = new_loc
         elif (args.dataset == "custom"):
             new_loc = base + args.mode + "/"
             query_loc = "/home/skhalid/Documents/datalake/dnerf/" + args.dataset + "/images/"
-            print()
-            print()
-            print(query_loc)
-            print()
-            print()
             os.system("mkdir -p "+new_loc)
             files = glob.glob(query_loc+"/*.jpg")
             files.sort()
@@ -533,7 +548,7 @@ if __name__ == "__main__":
                     "transform_matrix": c2w
                 }
 
-                print(frame)
+                # print(frame)
 
                 frames.append(frame)
 
@@ -560,7 +575,7 @@ if __name__ == "__main__":
             mg = g["transform_matrix"][0:3, :]
             p, weight = closest_point_2_lines(
                 mf[:, 3], mf[:, 2], mg[:, 3], mg[:, 2])
-            print(weight)
+            # print(weight)
             if weight > 0.001:  # TODO: used to be 0.01
                 totp += p * weight
                 totw += weight
