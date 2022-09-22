@@ -502,7 +502,7 @@ if __name__ == "__main__":
                 # 1-4 is quat, 5-7 is trans, 9ff is filename (9, if filename contains no spaces)
                 elems = line.split(" ")
 
-                name = '_'.join(elems[9:])
+                name = '_'.join(elems[8:])
                 full_name = os.path.join(args.images, name)
                 rel_name = full_name[len(root_dir):]
 
