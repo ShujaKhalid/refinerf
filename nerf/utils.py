@@ -1160,10 +1160,10 @@ class Trainer(object):
 
                         cv2.imwrite(save_path, cv2.cvtColor(
                             (pred * 255).astype(np.uint8), cv2.COLOR_RGB2BGR))
-                        cv2.imwrite(save_path_depth,
-                                    (depth * 255).astype(np.uint8))
-                        cv2.imwrite(save_path_gt, cv2.cvtColor(
-                            (truth * 255).astype(np.uint8), cv2.COLOR_RGB2BGR))
+                        # cv2.imwrite(save_path_depth,
+                        #             (depth * 255).astype(np.uint8))
+                        # cv2.imwrite(save_path_gt, cv2.cvtColor(
+                        #     (truth * 255).astype(np.uint8), cv2.COLOR_RGB2BGR))
                         # cv2.imwrite(save_path_gt, cv2.cvtColor(
                         #     (truth * 255).astype(np.uint8), cv2.COLOR_RGB2BGR))
 

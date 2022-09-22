@@ -208,7 +208,7 @@ def run_ffmpeg_images(args):
     else:
         if (args.dataset == "nvidia"):
             new_loc = base + "/" + args.mode + "/"
-            prod = base.split("/")[-2]
+            prod = base.split("/")[-3]
             trn_base = "/home/skhalid/Documents/torch-ngp/results/gt/" + prod + "/"
             query_loc = trn_base
             os.system("mkdir -p "+new_loc)
@@ -407,8 +407,8 @@ if __name__ == "__main__":
         print(args.images)
         run_ffmpeg_images(args)
 
-    if (args.mode == "val"):
-        root_dir = root_dir + "/dense/"
+    # if (args.mode == "val"):
+    #     root_dir = root_dir + "/dense/"
 
     args.colmap_db = os.path.join(root_dir, args.colmap_db)
     args.colmap_text = os.path.join(root_dir, args.colmap_text)
@@ -576,7 +576,7 @@ if __name__ == "__main__":
             p, weight = closest_point_2_lines(
                 mf[:, 3], mf[:, 2], mg[:, 3], mg[:, 2])
             # print(weight)
-            if weight > 0.001:  # TODO: used to be 0.01
+            if weight > 0.01:  # TODO: used to be 0.01
                 totp += p * weight
                 totw += weight
     totp /= totw

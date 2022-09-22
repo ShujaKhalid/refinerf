@@ -80,18 +80,18 @@ then
 		if [[ "$2" == "--nvidia" ]]
 		then
 			echo "\\n\\n COLMAP2NERF \\n\\n"
-			# mv $DATASET_PATH/sparse /tmp
-			# #mv $DATASET_PATH/transforms_val.json /tmp
-			# #mv $DATASET_PATH/val /tmp
-			# rm -rf $DATASET_PATH/*
-			# mv /tmp/sparse $DATASET_PATH/
-			# #mv /tmp/transforms_val.json $DATASET_PATH/
-			# #mv /tmp/val $DATASET_PATH/
-			# cp -pr $DATASET_PATH/sparse $DATASET_PATH/colmap_sparse
-			# mkdir -p $DATASET_PATH/images
-			# mkdir -p $DATASET_PATH/images_colmap
-			# IMAGE_PTH="images"
-			# python scripts/colmap2nerf.py --images $DATASET_PATH/$IMAGE_PTH --run_colmap --dynamic --dataset nvidia --mode train
+			mv $DATASET_PATH/sparse /tmp
+			#mv $DATASET_PATH/transforms_val.json /tmp
+			#mv $DATASET_PATH/val /tmp
+			rm -rf $DATASET_PATH/*
+			mv /tmp/sparse $DATASET_PATH/
+			#mv /tmp/transforms_val.json $DATASET_PATH/
+			#mv /tmp/val $DATASET_PATH/
+			cp -pr $DATASET_PATH/sparse $DATASET_PATH/colmap_sparse
+			mkdir -p $DATASET_PATH/images
+			mkdir -p $DATASET_PATH/images_colmap
+			IMAGE_PTH="images"
+			python scripts/colmap2nerf.py --images $DATASET_PATH/$IMAGE_PTH --run_colmap --dynamic --dataset nvidia --mode train
 			python scripts/colmap2nerf.py --images $DATASET_PATH/$IMAGE_PTH --run_colmap --dynamic --dataset nvidia --mode val
 			cp -pr $DATASET_PATH/images_scaled/*.jpg $DATASET_PATH/images_colmap
 		else
