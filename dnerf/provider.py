@@ -306,7 +306,7 @@ class NeRFDataset:
 
         # [debug] uncomment to view examples of randomly generated poses.
         # visualize_poses(rand_poses(100, self.device, radius=self.radius).cpu().numpy())
-        self.FLOW_FLAG = False
+        self.FLOW_FLAG = True
         if (self.FLOW_FLAG):
             # TODO: ADD the additional pre-reqs here
             basedir = self.root_path

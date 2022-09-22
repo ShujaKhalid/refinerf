@@ -173,7 +173,7 @@ def run_ffmpeg_images(args):
                 for k, mask in enumerate(all_masks):
                     fn = mask.split("/")[-2]
                     fn = fn + ".png"
-                    out = new_loc+"/"+fn  # Original count
+                    out = new_loc_mask+"/"+fn  # Original count
                     cmd = "ffmpeg -i "+mask+" -vf scale=" + \
                         str(args.W)+":"+str(args.H) + " " + out
                     print(cmd)
