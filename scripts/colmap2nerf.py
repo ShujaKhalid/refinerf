@@ -209,7 +209,7 @@ def run_ffmpeg_images(args):
         if (args.dataset == "nvidia"):
             new_loc = base + "/" + args.mode + "/"
             prod = base.split("/")[-3]
-            trn_base = "/home/skhalid/Documents/torch-ngp/results/gt/" + prod + "/"
+            trn_base = "/home/skhalid/Documents/torch-ngp/results/gt/" + prod
             query_loc = trn_base
             os.system("mkdir -p "+new_loc)
             files = glob.glob(query_loc+"/*.png")
@@ -245,10 +245,10 @@ def run_ffmpeg_images(args):
                 files.sort()
                 file = files[pose]
                 # fn = "v000t0"+str(indx).zfill(2)+".jpg"
-                fn = "v0"+str(pose).zfill(2)+"t0"+str(indx).zfill(2)+".png"
+                fn = "v0"+str(pose).zfill(2)+"_t0"+str(indx).zfill(2)+".png"
                 # fn = file.split("/")[-1]
                 cmd = "ffmpeg -i "+file+" -vf scale=" + \
-                    str(args.W)+":"+str(args.H) + " " + trn_base + fn
+                    str(args.W)+":"+str(args.H) + " " + trn_base + "/" + fn
                 print("cmd: {}".format(cmd))
                 os.system(cmd)
 
@@ -502,9 +502,9 @@ if __name__ == "__main__":
                 # 1-4 is quat, 5-7 is trans, 9ff is filename (9, if filename contains no spaces)
                 elems = line.split(" ")
 
-                name = '_'.join(elems[8:])
+                name = '_'.join(elems[9:])
                 full_name = os.path.join(args.images, name)
-                rel_name = full_name[len(root_dir):]
+                rel_name = full_name[len(root_dir) + 1:]
 
                 # if (args.MULTI_IMG_TRN):
                 #     # sk_debug <======================================
@@ -543,7 +543,7 @@ if __name__ == "__main__":
                 up += c2w[0:3, 1]
 
                 frame = {
-                    "file_path": rel_name,
+                    "file_path": rel_name[1:] if args.mode == "val" else rel_name,
                     "sharpness": b,
                     "transform_matrix": c2w
                 }

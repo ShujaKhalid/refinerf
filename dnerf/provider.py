@@ -226,6 +226,8 @@ class NeRFDataset:
             self.images = []
             self.times = []
 
+            # print("frames: {}".format(frames))
+
             # assume frames are already sorted by time!
             for f in tqdm.tqdm(frames, desc=f'Loading {type} data'):
                 f_path = os.path.join(self.root_path, f['file_path'])
@@ -235,6 +237,9 @@ class NeRFDataset:
                 # there are non-exist paths in fox...
                 if not os.path.exists(f_path):
                     continue
+
+                # print("f_path: {}".format(f_path))
+                # print("f: {}".format(f['transform_matrix']))
 
                 pose = np.array(f['transform_matrix'],
                                 dtype=np.float32)  # [4, 4]
