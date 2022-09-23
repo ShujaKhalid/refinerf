@@ -77,7 +77,7 @@ class NeRFRenderer(nn.Module):
 
         self.bound = bound
         self.cascade = 1 + math.ceil(math.log2(bound))
-        self.time_size = 25  # FIXME 64
+        self.time_size = 24  # FIXME 64
         self.grid_size = 128  # FIXME 128
         self.density_scale = density_scale * 1  # TODO: used to be 1
         self.min_near = min_near
@@ -340,11 +340,11 @@ class NeRFRenderer(nn.Module):
 
             # NVIDIA - Dynamic Scenes dataset
             # segmentation assisted
-            # rend_s = kwargs['inds_s']
-            # rend_d = kwargs['inds_d']
+            rend_s = kwargs['inds_s']
+            rend_d = kwargs['inds_d']
             # no segmentation assistance
-            rend_s = 0
-            rend_d = [v for v in range(480*270)]
+            # rend_s = 0
+            # rend_d = [v for v in range(480*270)]
             inds_s = [v for v in range(480*270)]
             inds_d = [v for v in range(480*270)]
 
