@@ -116,6 +116,7 @@ if __name__ == '__main__':
         from dnerf.network_basis import NeRFNetwork
     else:
         from dnerf.network import NeRFNetwork
+        from dnerf.network_camera import CameraNetwork
 
     print(opt)
 
@@ -129,6 +130,8 @@ if __name__ == '__main__':
         density_thresh=opt.density_thresh,
         bg_radius=opt.bg_radius,
     )
+
+    model_camera = CameraNetwork()
 
     print(model)
 

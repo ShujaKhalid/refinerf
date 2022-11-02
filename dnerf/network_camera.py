@@ -21,8 +21,8 @@ class CameraNetwork(NeRFRenderer):
         super().__init__(**kwargs)
 
         # pose & intrinsics
-        self.num_cams = num_cams
-        self.h, self.w = h, w
+        # self.num_cams = num_cams
+        # self.h, self.w = h, w
         self.r = nn.Parameter(torch.zeros(
             size=(self.num_cams, 3), dtype=torch.float32), requires_grad=learn_R)  # (N, 3)
         self.t = nn.Parameter(torch.zeros(
@@ -91,7 +91,7 @@ class CameraNetwork(NeRFRenderer):
                 output[3, 3] = 1.0
         return
 
-    def forward(self, cam_id):
+    def forward(self, cam_id, num_cams, h, w):
 
         fxfy = self.run_fxfy_network()
         pose = self.run_pose_network(cam_id)
@@ -101,11 +101,13 @@ class CameraNetwork(NeRFRenderer):
     def run_pose_network(self, cam_id):
         r = torch.squeeze(self.r[cam_id])  # (3, ) axis-angle
         t = torch.squeeze(self.t[cam_id])  # (3, )
+        print()
         print(self.r.shape)
         print(self.t.shape)
-        print(r.shape)
-        print(t.shape)
+        print(r)
+        print(t)
         c2w = self.make_c2w(r, t)  # (4, 4)
+        print(c2w)
         return c2w
 
     def run_fxfy_network(self):

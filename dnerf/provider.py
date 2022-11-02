@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 sys.path.append("..")  # noqa: E501
 from .utils import get_rays, srgb_to_linear
 from utils.flow_utils import resize_flow
-from dnerf.network_camera import CameraNetwork
+# from dnerf.network_camera import CameraNetwork
 
 
 # ref: https://github.com/NVlabs/instant-ngp/blob/b76004c8cf478880227401ae763be4c02f80b62f/include/neural-graphics-primitives/nerf_loader.h#L50
@@ -478,7 +478,7 @@ class NeRFDataset:
 
         self.intrinsics = np.array([fl_x, fl_y, cx, cy])
 
-        self.camera_network = CameraNetwork(self.H, self.W, len(imgs))
+        # self.camera_network = CameraNetwork(self.H, self.W, len(imgs))
 
     def collate(self, index):
 
@@ -523,9 +523,10 @@ class NeRFDataset:
         if (self.PRED_POSE):
             poses_gt = poses
             intrinsics_gt = self.intrinsics
-            fxfy_pred, poses_pred = self.camera_network.forward(index)
+            fxfy_pred, poses_pred = self.camera_network.forward(
+                index, len(self.poses), self.H, self.W)
 
-            print("fxfy: {} - poses: {}".format(fxfy_pred, poses_pred))
+            #print("fxfy: {} - poses: {}".format(fxfy_pred, poses_pred))
 
             # predict poses here
             # fxfy = fxfy_pred.to(self.device)  # [B, 4, 4]
