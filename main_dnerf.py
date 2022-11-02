@@ -173,7 +173,7 @@ if __name__ == '__main__':
             optimizer, lambda iter: 0.1 ** min(iter / opt.iters, 1))
 
         trainer = Trainer('ngp', opt, model, device=device, workspace=opt.workspace, optimizer=optimizer, criterion=criterion, ema_decay=None,
-                          fp16=opt.fp16, lr_scheduler=scheduler, scheduler_update_every_step=True, metrics=[PSNRMeter()], use_checkpoint=opt.ckpt, eval_interval=25)
+                          fp16=opt.fp16, lr_scheduler=scheduler, scheduler_update_every_step=True, metrics=[PSNRMeter()], use_checkpoint=opt.ckpt, eval_interval=1)
 
         if opt.gui:
             gui = NeRFGUI(opt, trainer, train_loader)

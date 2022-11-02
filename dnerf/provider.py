@@ -12,6 +12,7 @@ from torch.utils.data import DataLoader
 sys.path.append("..")  # noqa: E501
 from .utils import get_rays, srgb_to_linear
 from utils.flow_utils import resize_flow
+from dnerf.network_camera import CameraNetwork
 
 
 # ref: https://github.com/NVlabs/instant-ngp/blob/b76004c8cf478880227401ae763be4c02f80b62f/include/neural-graphics-primitives/nerf_loader.h#L50
@@ -307,6 +308,7 @@ class NeRFDataset:
         # [debug] uncomment to view examples of randomly generated poses.
         # visualize_poses(rand_poses(100, self.device, radius=self.radius).cpu().numpy())
         self.FLOW_FLAG = True
+        self.PRED_POSE = True
         if (self.FLOW_FLAG):
             # TODO: ADD the additional pre-reqs here
             basedir = self.root_path
@@ -476,6 +478,8 @@ class NeRFDataset:
 
         self.intrinsics = np.array([fl_x, fl_y, cx, cy])
 
+        self.camera_network = CameraNetwork(self.H, self.W, len(imgs))
+
     def collate(self, index):
 
         B = len(index)  # a list of length 1
@@ -515,6 +519,20 @@ class NeRFDataset:
             masks = None
             masks_val = None
             grid = None
+
+        if (self.PRED_POSE):
+            poses_gt = poses
+            intrinsics_gt = self.intrinsics
+            fxfy_pred, poses_pred = self.camera_network.forward(index)
+
+            print("fxfy: {} - poses: {}".format(fxfy_pred, poses_pred))
+
+            # predict poses here
+            # fxfy = fxfy_pred.to(self.device)  # [B, 4, 4]
+            # poses = poses_pred.to(self.device)  # [B, 4, 4]
+
+            # Assign intrinsics here
+            #self.intrinsics = fxfy
 
         if self.training:
             rays = get_rays(poses, self.intrinsics, self.H,
