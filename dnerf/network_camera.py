@@ -11,8 +11,8 @@ from .renderer import NeRFRenderer
 
 class CameraNetwork(NeRFRenderer):
     def __init__(self,
-                 h,
-                 w,
+                 #  h,
+                 #  w,
                  num_cams,
                  learn_R=True,
                  learn_t=True,
@@ -21,7 +21,7 @@ class CameraNetwork(NeRFRenderer):
         super().__init__(**kwargs)
 
         # pose & intrinsics
-        # self.num_cams = num_cams
+        self.num_cams = num_cams
         # self.h, self.w = h, w
         self.r = nn.Parameter(torch.zeros(
             size=(self.num_cams, 3), dtype=torch.float32), requires_grad=learn_R)  # (N, 3)
@@ -91,35 +91,33 @@ class CameraNetwork(NeRFRenderer):
                 output[3, 3] = 1.0
         return
 
-    def forward(self, cam_id, num_cams, h, w):
+    def forward(self, cam_id, h, w):
 
-        fxfy = self.run_fxfy_network()
+        fxfy = self.run_fxfy_network(h, w)
         pose = self.run_pose_network(cam_id)
 
         return fxfy, pose
 
     def run_pose_network(self, cam_id):
-        r = torch.squeeze(self.r[cam_id])  # (3, ) axis-angle
-        t = torch.squeeze(self.t[cam_id])  # (3, )
+        r = self.r[cam_id][0]  # (3, ) axis-angle
+        t = self.t[cam_id][0]  # (3, )
         print()
-        print(self.r.shape)
-        print(self.t.shape)
         print(r)
         print(t)
         c2w = self.make_c2w(r, t)  # (4, 4)
         print(c2w)
         return c2w
 
-    def run_fxfy_network(self):
-        fxfy = torch.stack([self.fx**2 * self.w, self.fy**2 * self.h])
+    def run_fxfy_network(self, h, w):
+        fxfy = torch.stack([self.fx**2 * w, self.fy**2 * h])
         return fxfy
 
     # optimizer utils
     def get_params(self, lr_pose=0.001, lr_fxfy=0.001):
         params = [
-            {'params': self.r.parameters(), 'lr': lr_pose},
-            {'params': self.t.parameters(), 'lr': lr_pose},
-            {'params': self.fx.parameters(), 'lr': lr_fxfy},
-            {'params': self.fy.parameters(), 'lr': lr_fxfy},
+            {'params': self.r, 'lr': lr_pose},
+            {'params': self.t, 'lr': lr_pose},
+            {'params': self.fx, 'lr': lr_fxfy},
+            {'params': self.fy, 'lr': lr_fxfy},
         ]
         return params

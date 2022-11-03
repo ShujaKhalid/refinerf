@@ -131,9 +131,9 @@ if __name__ == '__main__':
         bg_radius=opt.bg_radius,
     )
 
-    model_camera = CameraNetwork()
+    model_camera = CameraNetwork(num_cams=24)  # FIXME
 
-    print(model)
+    print(model_camera)
 
     criterion = torch.nn.MSELoss(reduction='none')
     # criterion = partial(huber_loss, reduction='none')
@@ -143,8 +143,11 @@ if __name__ == '__main__':
 
     if opt.test:
 
-        trainer = Trainer('ngp', opt, model, device=device, workspace=opt.workspace,
+        trainer = Trainer('ngp', opt, model, model_camera=model_camera, device=device, workspace=opt.workspace,
                           criterion=criterion, fp16=opt.fp16, metrics=[PSNRMeter()], use_checkpoint=opt.ckpt)
+
+        # Update opt here with new
+        # camera_params...
 
         if opt.gui:
             gui = NeRFGUI(opt, trainer)
@@ -165,8 +168,8 @@ if __name__ == '__main__':
 
     else:
 
-        def optimizer(model, state): return torch.optim.Adam(model.get_params(
-            opt.lr, opt.lr_net, svd=state), betas=(0.9, 0.99), eps=1e-15)
+        def optimizer(model, state): return torch.optim.Adam(list(model.get_params(
+            opt.lr, opt.lr_net, svd=state)+model_camera.get_params()), betas=(0.9, 0.99), eps=1e-15)
 
         train_loader = NeRFDataset(
             opt, device=device, type='train').dataloader()
@@ -175,7 +178,7 @@ if __name__ == '__main__':
         def scheduler(optimizer): return optim.lr_scheduler.LambdaLR(
             optimizer, lambda iter: 0.1 ** min(iter / opt.iters, 1))
 
-        trainer = Trainer('ngp', opt, model, device=device, workspace=opt.workspace, optimizer=optimizer, criterion=criterion, ema_decay=None,
+        trainer = Trainer('ngp', opt, model, model_camera=model_camera, device=device, workspace=opt.workspace, optimizer=optimizer, criterion=criterion, ema_decay=None,
                           fp16=opt.fp16, lr_scheduler=scheduler, scheduler_update_every_step=True, metrics=[PSNRMeter()], use_checkpoint=opt.ckpt, eval_interval=1)
 
         if opt.gui:

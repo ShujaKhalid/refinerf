@@ -403,6 +403,7 @@ class Trainer(object):
                  name,  # name of this experiment
                  opt,  # extra conf
                  model,  # network
+                 model_camera=None,  # camera_network
                  criterion=None,  # loss function, if None, assume inline implementation in train_step
                  optimizer=None,  # optimizer
                  ema_decay=None,  # if use EMA, set the decay
@@ -452,11 +453,13 @@ class Trainer(object):
         self.scheduler_func = lr_scheduler
 
         model.to(self.device)
+        model_camera.to(self.device)
         if self.world_size > 1:
             model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
             model = torch.nn.parallel.DistributedDataParallel(
                 model, device_ids=[local_rank])
         self.model = model
+        self.model_camera = model_camera
 
         if isinstance(criterion, nn.Module):
             criterion.to(self.device)
@@ -464,7 +467,9 @@ class Trainer(object):
 
         if optimizer is None:
             self.optimizer = optim.Adam(
-                self.model.parameters(), lr=0.001, weight_decay=5e-4)  # naive adam
+                list(self.model.parameters()) +
+                list(self.model_camera.parameters()),
+                lr=0.001, weight_decay=5e-4)  # naive adam
         else:
             self.opt_state = "static"
             self.optimizer = optimizer(self.model, self.opt_state)
