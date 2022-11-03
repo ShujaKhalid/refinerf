@@ -5,6 +5,7 @@ import glob
 import json
 import tqdm
 import numpy as np
+from dnerf.network_camera import CameraNetwork
 from scipy.spatial.transform import Slerp, Rotation
 import trimesh
 import torch
@@ -12,7 +13,8 @@ from torch.utils.data import DataLoader
 sys.path.append("..")  # noqa: E501
 from .utils import get_rays, srgb_to_linear
 from utils.flow_utils import resize_flow
-from dnerf.network_camera import CameraNetwork
+# torch.autograd.set_detect_anomaly(True)
+# from dnerf.network_camera import CameraNetwork # Sent in from main_dnerf
 
 
 # ref: https://github.com/NVlabs/instant-ngp/blob/b76004c8cf478880227401ae763be4c02f80b62f/include/neural-graphics-primitives/nerf_loader.h#L50
@@ -479,7 +481,7 @@ class NeRFDataset:
         self.intrinsics = np.array([fl_x, fl_y, cx, cy])
 
         # camera predictions
-        self.camera_network = CameraNetwork(len(imgs))
+        self.model_camera = opt.model_camera
 
     def collate(self, index):
 
@@ -524,17 +526,33 @@ class NeRFDataset:
         if (self.PRED_POSE):
             poses_gt = poses
             intrinsics_gt = self.intrinsics
-            fxfy_pred, poses_pred = self.camera_network.forward(
-                index, self.H, self.W)
+            fxfy_pred, poses_pred = self.model_camera(
+                index)
 
-            #print("fxfy: {} - poses: {}".format(fxfy_pred, poses_pred))
-
-            # predict poses here
-            # fxfy = fxfy_pred.to(self.device)  # [B, 4, 4]
-            # poses = poses_pred.to(self.device)  # [B, 4, 4]
+            # cpu -> gpu
+            self.intrinsics = torch.Tensor(
+                self.intrinsics).to(self.device)  # [B, 2]
+            # poses = torch.unsqueeze(poses_pred, 0).to(self.device)  # [B, 4, 4]
+            # poses_pred = torch.unsqueeze(
+            #     poses_pred, 0).to(self.device)  # [B, 4, 4]
 
             # Assign intrinsics here
-            #self.intrinsics = fxfy
+            # self.intrinsics[:2] = fxfy_pred
+
+            print()
+            print()
+            print("fxfy_actual: {}\nposes_actual: {}".format(
+                intrinsics_gt, poses_gt))
+            # print("fxfy_pred: {} - poses_pred: {}".format(fxfy_pred, poses_pred))
+            print("fxfy_actual.shape: {}\nposes_actual.shape: {}".format(
+                intrinsics_gt.shape, poses_gt.shape))
+            # print(
+            #     "fxfy_pred.shape: {} - poses_pred.shape: {}".format(fxfy.shape, poses_pred.shape))
+            print("fxfy_new: {}\nposes_new: {}".format(
+                self.intrinsics, poses))
+            print(
+                "fxfy_new.shape: {}\nposes_new.shape: {}".format(self.intrinsics.shape, poses.shape))
+            print()
 
         if self.training:
             rays = get_rays(poses, self.intrinsics, self.H,

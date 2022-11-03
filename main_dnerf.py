@@ -1,3 +1,4 @@
+from tkinter import W
 import torch
 import argparse
 
@@ -131,7 +132,9 @@ if __name__ == '__main__':
         bg_radius=opt.bg_radius,
     )
 
-    model_camera = CameraNetwork(num_cams=24)  # FIXME
+    model_camera = CameraNetwork(opt.H, opt.W, num_cams=24)  # FIXME
+    # send to provider for predicting int/ext camera params
+    opt.model_camera = model_camera
 
     print(model_camera)
 
@@ -168,8 +171,11 @@ if __name__ == '__main__':
 
     else:
 
-        def optimizer(model, state): return torch.optim.Adam(list(model.get_params(
-            opt.lr, opt.lr_net, svd=state)+model_camera.get_params()), betas=(0.9, 0.99), eps=1e-15)
+        def optimizer_model(model, state): return torch.optim.Adam(model.get_params(
+            opt.lr, opt.lr_net, svd=state), betas=(0.9, 0.99), eps=1e-15)
+
+        def optimizer_cam_model(model_camera): return torch.optim.Adam(
+            model_camera.parameters(), betas=(0.9, 0.99), eps=1e-15)
 
         train_loader = NeRFDataset(
             opt, device=device, type='train').dataloader()
@@ -178,7 +184,7 @@ if __name__ == '__main__':
         def scheduler(optimizer): return optim.lr_scheduler.LambdaLR(
             optimizer, lambda iter: 0.1 ** min(iter / opt.iters, 1))
 
-        trainer = Trainer('ngp', opt, model, model_camera=model_camera, device=device, workspace=opt.workspace, optimizer=optimizer, criterion=criterion, ema_decay=None,
+        trainer = Trainer('ngp', opt, model, model_camera=model_camera, device=device, workspace=opt.workspace, optimizer_model=optimizer_model, optimizer_cam_model=optimizer_cam_model, criterion=criterion, ema_decay=None,
                           fp16=opt.fp16, lr_scheduler=scheduler, scheduler_update_every_step=True, metrics=[PSNRMeter()], use_checkpoint=opt.ckpt, eval_interval=1)
 
         if opt.gui:

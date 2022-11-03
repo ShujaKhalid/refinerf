@@ -6,31 +6,41 @@ import torch.nn.functional as F
 
 from encoding import get_encoder
 from activation import trunc_exp
-from .renderer import NeRFRenderer
+# from .renderer import NeRFRenderer
 
 
-class CameraNetwork(NeRFRenderer):
+class CameraNetwork(nn.Module):
     def __init__(self,
-                 #  h,
-                 #  w,
+                 h,
+                 w,
                  num_cams,
                  learn_R=True,
                  learn_t=True,
+                 learn_fx=True,
+                 learn_fy=True,
                  **kwargs,
                  ):
-        super().__init__(**kwargs)
+        super(CameraNetwork, self).__init__(**kwargs)
 
         # pose & intrinsics
         self.num_cams = num_cams
-        # self.h, self.w = h, w
+        self.h, self.w = h, w
         self.r = nn.Parameter(torch.zeros(
             size=(self.num_cams, 3), dtype=torch.float32), requires_grad=learn_R)  # (N, 3)
         self.t = nn.Parameter(torch.zeros(
             size=(self.num_cams, 3), dtype=torch.float32), requires_grad=learn_t)  # (N, 3)
         self.fx = nn.Parameter(torch.tensor(
-            1.0, dtype=torch.float32), requires_grad=True)  # (1, )
+            1.0, dtype=torch.float32), requires_grad=learn_fx)  # (1, )
         self.fy = nn.Parameter(torch.tensor(
-            1.0, dtype=torch.float32), requires_grad=True)  # (1, )
+            1.0, dtype=torch.float32), requires_grad=learn_fy)  # (1, )
+        # self.r = nn.Parameter(torch.randn(
+        #     num_cams, 3, dtype=torch.float32), requires_grad=learn_R)  # (N, 3)
+        # self.t = nn.Parameter(torch.randn(
+        #     num_cams, 3, dtype=torch.float32), requires_grad=learn_t)  # (N, 3)
+        # self.fx = nn.Parameter(torch.tensor(
+        #     1.0, dtype=torch.float32), requires_grad=learn_fx)  # (1, )
+        # self.fy = nn.Parameter(torch.tensor(
+        #     1.0, dtype=torch.float32), requires_grad=learn_fy)  # (1, )
 
     def vec2skew(self, v):
         """
@@ -89,23 +99,20 @@ class CameraNetwork(NeRFRenderer):
                 output = np.concatenate(
                     [input, np.array([[0, 0, 0, 1]], dtype=input.dtype)], axis=0)  # (4, 4)
                 output[3, 3] = 1.0
-        return
+        return output
 
-    def forward(self, cam_id, h, w):
+    def forward(self, cam_id):
 
-        fxfy = self.run_fxfy_network(h, w)
+        fxfy = self.run_fxfy_network(self.h, self.w)
         pose = self.run_pose_network(cam_id)
 
         return fxfy, pose
 
     def run_pose_network(self, cam_id):
-        r = self.r[cam_id][0]  # (3, ) axis-angle
-        t = self.t[cam_id][0]  # (3, )
-        print()
-        print(r)
-        print(t)
+        r = torch.squeeze(self.r[cam_id])  # (3, ) axis-angle
+        t = torch.squeeze(self.t[cam_id])  # (3, )
+
         c2w = self.make_c2w(r, t)  # (4, 4)
-        print(c2w)
         return c2w
 
     def run_fxfy_network(self, h, w):

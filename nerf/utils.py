@@ -405,7 +405,8 @@ class Trainer(object):
                  model,  # network
                  model_camera=None,  # camera_network
                  criterion=None,  # loss function, if None, assume inline implementation in train_step
-                 optimizer=None,  # optimizer
+                 optimizer_model=None,  # optimizer
+                 optimizer_cam_model=None,  # optimizer
                  ema_decay=None,  # if use EMA, set the decay
                  lr_scheduler=None,  # scheduler
                  # metrics for evaluation, if None, use val_loss to measure performance, else use the first metric.
@@ -449,7 +450,8 @@ class Trainer(object):
         self.device = device if device is not None else torch.device(
             f'cuda:{local_rank}' if torch.cuda.is_available() else 'cpu')
         self.console = Console()
-        self.optimizer_func = optimizer
+        self.optimizer_func = optimizer_model
+        self.optimizer_cam_func = optimizer_cam_model
         self.scheduler_func = lr_scheduler
 
         model.to(self.device)
@@ -465,20 +467,26 @@ class Trainer(object):
             criterion.to(self.device)
         self.criterion = criterion
 
-        if optimizer is None:
-            self.optimizer = optim.Adam(
-                list(self.model.parameters()) +
-                list(self.model_camera.parameters()),
-                lr=0.001, weight_decay=5e-4)  # naive adam
+        if optimizer_model is None:
+            self.optimizer_model = optim.Adam(self.model.parameters(),
+                                              lr=0.001, weight_decay=5e-4)  # naive adam
         else:
             self.opt_state = "static"
-            self.optimizer = optimizer(self.model, self.opt_state)
+            self.optimizer_model = optimizer_model(self.model, self.opt_state)
+
+        if optimizer_cam_model is None:
+            self.optimizer_cam_model = optim.Adam(self.model_camera.parameters(),
+                                                  lr=0.001, weight_decay=5e-4)  # naive adam
+        else:
+            print("self.model_camera.parameters(): {}".format(
+                self.model_camera.parameters()))
+            self.optimizer_cam_model = optimizer_cam_model(self.model_camera)
 
         if lr_scheduler is None:
             self.lr_scheduler = optim.lr_scheduler.LambdaLR(
-                self.optimizer, lr_lambda=lambda epoch: 1)  # fake scheduler
+                self.optimizer_model, lr_lambda=lambda epoch: 1)  # fake scheduler
         else:
-            self.lr_scheduler = lr_scheduler(self.optimizer)
+            self.lr_scheduler = lr_scheduler(self.optimizer_model)
 
         if ema_decay is not None:
             self.opt_state = "static"
@@ -834,13 +842,15 @@ class Trainer(object):
 
             self.global_step += 1
 
-            self.optimizer.zero_grad()
+            self.optimizer_model.zero_grad()
+            self.optimizer_cam_model.zero_grad()
 
             with torch.cuda.amp.autocast(enabled=self.fp16):
                 preds, truths, loss = self.train_step(data)
 
             self.scaler.scale(loss).backward()
-            self.scaler.step(self.optimizer)
+            self.scaler.step(self.optimizer_model)
+            self.scaler.step(self.optimizer_cam_model)
             self.scaler.update()
 
             if self.scheduler_update_every_step:
@@ -861,7 +871,7 @@ class Trainer(object):
 
         outputs = {
             'loss': average_loss,
-            'lr': self.optimizer.param_groups[0]['lr'],
+            'lr': self.optimizer_model.param_groups[0]['lr'],
         }
 
         return outputs
@@ -924,7 +934,7 @@ class Trainer(object):
 
     def train_one_epoch(self, loader):
         self.log(
-            f"==> Start Training Epoch {self.epoch}, lr={self.optimizer.param_groups[0]['lr']:.6f} ...")
+            f"==> Start Training Epoch {self.epoch}, lr={self.optimizer_model.param_groups[0]['lr']:.6f} ...")
 
         total_loss = 0
         if self.local_rank == 0 and self.report_metric_at_train:
@@ -932,6 +942,9 @@ class Trainer(object):
                 metric.clear()
 
         self.model.train()
+        self.model_camera.train()
+
+        self.optimizer_cam_model = self.optimizer_cam_func(self.model_camera)
 
         # distributedSampler: must call set_epoch() to shuffle indices across multiple epochs
         # ref: https://pytorch.org/docs/stable/data.html
@@ -958,7 +971,8 @@ class Trainer(object):
             # print("DYNAMIC MODEL ACTIVATED!!! - (optimizer)")
             # print("========================================\n\n")
             self.opt_state = "dynamic"
-            self.optimizer = self.optimizer_func(self.model, self.opt_state)
+            self.optimizer_model = self.optimizer_func(
+                self.model, self.opt_state)
             # self.lr_scheduler = self.scheduler_func(self.optimizer)
 
             for name, param in self.model.named_parameters():
@@ -970,14 +984,16 @@ class Trainer(object):
             # print("COMBINED MODEL ACTIVATED!!! - (optimizer)")
             # print("========================================\n\n")
             self.opt_state = "all"
-            self.optimizer = self.optimizer_func(self.model, self.opt_state)
+            self.optimizer_model = self.optimizer_func(
+                self.model, self.opt_state)
             # self.lr_scheduler = self.scheduler_func(self.optimizer)
         elif ('b1' not in cond and 'b2' not in cond and 'b3' not in cond and 'b4' not in cond and 'd1' not in cond and 'd2' not in cond and 'd3' not in cond and 'd4' not in cond):
             # print("\n\n========================================")
             # print("STATIC MODEL ACTIVATED!!! - (optimizer)")
             # print("========================================\n\n")
             self.opt_state = "static"
-            self.optimizer = self.optimizer_func(self.model, self.opt_state)
+            self.optimizer_model = self.optimizer_func(
+                self.model, self.opt_state)
             # self.lr_scheduler = self.scheduler_func(self.optimizer)
 
         for data in loader:
@@ -991,13 +1007,25 @@ class Trainer(object):
             self.local_step += 1
             self.global_step += 1
 
-            self.optimizer.zero_grad()
+            self.optimizer_model.zero_grad()
+            self.optimizer_cam_model.zero_grad()
 
             with torch.cuda.amp.autocast(enabled=self.fp16):
                 preds, truths, loss = self.train_step(data)
 
+            print("optimizer_model: {}".format(self.optimizer_model))
+            print("optimizer_cam_model: {}".format(self.optimizer_cam_model))
+
             self.scaler.scale(loss).backward()
-            self.scaler.step(self.optimizer)
+            print("\n\n\n model_parameters")
+            for p in self.model.parameters():
+                print(p.name, p.data, p.grad, p.is_leaf)
+
+            print("\n\n\n model_camera_parameters")
+            for p in self.model_camera.parameters():
+                print(p.name, p.data, p.grad, p.is_leaf)
+            self.scaler.step(self.optimizer_model)
+            self.scaler.step(self.optimizer_cam_model)  # FIXME
             self.scaler.update()
 
             if self.scheduler_update_every_step:
@@ -1015,11 +1043,11 @@ class Trainer(object):
                     self.writer.add_scalar(
                         "validation/loss", loss_val, self.global_step)
                     self.writer.add_scalar(
-                        "validation/lr", self.optimizer.param_groups[0]['lr'], self.global_step)
+                        "validation/lr", self.optimizer_model.param_groups[0]['lr'], self.global_step)
 
                 if self.scheduler_update_every_step:
                     pbar.set_description(
-                        f"loss={loss_val:.4f} ({total_loss/self.local_step:.4f}), lr={self.optimizer.param_groups[0]['lr']:.6f}")
+                        f"loss={loss_val:.4f} ({total_loss/self.local_step:.4f}), lr={self.optimizer_model.param_groups[0]['lr']:.6f}")
                 else:
                     pbar.set_description(
                         f"loss={loss_val:.4f} ({total_loss/self.local_step:.4f})")
@@ -1219,7 +1247,7 @@ class Trainer(object):
             state['mean_density'] = self.model.mean_density
 
         if full:
-            state['optimizer'] = self.optimizer.state_dict()
+            state['optimizer'] = self.optimizer_model.state_dict()
             state['lr_scheduler'] = self.lr_scheduler.state_dict()
             state['scaler'] = self.scaler.state_dict()
             if self.ema is not None:
@@ -1312,9 +1340,10 @@ class Trainer(object):
         self.log(
             f"[INFO] load at epoch {self.epoch}, global step {self.global_step}")
 
-        if self.optimizer and 'optimizer' in checkpoint_dict:
+        if self.optimizer_model and 'optimizer' in checkpoint_dict:
             try:
-                self.optimizer.load_state_dict(checkpoint_dict['optimizer'])
+                self.optimizer_model.load_state_dict(
+                    checkpoint_dict['optimizer'])
                 self.log("[INFO] loaded optimizer.")
             except:
                 self.log("[WARN] Failed to load optimizer.")

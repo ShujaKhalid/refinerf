@@ -10,7 +10,8 @@ class Trainer(_Trainer):
                  model,  # network
                  model_camera,
                  criterion=None,  # loss function, if None, assume inline implementation in train_step
-                 optimizer=None,  # optimizer
+                 optimizer_model=None,  # optimizer
+                 optimizer_cam_model=None,  # optimizer
                  ema_decay=None,  # if use EMA, set the decay
                  lr_scheduler=None,  # scheduler
                  # metrics for evaluation, if None, use val_loss to measure performance, else use the first metric.
@@ -33,10 +34,10 @@ class Trainer(_Trainer):
                  scheduler_update_every_step=False,
                  ):
 
-        self.optimizer_fn = optimizer
+        self.optimizer_fn = optimizer_model
         self.lr_scheduler_fn = lr_scheduler
 
-        super().__init__(name, opt, model, model_camera, criterion, optimizer, ema_decay, lr_scheduler, metrics, local_rank, world_size, device, mute, fp16, eval_interval,
+        super().__init__(name, opt, model, model_camera, criterion, optimizer_model, optimizer_cam_model, ema_decay, lr_scheduler, metrics, local_rank, world_size, device, mute, fp16, eval_interval,
                          max_keep_ckpt, workspace, best_mode, use_loss_as_metric, report_metric_at_train, use_checkpoint, use_tensorboardX, scheduler_update_every_step)
 
     # ------------------------------
