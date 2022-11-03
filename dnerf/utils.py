@@ -1,6 +1,8 @@
+from dataclasses import dataclass
 from nerf.utils import *
 from nerf.utils import Trainer as _Trainer
 from utils.run_nerf_helpers import *
+# from dnerf.network_camera import CameraNetwork # Sent in from main_dnerf
 
 
 class Trainer(_Trainer):
@@ -42,7 +44,144 @@ class Trainer(_Trainer):
 
     # ------------------------------
 
+    def render_prereqs(self, data):
+
+        results = data
+        B = 1
+        self.PRED_POSE = data['PRED_POSE']
+        self.FLOW_FLAG = data['FLOW_FLAG']
+        self.TRAIN_FLAG = data['TRAIN_FLAG']
+        self.DYNAMIC_ITER = data['dynamic_iter']
+        self.DYNAMIC_ITERS = data['dynamic_iters']
+        self.poses = data['poses']  # COLMAP APPROXIMATION
+        self.intrinsics = data['intrinsics']  # COLMAP_APPROXIMATION
+        self.error_map = data['error_map']
+        self.num_rays = data['num_rays']
+        self.masks = data['masks']
+        self.masks_val = data['masks_val']
+        self.all_masks = data['all_masks']
+        self.all_masks_val = data['all_masks_val']
+        self.times = data['time']
+        self.H = data['H']
+        self.W = data['W']
+        self.index = data['index']
+        self.grid = data['grid']
+        self.images = data['images']
+        self.disp = data['disp']
+
+        if (self.PRED_POSE):
+            print("\n\nPREDICTING POSES!\n\n")
+            poses_gt = self.poses
+            intrinsics_gt = self.intrinsics
+            fxfy_pred, poses_pred = self.model_camera(self.index)
+
+            # cpu -> gpu
+            self.intrinsics = torch.Tensor(
+                self.intrinsics).to(self.device)  # [B, 2]
+            # poses = torch.unsqueeze(poses_pred, 0).to(self.device)  # [B, 4, 4]
+            # poses_pred = torch.unsqueeze(
+            #     poses_pred, 0).to(self.device)  # [B, 4, 4]
+
+            # Assign intrinsics here
+            # self.intrinsics[:2] = fxfy_pred
+
+            print()
+            print()
+            print("fxfy_actual: {}\nposes_actual: {}".format(
+                intrinsics_gt, poses_gt))
+            # print("fxfy_pred: {} - poses_pred: {}".format(fxfy_pred, poses_pred))
+            print("fxfy_actual.shape: {}\nposes_actual.shape: {}".format(
+                intrinsics_gt.shape, poses_gt.shape))
+            # print(
+            #     "fxfy_pred.shape: {} - poses_pred.shape: {}".format(fxfy.shape, poses_pred.shape))
+            print("fxfy_new: {}\nposes_new: {}".format(
+                self.intrinsics, self.poses))
+            print(
+                "fxfy_new.shape: {}\nposes_new.shape: {}".format(self.intrinsics.shape, self.poses.shape))
+            print()
+
+        if self.TRAIN_FLAG:
+            rays = get_rays(self.poses, self.intrinsics, self.H,
+                            self.W, self.masks, self.num_rays, self.error_map, self.DYNAMIC_ITER, self.DYNAMIC_ITERS)  # sk_debug - added masks
+        else:
+            rays = get_rays(self.poses, self.intrinsics, self.H,
+                            self.W, self.masks_val, self.num_rays, self.error_map, self.DYNAMIC_ITER, self.DYNAMIC_ITERS)  # sk_debug - added masks
+
+        # self.DYNAMIC_ITER += 1
+
+        if ("inds_s" in rays and "inds_d" in rays):
+            self.inds_s = rays["inds_s"]
+            self.inds_d = rays["inds_d"]
+        else:
+            self.inds_s = 0
+            self.inds_d = 0
+
+        results['inds_s'] = self.inds_s
+        results['inds_d'] = self.inds_d
+
+        indices = rays["inds"] if self.TRAIN_FLAG else -1
+
+        if (self.FLOW_FLAG):
+            grid = self.grid[:, indices, :]
+
+        results['rays_o'] = rays['rays_o']
+        results['rays_d'] = rays['rays_d']
+
+        if self.images is not None:
+            # [B, H, W, 3/4]
+            # print("index: {}".format(index))
+            i = self.index[0]
+            images_b = self.images[i-1].to(self.device) if i - \
+                1 > 0 else self.images[i].to(self.device)
+            images_f = self.images[i+1].to(self.device) if i+1 < len(
+                self.images) else self.images[self.index].to(self.device)   # [B, H, W, 3/4]
+            images = self.images[self.index].to(self.device)  # [B, H, W, 3/4]
+
+            if self.TRAIN_FLAG:
+                C = images.shape[-1]
+                images = torch.gather(images.view(
+                    B, -1, C), 1, torch.stack(C * [rays['inds']], -1))  # [B, N, 3/4]
+                images_b = torch.gather(images_b.view(
+                    B, -1, C), 1, torch.stack(C * [rays['inds']], -1))  # [B, N, 3/4]
+                images_f = torch.gather(images_f.view(
+                    B, -1, C), 1, torch.stack(C * [rays['inds']], -1))  # [B, N, 3/4]
+            results['images'] = images
+            results['images_b'] = images_b
+            results['images_f'] = images_f
+
+        if (self.FLOW_FLAG):
+            if self.masks is not None:
+                i = self.index[0]
+                # [B, H, W, 3/4]
+                # print(self.masks[:, :, :, index].shape)
+                # print(self.disp[:, :, index].shape)
+                masks = self.all_masks[:, :, :, i]
+                disp = torch.Tensor(self.disp[:, :, i]).to(
+                    self.device)  # [B, H, W, 3/4]
+                # print("masks.shape: {}".format(masks.shape))
+                # print("disp.shape: {}".format(disp.shape))
+                # print("images.shape: {}".format(images.shape))
+                # print("rays['inds'].shape: {}".format(rays['inds'].shape))
+                # print("disp.view(B, -1, 1).shape: {}".format(disp.view(1, -1, 1).shape))
+                if self.TRAIN_FLAG:
+                    masks = torch.gather(masks.view(
+                        B, -1, 3), 1, torch.stack(3 * [rays['inds']], -1))  # [B, N, 3/4]
+                    disp = torch.gather(disp.view(
+                        B, -1, 1), 1, torch.stack(1 * [rays['inds']], -1))  # [B, N, 3/4]
+                results['disp'] = disp
+                results['masks'] = masks
+
+        # need inds to update error_map
+        results['index'] = self.index
+        results['grid'] = grid
+        if self.error_map is not None:
+            results['inds_coarse'] = rays['inds_coarse']
+
+        return results
+
     def train_step(self, data):
+
+        data = self.render_prereqs(data)
 
         rays_o = data['rays_o']  # [B, N, 3]
         rays_d = data['rays_d']  # [B, N, 3]

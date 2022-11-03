@@ -481,7 +481,7 @@ class NeRFDataset:
         self.intrinsics = np.array([fl_x, fl_y, cx, cy])
 
         # camera predictions
-        self.model_camera = opt.model_camera
+        # self.model_camera = opt.model_camera
 
     def collate(self, index):
 
@@ -523,123 +523,156 @@ class NeRFDataset:
             masks_val = None
             grid = None
 
-        if (self.PRED_POSE):
-            poses_gt = poses
-            intrinsics_gt = self.intrinsics
-            fxfy_pred, poses_pred = self.model_camera(
-                index)
+        # if (self.PRED_POSE):
+        #     poses_gt = poses
+        #     intrinsics_gt = self.intrinsics
+        #     fxfy_pred, poses_pred = self.model_camera(
+        #         index)
 
-            # cpu -> gpu
-            self.intrinsics = torch.Tensor(
-                self.intrinsics).to(self.device)  # [B, 2]
-            # poses = torch.unsqueeze(poses_pred, 0).to(self.device)  # [B, 4, 4]
-            # poses_pred = torch.unsqueeze(
-            #     poses_pred, 0).to(self.device)  # [B, 4, 4]
+        #     # cpu -> gpu
+        #     self.intrinsics = torch.Tensor(
+        #         self.intrinsics).to(self.device)  # [B, 2]
+        #     # poses = torch.unsqueeze(poses_pred, 0).to(self.device)  # [B, 4, 4]
+        #     # poses_pred = torch.unsqueeze(
+        #     #     poses_pred, 0).to(self.device)  # [B, 4, 4]
 
-            # Assign intrinsics here
-            # self.intrinsics[:2] = fxfy_pred
+        #     # Assign intrinsics here
+        #     # self.intrinsics[:2] = fxfy_pred
 
-            print()
-            print()
-            print("fxfy_actual: {}\nposes_actual: {}".format(
-                intrinsics_gt, poses_gt))
-            # print("fxfy_pred: {} - poses_pred: {}".format(fxfy_pred, poses_pred))
-            print("fxfy_actual.shape: {}\nposes_actual.shape: {}".format(
-                intrinsics_gt.shape, poses_gt.shape))
-            # print(
-            #     "fxfy_pred.shape: {} - poses_pred.shape: {}".format(fxfy.shape, poses_pred.shape))
-            print("fxfy_new: {}\nposes_new: {}".format(
-                self.intrinsics, poses))
-            print(
-                "fxfy_new.shape: {}\nposes_new.shape: {}".format(self.intrinsics.shape, poses.shape))
-            print()
-
-        if self.training:
-            rays = get_rays(poses, self.intrinsics, self.H,
-                            self.W, masks, self.num_rays, error_map, self.DYNAMIC_ITER, self.DYNAMIC_ITERS)  # sk_debug - added masks
-        else:
-            rays = get_rays(poses, self.intrinsics, self.H,
-                            self.W, masks_val, self.num_rays, error_map, self.DYNAMIC_ITER, self.DYNAMIC_ITERS)  # sk_debug - added masks
-
-        self.DYNAMIC_ITER += 1
-
-        if ("inds_s" in rays and "inds_d" in rays):
-            self.inds_s = rays["inds_s"]
-            self.inds_d = rays["inds_d"]
-        else:
-            self.inds_s = 0
-            self.inds_d = 0
-
-        indices = rays["inds"] if self.training else -1
-
-        if (self.FLOW_FLAG):
-            grid = grid[:, indices, :]
+        #     print()
+        #     print()masks
+        #     print("fxfy_actual: {}\nposes_actual: {}".format(
+        #         intrinsics_gt, poses_gt))
+        #     # print("fxfy_pred: {} - poses_pred: {}".format(fxfy_pred, poses_pred))
+        #     print("fxfy_actual.shape: {}\nposes_actual.shape: {}".format(
+        #         intrinsics_gt.shape, poses_gt.shape))
+        #     # print(
+        #     #     "fxfy_pred.shape: {} - poses_pred.shape: {}".format(fxfy.shape, poses_pred.shape))
+        #     print("fxfy_new: {}\nposes_new: {}".format(
+        #         self.intrinsics, poses))
+        #     print(
+        #         "fxfy_new.shape: {}\nposes_new.shape: {}".format(self.intrinsics.shape, poses.shape))
+        #     print()
 
         results = {
             'H': self.H,
             'W': self.W,
             'grids': grid,
-            'intrinsics': self.intrinsics,
-            'all_poses': self.poses,
-            'rays_o': rays['rays_o'],
-            'rays_d': rays['rays_d'],
-            'time': times,
             'poses': poses,
+            'all_poses': self.poses,
+            'intrinsics': self.intrinsics,
+            'time': times,
+            'error_map': error_map,
+            'dynamic_iter': self.DYNAMIC_ITER,
+            'dynamic_iters': self.DYNAMIC_ITERS,
+            'num_rays': self.num_rays,
             'FLOW_FLAG': self.FLOW_FLAG,
-            "inds_s": self.inds_s,
-            "inds_d": self.inds_d
+            'PRED_POSE': self.PRED_POSE,
+            'TRAIN_FLAG': self.training,
+            'images': self.images,
+            'masks': masks,
+            'all_masks': self.masks,
+            'masks_val': masks_val,
+            'all_masks_val': self.masks_val,
+            'disp': self.disp,
+            # 'rays_o': rays['rays_o'],
+            # 'rays_d': rays['rays_d'],
+            # "inds_s": self.inds_s,
+            # "inds_d": self.inds_d
+            'rays_o': None,
+            'rays_d': None,
+            'inds_s': None,
+            'inds_d': None,
+            'index': index,
+            'grid': grid
         }
 
-        if self.images is not None:
-            # [B, H, W, 3/4]
-            # print("index: {}".format(index))
-            i = index[0]
-            images_b = self.images[i-1].to(self.device) if i - \
-                1 > 0 else self.images[i].to(self.device)
-            images_f = self.images[i+1].to(self.device) if i+1 < len(
-                self.images) else self.images[index].to(self.device)   # [B, H, W, 3/4]
-            images = self.images[index].to(self.device)  # [B, H, W, 3/4]
+        # if self.training:
+        #     rays = get_rays(poses, self.intrinsics, self.H,
+        #                     self.W, masks, self.num_rays, error_map, self.DYNAMIC_ITER, self.DYNAMIC_ITERS)  # sk_debug - added masks
+        # else:
+        #     rays = get_rays(poses, self.intrinsics, self.H,
+        #                     self.W, masks_val, self.num_rays, error_map, self.DYNAMIC_ITER, self.DYNAMIC_ITERS)  # sk_debug - added masks
 
-            if self.training:
-                C = images.shape[-1]
-                images = torch.gather(images.view(
-                    B, -1, C), 1, torch.stack(C * [rays['inds']], -1))  # [B, N, 3/4]
-                images_b = torch.gather(images_b.view(
-                    B, -1, C), 1, torch.stack(C * [rays['inds']], -1))  # [B, N, 3/4]
-                images_f = torch.gather(images_f.view(
-                    B, -1, C), 1, torch.stack(C * [rays['inds']], -1))  # [B, N, 3/4]
-            results['images'] = images
-            results['images_b'] = images_b
-            results['images_f'] = images_f
+        self.DYNAMIC_ITER += 1
 
-        if (self.FLOW_FLAG):
-            if self.masks is not None:
-                index = index[0]
-                # print(index)
-                # [B, H, W, 3/4]
-                # print(self.masks[:, :, :, index].shape)
-                # print(self.disp[:, :, index].shape)
-                masks = self.masks[:, :, :, index]
-                disp = torch.Tensor(self.disp[:, :, index]).to(
-                    self.device)  # [B, H, W, 3/4]
-                # print("masks.shape: {}".format(masks.shape))
-                # print("disp.shape: {}".format(disp.shape))
-                # print("images.shape: {}".format(images.shape))
-                # print("rays['inds'].shape: {}".format(rays['inds'].shape))
-                # print("disp.view(B, -1, 1).shape: {}".format(disp.view(1, -1, 1).shape))
-                if self.training:
-                    masks = torch.gather(masks.view(
-                        B, -1, 3), 1, torch.stack(3 * [rays['inds']], -1))  # [B, N, 3/4]
-                    disp = torch.gather(disp.view(
-                        B, -1, 1), 1, torch.stack(1 * [rays['inds']], -1))  # [B, N, 3/4]
-                results['disp'] = disp
-                results['masks'] = masks
+        # if ("inds_s" in rays and "inds_d" in rays):
+        #     self.inds_s = rays["inds_s"]
+        #     self.inds_d = rays["inds_d"]
+        # else:
+        #     self.inds_s = 0
+        #     self.inds_d = 0
+
+        # indices = rays["inds"] if self.training else -1
+
+        # if (self.FLOW_FLAG):
+        #     grid = grid[:, indices, :]
+
+        # results = {
+        #     'H': self.H,
+        #     'W': self.W,
+        #     'grids': grid,
+        #     'intrinsics': self.intrinsics,
+        #     'all_poses': self.poses,
+        #     'rays_o': rays['rays_o'],
+        #     'rays_d': rays['rays_d'],
+        #     'time': times,
+        #     'poses': poses,
+        #     'FLOW_FLAG': self.FLOW_FLAG,
+        #     "inds_s": self.inds_s,
+        #     "inds_d": self.inds_d
+        # }
+
+        # if self.images is not None:
+        #     # [B, H, W, 3/4]
+        #     # print("index: {}".format(index))
+        #     i = index[0]
+        #     images_b = self.images[i-1].to(self.device) if i - \
+        #         1 > 0 else self.images[i].to(self.device)
+        #     images_f = self.images[i+1].to(self.device) if i+1 < len(
+        #         self.images) else self.images[index].to(self.device)   # [B, H, W, 3/4]
+        #     images = self.images[index].to(self.device)  # [B, H, W, 3/4]
+
+        #     if self.training:
+        #         C = images.shape[-1]
+        #         images = torch.gather(images.view(
+        #             B, -1, C), 1, torch.stack(C * [rays['inds']], -1))  # [B, N, 3/4]
+        #         images_b = torch.gather(images_b.view(
+        #             B, -1, C), 1, torch.stack(C * [rays['inds']], -1))  # [B, N, 3/4]
+        #         images_f = torch.gather(images_f.view(
+        #             B, -1, C), 1, torch.stack(C * [rays['inds']], -1))  # [B, N, 3/4]
+        #     results['images'] = images
+        #     results['images_b'] = images_b
+        #     results['images_f'] = images_f
+
+        # if (self.FLOW_FLAG):
+        #     if self.masks is not None:
+        #         index = index[0]
+        #         # print(index)
+        #         # [B, H, W, 3/4]
+        #         # print(self.masks[:, :, :, index].shape)
+        #         # print(self.disp[:, :, index].shape)
+        #         masks = self.masks[:, :, :, index]
+        #         disp = torch.Tensor(self.disp[:, :, index]).to(
+        #             self.device)  # [B, H, W, 3/4]
+        #         # print("masks.shape: {}".format(masks.shape))
+        #         # print("disp.shape: {}".format(disp.shape))
+        #         # print("images.shape: {}".format(images.shape))
+        #         # print("rays['inds'].shape: {}".format(rays['inds'].shape))
+        #         # print("disp.view(B, -1, 1).shape: {}".format(disp.view(1, -1, 1).shape))
+        #         if self.training:
+        #             masks = torch.gather(masks.view(
+        #                 B, -1, 3), 1, torch.stack(3 * [rays['inds']], -1))  # [B, N, 3/4]
+        #             disp = torch.gather(disp.view(
+        #                 B, -1, 1), 1, torch.stack(1 * [rays['inds']], -1))  # [B, N, 3/4]
+        #         results['disp'] = disp
+        #         results['masks'] = masks
 
         # need inds to update error_map
         results['index'] = index
         results['num_img'] = len(self.images)
-        if error_map is not None:
-            results['inds_coarse'] = rays['inds_coarse']
+        # if error_map is not None:
+        #     results['inds_coarse'] = rays['inds_coarse']
 
         return results
 

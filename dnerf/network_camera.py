@@ -6,10 +6,10 @@ import torch.nn.functional as F
 
 from encoding import get_encoder
 from activation import trunc_exp
-# from .renderer import NeRFRenderer
+from .renderer import NeRFRenderer
 
 
-class CameraNetwork(nn.Module):
+class CameraNetwork(NeRFRenderer):
     def __init__(self,
                  h,
                  w,
@@ -20,7 +20,7 @@ class CameraNetwork(nn.Module):
                  learn_fy=True,
                  **kwargs,
                  ):
-        super(CameraNetwork, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         # pose & intrinsics
         self.num_cams = num_cams
