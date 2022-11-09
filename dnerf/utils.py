@@ -10,10 +10,10 @@ class Trainer(_Trainer):
                  name,  # name of this experiment
                  opt,  # extra conf
                  model,  # network
-                 model_camera,
+                 #  model_camera,
                  criterion=None,  # loss function, if None, assume inline implementation in train_step
                  optimizer_model=None,  # optimizer
-                 optimizer_cam_model=None,  # optimizer
+                 #  optimizer_cam_model=None,  # optimizer
                  ema_decay=None,  # if use EMA, set the decay
                  lr_scheduler=None,  # scheduler
                  # metrics for evaluation, if None, use val_loss to measure performance, else use the first metric.
@@ -39,7 +39,7 @@ class Trainer(_Trainer):
         self.optimizer_fn = optimizer_model
         self.lr_scheduler_fn = lr_scheduler
 
-        super().__init__(name, opt, model, model_camera, criterion, optimizer_model, optimizer_cam_model, ema_decay, lr_scheduler, metrics, local_rank, world_size, device, mute, fp16, eval_interval,
+        super().__init__(name, opt, model, criterion, optimizer_model, ema_decay, lr_scheduler, metrics, local_rank, world_size, device, mute, fp16, eval_interval,
                          max_keep_ckpt, workspace, best_mode, use_loss_as_metric, report_metric_at_train, use_checkpoint, use_tensorboardX, scheduler_update_every_step)
 
     # ------------------------------
@@ -73,7 +73,9 @@ class Trainer(_Trainer):
             print("\n\nPREDICTING POSES!\n\n")
             poses_gt = self.poses
             intrinsics_gt = self.intrinsics
-            fxfy_pred, poses_pred = self.model_camera(self.index)
+            # fxfy_pred, poses_pred = self.model_camera(self.index)
+            fxfy_pred, poses_pred = self.model(None, None, None, svd="camera")
+            # print("fxfy: {}\nposes: {}".format(fxfy_pred, poses_pred))
 
             # cpu -> gpu
             self.intrinsics = torch.Tensor(
@@ -95,9 +97,9 @@ class Trainer(_Trainer):
             # print(
             #     "fxfy_pred.shape: {} - poses_pred.shape: {}".format(fxfy.shape, poses_pred.shape))
             print("fxfy_new: {}\nposes_new: {}".format(
-                self.intrinsics, self.poses))
+                fxfy_pred, poses_pred))
             print(
-                "fxfy_new.shape: {}\nposes_new.shape: {}".format(self.intrinsics.shape, self.poses.shape))
+                "fxfy_new.shape: {}\nposes_new.shape: {}".format(fxfy_pred.shape, poses_pred.shape))
             print()
 
         if self.TRAIN_FLAG:
@@ -577,6 +579,8 @@ class Trainer(_Trainer):
         return pred_rgb, gt_rgb, loss
 
     def eval_step(self, data):
+
+        data = self.render_prereqs(data)
 
         rays_o = data['rays_o']  # [B, N, 3]
         rays_d = data['rays_d']  # [B, N, 3]

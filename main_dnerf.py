@@ -117,7 +117,7 @@ if __name__ == '__main__':
         from dnerf.network_basis import NeRFNetwork
     else:
         from dnerf.network import NeRFNetwork
-        from dnerf.network_camera import CameraNetwork
+        # from dnerf.network_camera import CameraNetwork
 
     print(opt)
 
@@ -130,13 +130,16 @@ if __name__ == '__main__':
         min_near=opt.min_near,
         density_thresh=opt.density_thresh,
         bg_radius=opt.bg_radius,
+        h=opt.H,
+        w=opt.W,
+        num_cams=24
     )
 
-    model_camera = CameraNetwork(opt.H, opt.W, num_cams=24)  # FIXME
+    # model_camera = CameraNetwork(opt.H, opt.W, num_cams=24)  # FIXME
     # send to provider for predicting int/ext camera params
-    opt.model_camera = model_camera
+    #opt.model_camera = model_camera
 
-    print(model_camera)
+    # print(model_camera)
 
     criterion = torch.nn.MSELoss(reduction='none')
     # criterion = partial(huber_loss, reduction='none')
@@ -146,7 +149,7 @@ if __name__ == '__main__':
 
     if opt.test:
 
-        trainer = Trainer('ngp', opt, model, model_camera=model_camera, device=device, workspace=opt.workspace,
+        trainer = Trainer('ngp', opt, model, device=device, workspace=opt.workspace,
                           criterion=criterion, fp16=opt.fp16, metrics=[PSNRMeter()], use_checkpoint=opt.ckpt)
 
         # Update opt here with new
@@ -174,8 +177,8 @@ if __name__ == '__main__':
         def optimizer_model(model, state): return torch.optim.Adam(model.get_params(
             opt.lr, opt.lr_net, svd=state), betas=(0.9, 0.99), eps=1e-15)
 
-        def optimizer_cam_model(model_camera): return torch.optim.Adam(
-            model_camera.parameters(), betas=(0.9, 0.99), eps=1e-15)
+        # def optimizer_cam_model(model_camera): return torch.optim.Adam(
+        #     model_camera.parameters(), betas=(0.9, 0.99), eps=1e-15)
 
         train_loader = NeRFDataset(
             opt, device=device, type='train').dataloader()
@@ -184,7 +187,7 @@ if __name__ == '__main__':
         def scheduler(optimizer): return optim.lr_scheduler.LambdaLR(
             optimizer, lambda iter: 0.1 ** min(iter / opt.iters, 1))
 
-        trainer = Trainer('ngp', opt, model, model_camera=model_camera, device=device, workspace=opt.workspace, optimizer_model=optimizer_model, optimizer_cam_model=optimizer_cam_model, criterion=criterion, ema_decay=None,
+        trainer = Trainer('ngp', opt, model, device=device, workspace=opt.workspace, optimizer_model=optimizer_model, criterion=criterion, ema_decay=None,
                           fp16=opt.fp16, lr_scheduler=scheduler, scheduler_update_every_step=True, metrics=[PSNRMeter()], use_checkpoint=opt.ckpt, eval_interval=1)
 
         if opt.gui:

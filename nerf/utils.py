@@ -403,10 +403,10 @@ class Trainer(object):
                  name,  # name of this experiment
                  opt,  # extra conf
                  model,  # network
-                 model_camera=None,  # camera_network
+                 #  model_camera=None,  # camera_network
                  criterion=None,  # loss function, if None, assume inline implementation in train_step
                  optimizer_model=None,  # optimizer
-                 optimizer_cam_model=None,  # optimizer
+                 #  optimizer_cam_model=None,  # optimizer
                  ema_decay=None,  # if use EMA, set the decay
                  lr_scheduler=None,  # scheduler
                  # metrics for evaluation, if None, use val_loss to measure performance, else use the first metric.
@@ -451,17 +451,17 @@ class Trainer(object):
             f'cuda:{local_rank}' if torch.cuda.is_available() else 'cpu')
         self.console = Console()
         self.optimizer_func = optimizer_model
-        self.optimizer_cam_func = optimizer_cam_model
+        # self.optimizer_cam_func = optimizer_cam_model
         self.scheduler_func = lr_scheduler
 
         model.to(self.device)
-        model_camera.to(self.device)
+        # model_camera.to(self.device)
         if self.world_size > 1:
             model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
             model = torch.nn.parallel.DistributedDataParallel(
                 model, device_ids=[local_rank])
         self.model = model
-        self.model_camera = model_camera
+        # self.model_camera = model_camera
 
         if isinstance(criterion, nn.Module):
             criterion.to(self.device)
@@ -474,13 +474,13 @@ class Trainer(object):
             self.opt_state = "static"
             self.optimizer_model = optimizer_model(self.model, self.opt_state)
 
-        if optimizer_cam_model is None:
-            self.optimizer_cam_model = optim.Adam(self.model_camera.parameters(),
-                                                  lr=0.001, weight_decay=5e-4)  # naive adam
-        else:
-            print("self.model_camera.parameters(): {}".format(
-                self.model_camera.parameters()))
-            self.optimizer_cam_model = optimizer_cam_model(self.model_camera)
+        # if optimizer_cam_model is None:
+        #     self.optimizer_cam_model = optim.Adam(self.model_camera.parameters(),
+        #                                           lr=0.001, weight_decay=5e-4)  # naive adam
+        # else:
+        #     print("self.model_camera.parameters(): {}".format(
+        #         self.model_camera.parameters()))
+        #     self.optimizer_cam_model = optimizer_cam_model(self.model_camera)
 
         if lr_scheduler is None:
             self.lr_scheduler = optim.lr_scheduler.LambdaLR(
@@ -843,14 +843,14 @@ class Trainer(object):
             self.global_step += 1
 
             self.optimizer_model.zero_grad()
-            self.optimizer_cam_model.zero_grad()
+            # self.optimizer_cam_model.zero_grad()
 
             with torch.cuda.amp.autocast(enabled=self.fp16):
                 preds, truths, loss = self.train_step(data)
 
             self.scaler.scale(loss).backward()
             self.scaler.step(self.optimizer_model)
-            self.scaler.step(self.optimizer_cam_model)
+            # self.scaler.step(self.optimizer_cam_model)
             self.scaler.update()
 
             if self.scheduler_update_every_step:
@@ -942,9 +942,9 @@ class Trainer(object):
                 metric.clear()
 
         self.model.train()
-        self.model_camera.train()
+        # self.model_camera.train()
 
-        self.optimizer_cam_model = self.optimizer_cam_func(self.model_camera)
+        # self.optimizer_cam_model = self.optimizer_cam_func(self.model_camera)
 
         # distributedSampler: must call set_epoch() to shuffle indices across multiple epochs
         # ref: https://pytorch.org/docs/stable/data.html
@@ -1008,24 +1008,24 @@ class Trainer(object):
             self.global_step += 1
 
             self.optimizer_model.zero_grad()
-            self.optimizer_cam_model.zero_grad()
+            # self.optimizer_cam_model.zero_grad()
 
             with torch.cuda.amp.autocast(enabled=self.fp16):
                 preds, truths, loss = self.train_step(data)
 
-            print("optimizer_model: {}".format(self.optimizer_model))
-            print("optimizer_cam_model: {}".format(self.optimizer_cam_model))
+            # print("optimizer_model: {}".format(self.optimizer_model))
+            # rint("optimizer_cam_model: {}".format(self.optimizer_cam_model))
 
             self.scaler.scale(loss).backward()
-            print("\n\n\n model_parameters")
-            for p in self.model.parameters():
-                print(p.name, p.data, p.grad, p.is_leaf)
+            # print("\n\n\n model_parameters")
+            # for p in self.model.parameters():
+            #     print(p.name, p.data, p.grad, p.is_leaf)
 
-            print("\n\n\n model_camera_parameters")
-            for p in self.model_camera.parameters():
-                print(p.name, p.data, p.grad, p.is_leaf)
+            # print("\n\n\n model_camera_parameters")
+            # for p in self.model_camera.parameters():
+            #     print(p.name, p.data, p.grad, p.is_leaf)
             self.scaler.step(self.optimizer_model)
-            self.scaler.step(self.optimizer_cam_model)  # FIXME
+            # self.scaler.step(self.optimizer_cam_model)  # FIXME
             self.scaler.update()
 
             if self.scheduler_update_every_step:
