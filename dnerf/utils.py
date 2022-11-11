@@ -87,8 +87,8 @@ class Trainer(_Trainer):
             #     self.model_fxfy.named_parameters()))
 
             # assignments
-            self.intrinsics = fxfy_pred
-            self.poses = poses_pred
+            # self.intrinsics = fxfy_pred
+            # self.poses = poses_pred
             # self.poses[0, 0, 0] = poses_pred[0, 0]
             # self.poses = torch.unsqueeze(
             #     poses_pred, 0)  # [B, 4, 4]
