@@ -211,8 +211,12 @@ class NeRFNetwork(NeRFRenderer):
             sigma, rgbs, deform, blend, sf = self.run_dnerf(x, d, t)
             return sigma, rgbs, deform, blend, sf
         elif (svd == "camera"):
-            fxfy = self.run_fxfy_network(self.h, self.w)
-            pose = self.run_pose_network()
+            #fxfy = self.run_fxfy_network(self.h, self.w)
+            #pose = self.run_pose_network()
+            fxfy = nn.Parameter(torch.zeros(
+                size=(1, 2), dtype=torch.float32), requires_grad=True)
+            pose = nn.Parameter(torch.zeros(
+                size=(4, 4), dtype=torch.float32), requires_grad=True)
             return fxfy, pose
         else:
             raise Exception("Run NeRF in either `static` or `dynamic` mode")

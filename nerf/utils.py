@@ -24,6 +24,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 import torch.distributed as dist
 from torch.utils.data import Dataset, DataLoader
+from torch.optim.lr_scheduler import MultiStepLR
 
 import trimesh
 import mcubes
@@ -31,6 +32,40 @@ from rich.console import Console
 from torch_ema import ExponentialMovingAverage
 
 from packaging import version as pver
+
+# from dnerf.network_fxfy import LearnFocal
+# from dnerf.network_pose import LearnPose
+
+
+def plot_grad_flow(named_parameters):
+    '''Plots the gradients flowing through different layers in the net during training.
+    Can be used for checking for possible gradient vanishing / exploding problems.
+
+    Usage: Plug this function in Trainer class after loss.backwards() as 
+    "plot_grad_flow(self.model.named_parameters())" to visualize the gradient flow'''
+    ave_grads = []
+    max_grads = []
+    layers = []
+    for n, p in named_parameters:
+        if(p.requires_grad) and ("bias" not in n):
+            layers.append(n)
+            if (p.grad != None):
+                ave_grads.append(p.grad.abs().mean())
+            if (p.grad != None):
+                max_grads.append(p.grad.abs().max())
+    # plt.bar(np.arange(len(max_grads)), max_grads, alpha=0.1, lw=1, color="c")
+    # plt.bar(np.arange(len(max_grads)), ave_grads, alpha=0.1, lw=1, color="b")
+    # plt.hlines(0, 0, len(ave_grads)+1, lw=2, color="k")
+    # plt.xticks(range(0, len(ave_grads), 1), layers, rotation="vertical")
+    # plt.xlim(left=0, right=len(ave_grads))
+    # plt.ylim(bottom=-0.001, top=0.02)  # zoom in on the lower gradient regions
+    # plt.xlabel("Layers")
+    # plt.ylabel("average gradient")
+    # plt.title("Gradient flow")
+    # plt.grid(True)
+    # plt.legend([Line2D([0], [0], color="c", lw=4),
+    #             Line2D([0], [0], color="b", lw=4),
+    #             Line2D([0], [0], color="k", lw=4)], ['max-gradient', 'mean-gradient', 'zero-gradient'])
 
 
 def custom_meshgrid(*args):
@@ -77,167 +112,169 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, dynamic_iter=
     i, j = custom_meshgrid(torch.linspace(
         0, (W)-1, W, device=device), torch.linspace(0, (H)-1, H, device=device))
 
-    # print("i.shape: {}".format(i.shape))
+    # print("poses: {}".format(poses))
+    # print("device: {}".format(device))
+    # print("i (before): {}".format(i))
     # print("j.shape: {}".format(j.shape))
-
     i = i.t().reshape([1, H*W]).expand([B, H*W]) + 0.5
+    # print("i (after): {}".format(i))
     j = j.t().reshape([1, H*W]).expand([B, H*W]) + 0.5
 
     results = {}
 
-    if N > 0:
-        N = min(N, H*W)
+    # if N > 0:
+    #     N = min(N, H*W)
 
-        if error_map is None:
-            e = 0  # buffer
-            # N = 2*N  # FIXME
-            if (masks != None):
-                mask = masks[e:masks.shape[0]-e, 0].to(device)
+    #     if error_map is None:
+    #         e = 0  # buffer
+    #         # N = 2*N  # FIXME
+    #         if (masks != None):
+    #             mask = masks[e:masks.shape[0]-e, 0].to(device)
 
-                thresh = 0.0  # training threshold
-                coords_s = torch.where(mask < 0.5)[0]
-                coords_d = torch.where(mask >= thresh)[0]  # For training
-                coords_s_mask = torch.where(mask < 0.5)[0]
-                coords_d_mask = torch.where(mask >= 0.5)[0]  # For inference
-                # print("\ncoords_s: {}".format(coords_s))
-                # print("coords_d: {}".format(coords_d))
+    #             thresh = 0.0  # training threshold
+    #             coords_s = torch.where(mask < 0.5)[0]
+    #             coords_d = torch.where(mask >= thresh)[0]  # For training
+    #             coords_s_mask = torch.where(mask < 0.5)[0]
+    #             coords_d_mask = torch.where(mask >= 0.5)[0]  # For inference
+    #             # print("\ncoords_s: {}".format(coords_s))
+    #             # print("coords_d: {}".format(coords_d))
 
-                # inds = torch.cat([coords_s, coords_d], 0)
-                cond = np.array([key for key in dynamic_iters if dynamic_iter >= dynamic_iters[key][0] and dynamic_iter <
-                                 dynamic_iters[key][1]])
-                if ('d1' in cond or 'd2' in cond or 'd3' in cond or 'd4' in cond):
-                    # print("\n\n=======================================")
-                    # print(
-                    #     "DYNAMIC MODEL ACTIVATED!!! - (get_rays) - iter: {}".format(dynamic_iter))
-                    # print("=======================================\n\n")
-                    # if (coords_d.shape[-1]-1 >= N):
-                    inds_s = torch.randint(
-                        0, coords_s.shape[-1]-1, size=[0], device=device)  # may duplicate
-                    inds_d = torch.randint(
-                        0, coords_d.shape[-1]-1, size=[int(N)], device=device)  # may duplicate
-                    # else:
-                    #     inds_s = torch.randint(
-                    #         0, 10, size=[5], device=device)  # may duplicate
-                    #     inds_d = torch.randint(
-                    #         0, 10, size=[5], device=device)  # may duplicate
-                    #     coords_d = coords_s
+    #             # inds = torch.cat([coords_s, coords_d], 0)
+    #             cond = np.array([key for key in dynamic_iters if dynamic_iter >= dynamic_iters[key][0] and dynamic_iter <
+    #                              dynamic_iters[key][1]])
+    #             if ('d1' in cond or 'd2' in cond or 'd3' in cond or 'd4' in cond):
+    #                 # print("\n\n=======================================")
+    #                 # print(
+    #                 #     "DYNAMIC MODEL ACTIVATED!!! - (get_rays) - iter: {}".format(dynamic_iter))
+    #                 # print("=======================================\n\n")
+    #                 # if (coords_d.shape[-1]-1 >= N):
+    #                 inds_s = torch.randint(
+    #                     0, coords_s.shape[-1]-1, size=[0], device=device)  # may duplicate
+    #                 inds_d = torch.randint(
+    #                     0, coords_d.shape[-1]-1, size=[int(N)], device=device)  # may duplicate
+    #                 # else:
+    #                 #     inds_s = torch.randint(
+    #                 #         0, 10, size=[5], device=device)  # may duplicate
+    #                 #     inds_d = torch.randint(
+    #                 #         0, 10, size=[5], device=device)  # may duplicate
+    #                 #     coords_d = coords_s
 
-                    coords_s = coords_s[inds_s]
-                    coords_d = coords_d[inds_d]
-                    inds = torch.cat([coords_d], 0)
-                    results['inds_s'] = coords_s_mask
-                    results['inds_d'] = coords_d_mask
-                elif ('b1' in cond or 'b2' in cond or 'b3' in cond or 'b4' in cond):
-                    # print("\n\n=======================================")
-                    # print(
-                    #     "COMBINED MODEL ACTIVATED!!! - (get_rays) - iter: {}".format(dynamic_iter))
-                    # print("=======================================\n\n")
-                    inds_s = torch.randint(
-                        0, coords_s.shape[-1]-1, size=[int(N//2)], device=device)  # may duplicate
-                    inds_d = torch.randint(
-                        0, coords_d.shape[-1]-1, size=[int(N//2)], device=device)  # may duplicate
+    #                 coords_s = coords_s[inds_s]
+    #                 coords_d = coords_d[inds_d]
+    #                 inds = torch.cat([coords_d], 0)
+    #                 results['inds_s'] = coords_s_mask
+    #                 results['inds_d'] = coords_d_mask
+    #             elif ('b1' in cond or 'b2' in cond or 'b3' in cond or 'b4' in cond):
+    #                 # print("\n\n=======================================")
+    #                 # print(
+    #                 #     "COMBINED MODEL ACTIVATED!!! - (get_rays) - iter: {}".format(dynamic_iter))
+    #                 # print("=======================================\n\n")
+    #                 inds_s = torch.randint(
+    #                     0, coords_s.shape[-1]-1, size=[int(N//2)], device=device)  # may duplicate
+    #                 inds_d = torch.randint(
+    #                     0, coords_d.shape[-1]-1, size=[int(N//2)], device=device)  # may duplicate
 
-                    coords_s = coords_s[inds_s]
-                    coords_d = coords_d[inds_d]
-                    inds = torch.cat([coords_s, coords_d], 0)
+    #                 coords_s = coords_s[inds_s]
+    #                 coords_d = coords_d[inds_d]
+    #                 inds = torch.cat([coords_s, coords_d], 0)
 
-                    results['inds_s'] = coords_s_mask
-                    results['inds_d'] = coords_d_mask
+    #                 results['inds_s'] = coords_s_mask
+    #                 results['inds_d'] = coords_d_mask
 
-                    results["both"] = True
-                else:
-                    # print("\n\n=======================================")
-                    # print(
-                    #     "STATIC MODEL ACTIVATED!!! - (get_rays) - iter: {}".format(dynamic_iter))
-                    # print("=======================================\n\n")
-                    inds_s = torch.randint(
-                        0, coords_s.shape[-1]-1, size=[int(N)], device=device)  # may duplicate
-                    inds_d = torch.randint(
-                        0, coords_d.shape[-1]-1, size=[0], device=device)  # may duplicate
+    #                 results["both"] = True
+    #             else:
+    #                 # print("\n\n=======================================")
+    #                 # print(
+    #                 #     "STATIC MODEL ACTIVATED!!! - (get_rays) - iter: {}".format(dynamic_iter))
+    #                 # print("=======================================\n\n")
+    #                 inds_s = torch.randint(
+    #                     0, coords_s.shape[-1]-1, size=[int(N)], device=device)  # may duplicate
+    #                 inds_d = torch.randint(
+    #                     0, coords_d.shape[-1]-1, size=[0], device=device)  # may duplicate
 
-                    coords_s = coords_s[inds_s]
-                    coords_d = coords_d[inds_d]
-                    inds = torch.cat([coords_s], 0)
-                    results['inds_s'] = coords_s_mask
-                    results['inds_d'] = coords_d_mask
+    #                 coords_s = coords_s[inds_s]
+    #                 coords_d = coords_d[inds_d]
+    #                 inds = torch.cat([coords_s], 0)
+    #                 results['inds_s'] = coords_s_mask
+    #                 results['inds_d'] = coords_d_mask
 
-                    # print("\ncoords_s: {}".format(coords_s))
-                    # print("coords_d: {}".format(coords_d))
+    #                 # print("\ncoords_s: {}".format(coords_s))
+    #                 # print("coords_d: {}".format(coords_d))
 
-            else:
-                # sk_debug - Random from anaywhere on grid
-                # For dnerf datasets - not sure if required
-                inds = torch.randint(
-                    0, H*W, size=[N], device=device)  # may duplicate
-                results['inds_s'] = torch.Tensor([]).cuda()
-                results['inds_d'] = inds
+    #         else:
+    #             # sk_debug - Random from anaywhere on grid
+    #             # For dnerf datasets - not sure if required
+    #             inds = torch.randint(
+    #                 0, H*W, size=[N], device=device)  # may duplicate
+    #             results['inds_s'] = torch.Tensor([]).cuda()
+    #             results['inds_d'] = inds
 
-            inds = inds.expand([B, inds.shape[0]])
-        else:
+    #         inds = inds.expand([B, inds.shape[0]])
+    #     else:
 
-            # weighted sample on a low-reso grid
-            # [B, N], but in [0, 128*128)
-            inds_coarse = torch.multinomial(
-                error_map.to(device), N, replacement=False)
+    #         # weighted sample on a low-reso grid
+    #         # [B, N], but in [0, 128*128)
+    #         inds_coarse = torch.multinomial(
+    #             error_map.to(device), N, replacement=False)
 
-            # map to the original resolution with random perturb.
-            # `//` will throw a warning in torch 1.10... anyway.
-            inds_x, inds_y = inds_coarse // 128, inds_coarse % 128
-            sx, sy = H / 128, W / 128
-            inds_x = (inds_x * sx + torch.rand(B, N, device=device)
-                      * sx).long().clamp(max=H - 1)
-            inds_y = (inds_y * sy + torch.rand(B, N, device=device)
-                      * sy).long().clamp(max=W - 1)
-            inds = inds_x * W + inds_y
+    #         # map to the original resolution with random perturb.
+    #         # `//` will throw a warning in torch 1.10... anyway.
+    #         inds_x, inds_y = inds_coarse // 128, inds_coarse % 128
+    #         sx, sy = H / 128, W / 128
+    #         inds_x = (inds_x * sx + torch.rand(B, N, device=device)
+    #                   * sx).long().clamp(max=H - 1)
+    #         inds_y = (inds_y * sy + torch.rand(B, N, device=device)
+    #                   * sy).long().clamp(max=W - 1)
+    #         inds = inds_x * W + inds_y
 
-            # need this when updating error_map
-            results['inds_coarse'] = inds_coarse
+    #         # need this when updating error_map
+    #         results['inds_coarse'] = inds_coarse
 
-        # We're only using a very small set of points from
-        # our meshgrid
-        i = torch.gather(i, -1, inds)
-        j = torch.gather(j, -1, inds)
+    #     # We're only using a very small set of points from
+    #     # our meshgrid
+    #     i = torch.gather(i, -1, inds)
+    #     j = torch.gather(j, -1, inds)
 
-        results['inds'] = inds
+    #     results['inds'] = inds
 
-    else:
-        if (masks != None):
-            mask = masks[:masks.shape[0], 0].to(device)
+    # else:
+    #     if (masks != None):
+    #         mask = masks[:masks.shape[0], 0].to(device)
 
-            # print("0: {}".format(masks[:masks.shape[0], 0].mean()))
-            # print("1: {}".format(masks[:masks.shape[0], 1].mean()))
-            # print("2: {}".format(masks[:masks.shape[0], 2].mean()))
+    #         # print("0: {}".format(masks[:masks.shape[0], 0].mean()))
+    #         # print("1: {}".format(masks[:masks.shape[0], 1].mean()))
+    #         # print("2: {}".format(masks[:masks.shape[0], 2].mean()))
 
-            coords_s = torch.where(mask < 0.5)[0]
-            coords_d = torch.where(mask >= 0.5)[0]
+    #         coords_s = torch.where(mask < 0.5)[0]
+    #         coords_d = torch.where(mask >= 0.5)[0]
 
-            # no segmentation assistance
-            # coords_s = torch.randint(
-            #     0, coords_s.shape[-1]-1, size=[int(len(coords_s)+len(coords_d))], device=device)  # may duplicate
-            # coords_d = torch.randint(
-            #     0, coords_d.shape[-1]-1, size=[int(len(coords_s)+len(coords_d))], device=device)  # may duplicate
+    #         # no segmentation assistance
+    #         # coords_s = torch.randint(
+    #         #     0, coords_s.shape[-1]-1, size=[int(len(coords_s)+len(coords_d))], device=device)  # may duplicate
+    #         # coords_d = torch.randint(
+    #         #     0, coords_d.shape[-1]-1, size=[int(len(coords_s)+len(coords_d))], device=device)  # may duplicate
 
-            # segmentation assisted
-            inds = torch.cat([coords_s, coords_d], 0)
+    #         # segmentation assisted
+    #         inds = torch.cat([coords_s, coords_d], 0)
 
-            results['inds_s'] = coords_s
-            results['inds_d'] = coords_d
-            # inds = torch.cat([coords_d], 0)
+    #         results['inds_s'] = coords_s
+    #         results['inds_d'] = coords_d
+    #         # inds = torch.cat([coords_d], 0)
 
-        else:
-            # sk_debug - Random from anywhere on grid
-            coords_s = torch.randint(
-                0, H*W-1, size=[0], device=device)  # may duplicate
-            coords_d = torch.randint(
-                0, H*W-1, size=[H*W], device=device)  # may duplicate
+    #     else:
+    #         # sk_debug - Random from anywhere on grid
+    #         coords_s = torch.randint(
+    #             0, H*W-1, size=[0], device=device)  # may duplicate
+    #         coords_d = torch.randint(
+    #             0, H*W-1, size=[H*W], device=device)  # may duplicate
 
-            inds = torch.cat([coords_s, coords_d], 0)
+    #         inds = torch.cat([coords_s, coords_d], 0)
 
-            results['inds_s'] = coords_s
-            results['inds_d'] = coords_d
+    #         results['inds_s'] = coords_s
+    #         results['inds_d'] = coords_d
 
-        inds = torch.arange(H*W*MODELS, device=device).expand([B, H*W*MODELS])
-        results['inds'] = inds
+    # inds = torch.arange(H*W*MODELS, device=device).expand([B, H*W*MODELS])
+    # results['inds'] = inds
 
     zs = torch.ones_like(i)
     xs = (i - cx) / fx * zs
@@ -248,8 +285,27 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, dynamic_iter=
     rays_o = poses[..., :3, 3]  # [B, 3]
     rays_o = rays_o[..., None, :].expand_as(rays_d)  # [B, N, 3]
 
+    # print("\nxs.requires_grad: {}".format(xs.requires_grad))
+    # print("ys.requires_grad: {}".format(ys.requires_grad))
+    # print("zs.requires_grad: {}".format(zs.requires_grad))
+    # print("directions.requires_grad: {}".format(directions.requires_grad))
+    # print("rays_d.requires_grad: {}".format(rays_d.requires_grad))
+    # print("rays_o.requires_grad: {}".format(rays_o.requires_grad))
+    # print("poses.requires_grad: {}".format(poses.requires_grad))
+    # print("intrinsics.requires_grad: {}".format(intrinsics.requires_grad))
+    # print("fx.requires_grad: {}".format(fx.requires_grad))
+    # print("fy.requires_grad: {}".format(fy.requires_grad))
+    # print("rays_o: {}".format(rays_o))
+    # print("rays_d: {}".format(rays_d))
     # print("\nrays_o.shape: {}".format(rays_o.shape))
     # print("\nrays_d.shape: {}".format(rays_d.shape))
+
+    inds = torch.arange(4096, device=device).expand([B, 4096])
+    inds_s = torch.arange(4096, device=device).expand([B, 4096])
+    inds_d = torch.arange(4096, device=device).expand([B, 4096])
+    results['inds'] = inds
+    results['inds_s'] = inds_s
+    results['inds_d'] = inds_d
 
     results['rays_o'] = rays_o
     results['rays_d'] = rays_d
@@ -403,9 +459,13 @@ class Trainer(object):
                  name,  # name of this experiment
                  opt,  # extra conf
                  model,  # network
+                 model_fxfy,  # network
+                 model_pose,  # network
                  #  model_camera=None,  # camera_network
                  criterion=None,  # loss function, if None, assume inline implementation in train_step
                  optimizer_model=None,  # optimizer
+                 optimizer_fxfy=None,  # optimizer
+                 optimizer_pose=None,  # optimizer
                  #  optimizer_cam_model=None,  # optimizer
                  ema_decay=None,  # if use EMA, set the decay
                  lr_scheduler=None,  # scheduler
@@ -454,14 +514,22 @@ class Trainer(object):
         # self.optimizer_cam_func = optimizer_cam_model
         self.scheduler_func = lr_scheduler
 
-        model.to(self.device)
         # model_camera.to(self.device)
         if self.world_size > 1:
             model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
             model = torch.nn.parallel.DistributedDataParallel(
                 model, device_ids=[local_rank])
         self.model = model
+        self.model_fxfy = model_fxfy
+        self.model_pose = model_pose
+
+        # self.model_fxfy = LearnFocal(H=1080, W=1920).cuda()  # FIXME
+        # self.model_pose = LearnPose(num_cams=24).cuda()  # FIXME
         # self.model_camera = model_camera
+
+        self.model.to(self.device)
+        self.model_fxfy.to(self.device)
+        self.model_pose.to(self.device)
 
         if isinstance(criterion, nn.Module):
             criterion.to(self.device)
@@ -472,15 +540,13 @@ class Trainer(object):
                                               lr=0.001, weight_decay=5e-4)  # naive adam
         else:
             self.opt_state = "static"
-            self.optimizer_model = optimizer_model(self.model, self.opt_state)
+            self.optimizer_model = optimizer_model(
+                self.model, self.opt_state)
 
-        # if optimizer_cam_model is None:
-        #     self.optimizer_cam_model = optim.Adam(self.model_camera.parameters(),
-        #                                           lr=0.001, weight_decay=5e-4)  # naive adam
-        # else:
-        #     print("self.model_camera.parameters(): {}".format(
-        #         self.model_camera.parameters()))
-        #     self.optimizer_cam_model = optimizer_cam_model(self.model_camera)
+        self.optimizer_fxfy = optim.Adam(self.model_fxfy.parameters(),
+                                         lr=0.001, weight_decay=5e-4)  # naive adam
+        self.optimizer_pose = optim.Adam(self.model_pose.parameters(),
+                                         lr=0.001, weight_decay=5e-4)  # naive adam
 
         if lr_scheduler is None:
             self.lr_scheduler = optim.lr_scheduler.LambdaLR(
@@ -496,6 +562,11 @@ class Trainer(object):
             self.ema = None
 
         self.scaler = torch.cuda.amp.GradScaler(enabled=self.fp16)
+
+        self.scheduler_focal = MultiStepLR(
+            self.optimizer_fxfy, milestones=list(range(0, 10000, 100)), gamma=0.9)
+        self.scheduler_pose = MultiStepLR(
+            self.optimizer_pose, milestones=list(range(0, 10000, 100)), gamma=0.9)
 
         # variable init
         self.epoch = 0
@@ -843,13 +914,18 @@ class Trainer(object):
             self.global_step += 1
 
             self.optimizer_model.zero_grad()
+            self.optimizer_fxfy.zero_grad()
+            self.optimizer_pose.zero_grad()
             # self.optimizer_cam_model.zero_grad()
 
             with torch.cuda.amp.autocast(enabled=self.fp16):
                 preds, truths, loss = self.train_step(data)
 
             self.scaler.scale(loss).backward()
+
             self.scaler.step(self.optimizer_model)
+            self.scaler.step(self.optimizer_fxfy)
+            self.scaler.step(self.optimizer_pose)
             # self.scaler.step(self.optimizer_cam_model)
             self.scaler.update()
 
@@ -942,8 +1018,9 @@ class Trainer(object):
                 metric.clear()
 
         self.model.train()
+        self.model_fxfy.train()
+        self.model_pose.train()
         # self.model_camera.train()
-
         # self.optimizer_cam_model = self.optimizer_cam_func(self.model_camera)
 
         # distributedSampler: must call set_epoch() to shuffle indices across multiple epochs
@@ -975,9 +1052,9 @@ class Trainer(object):
                 self.model, self.opt_state)
             # self.lr_scheduler = self.scheduler_func(self.optimizer)
 
-            for name, param in self.model.named_parameters():
-                if param.requires_grad:
-                    print(name)
+            # for name, param in self.model.named_parameters():
+            #     if param.requires_grad:
+            #         print(name)
 
         elif (('b1' in cond or 'b2' in cond or 'b3' in cond or 'b4' in cond) and self.opt_state != "all"):
             # print("\n\n========================================")
@@ -1007,26 +1084,45 @@ class Trainer(object):
             self.local_step += 1
             self.global_step += 1
 
-            self.optimizer_model.zero_grad()
-            # self.optimizer_cam_model.zero_grad()
+            # self.optimizer_model.zero_grad()
+            # self.optimizer_fxfy.zero_grad()
+            # self.optimizer_pose.zero_grad()
 
             with torch.cuda.amp.autocast(enabled=self.fp16):
                 preds, truths, loss = self.train_step(data)
 
+            # plot_grad_flow(self.model.named_parameters())
+
             # print("optimizer_model: {}".format(self.optimizer_model))
-            # rint("optimizer_cam_model: {}".format(self.optimizer_cam_model))
+            # print("optimizer_cam_model: {}".format(self.optimizer_cam_model))
+
+            # # print("\n\n\n model_parameters")
+            # for p in self.model.parameters():
+            #     print(p.name, p.data, p.requires_grad, p.grad, p.is_leaf)
+
+            print("\n\n\n model_fxfy")
+            for p in self.model_fxfy.parameters():
+                print(p.name, p.data, p.requires_grad, p.grad, p.is_leaf)
 
             self.scaler.scale(loss).backward()
-            # print("\n\n\n model_parameters")
-            # for p in self.model.parameters():
-            #     print(p.name, p.data, p.grad, p.is_leaf)
 
-            # print("\n\n\n model_camera_parameters")
-            # for p in self.model_camera.parameters():
-            #     print(p.name, p.data, p.grad, p.is_leaf)
-            self.scaler.step(self.optimizer_model)
-            # self.scaler.step(self.optimizer_cam_model)  # FIXME
-            self.scaler.update()
+            # print("\n\n\n model_pose")
+            for p in self.model_pose.parameters():
+                print(p.name, p.data, p.grad, p.is_leaf)
+
+            # Results in nan/inf errors
+            # self.scaler.step(self.optimizer_model)
+            # self.scaler.step(self.optimizer_fxfy)
+            # self.scaler.step(self.optimizer_pose)
+
+            self.optimizer_model.step()
+            self.optimizer_fxfy.step()
+            # self.optimizer_pose.step()
+            self.optimizer_model.zero_grad()
+            self.optimizer_fxfy.zero_grad()
+            # self.optimizer_pose.zero_grad()
+
+            # self.scaler.update()
 
             if self.scheduler_update_every_step:
                 self.lr_scheduler.step()

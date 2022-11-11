@@ -118,6 +118,8 @@ if __name__ == '__main__':
     else:
         from dnerf.network import NeRFNetwork
         # from dnerf.network_camera import CameraNetwork
+        from dnerf.network_fxfy import LearnFocal
+        from dnerf.network_pose import LearnPose
 
     print(opt)
 
@@ -134,7 +136,8 @@ if __name__ == '__main__':
         w=opt.W,
         num_cams=24
     )
-
+    model_fxfy = LearnFocal(H=1080, W=1920).cuda()  # FIXME
+    model_pose = LearnPose(num_cams=24).cuda()  # FIXME
     # model_camera = CameraNetwork(opt.H, opt.W, num_cams=24)  # FIXME
     # send to provider for predicting int/ext camera params
     #opt.model_camera = model_camera
@@ -149,7 +152,7 @@ if __name__ == '__main__':
 
     if opt.test:
 
-        trainer = Trainer('ngp', opt, model, device=device, workspace=opt.workspace,
+        trainer = Trainer('ngp', opt, model, model_fxfy, model_pose, device=device, workspace=opt.workspace,
                           criterion=criterion, fp16=opt.fp16, metrics=[PSNRMeter()], use_checkpoint=opt.ckpt)
 
         # Update opt here with new
@@ -187,7 +190,7 @@ if __name__ == '__main__':
         def scheduler(optimizer): return optim.lr_scheduler.LambdaLR(
             optimizer, lambda iter: 0.1 ** min(iter / opt.iters, 1))
 
-        trainer = Trainer('ngp', opt, model, device=device, workspace=opt.workspace, optimizer_model=optimizer_model, criterion=criterion, ema_decay=None,
+        trainer = Trainer('ngp', opt, model, model_fxfy, model_pose, device=device, workspace=opt.workspace, optimizer_model=optimizer_model, criterion=criterion, ema_decay=None,
                           fp16=opt.fp16, lr_scheduler=scheduler, scheduler_update_every_step=True, metrics=[PSNRMeter()], use_checkpoint=opt.ckpt, eval_interval=1)
 
         if opt.gui:

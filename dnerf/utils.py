@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from nerf.utils import *
 from nerf.utils import Trainer as _Trainer
 from utils.run_nerf_helpers import *
+from torchviz import make_dot, make_dot_from_trace
 # from dnerf.network_camera import CameraNetwork # Sent in from main_dnerf
 
 
@@ -10,9 +11,12 @@ class Trainer(_Trainer):
                  name,  # name of this experiment
                  opt,  # extra conf
                  model,  # network
-                 #  model_camera,
+                 model_fxfy,
+                 model_pose,
                  criterion=None,  # loss function, if None, assume inline implementation in train_step
                  optimizer_model=None,  # optimizer
+                 optimizer_fxfy=None,  # optimizer
+                 optimizer_pose=None,  # optimizer
                  #  optimizer_cam_model=None,  # optimizer
                  ema_decay=None,  # if use EMA, set the decay
                  lr_scheduler=None,  # scheduler
@@ -39,7 +43,7 @@ class Trainer(_Trainer):
         self.optimizer_fn = optimizer_model
         self.lr_scheduler_fn = lr_scheduler
 
-        super().__init__(name, opt, model, criterion, optimizer_model, ema_decay, lr_scheduler, metrics, local_rank, world_size, device, mute, fp16, eval_interval,
+        super().__init__(name, opt, model, model_fxfy, model_pose, criterion, optimizer_model, optimizer_fxfy, optimizer_pose, ema_decay, lr_scheduler, metrics, local_rank, world_size, device, mute, fp16, eval_interval,
                          max_keep_ckpt, workspace, best_mode, use_loss_as_metric, report_metric_at_train, use_checkpoint, use_tensorboardX, scheduler_update_every_step)
 
     # ------------------------------
@@ -70,37 +74,58 @@ class Trainer(_Trainer):
         self.disp = data['disp']
 
         if (self.PRED_POSE):
-            print("\n\nPREDICTING POSES!\n\n")
+            # print("\n\nPREDICTING POSES!\n\n")
             poses_gt = self.poses
             intrinsics_gt = self.intrinsics
             # fxfy_pred, poses_pred = self.model_camera(self.index)
-            fxfy_pred, poses_pred = self.model(None, None, None, svd="camera")
+            # fxfy_pred, poses_pred = self.model(None, None, None, svd="camera")
+            fxfy_pred = self.model_fxfy()
+            poses_pred = self.model_pose(self.index)
             # print("fxfy: {}\nposes: {}".format(fxfy_pred, poses_pred))
 
-            # cpu -> gpu
-            self.intrinsics = torch.Tensor(
-                self.intrinsics).to(self.device)  # [B, 2]
-            # poses = torch.unsqueeze(poses_pred, 0).to(self.device)  # [B, 4, 4]
+            # make_dot(self.model_fxfy(), params=dict(
+            #     self.model_fxfy.named_parameters()))
+
+            # assignments
+            self.intrinsics = fxfy_pred
+            self.poses = poses_pred
+            # self.poses[0, 0, 0] = poses_pred[0, 0]
+            # self.poses = torch.unsqueeze(
+            #     poses_pred, 0)  # [B, 4, 4]
             # poses_pred = torch.unsqueeze(
             #     poses_pred, 0).to(self.device)  # [B, 4, 4]
 
-            # Assign intrinsics here
-            # self.intrinsics[:2] = fxfy_pred
+            # print()
+            # print("\nfxfy_actual: {}\nposes_actual:\n{}".format(
+            #     intrinsics_gt, poses_gt))
+            # # print("fxfy_pred: {} - poses_pred: {}".format(fxfy_pred, poses_pred))
+            # # print("\nfxfy_actual.shape: {}\nposes_actual.shape: {}\n".format(
+            # #     intrinsics_gt.shape, poses_gt.shape))
+            # print("\self.intrinsics: {}\nposes_new:\n{}".format(
+            #     self.intrinsics, poses_pred))
+            # # print(
+            # #     "\self.intrinsics.shape: {}\nposes_new.shape: {}\n".format(self.intrinsics, poses_pred.shape))
+            # print()
+            # print("\nfxfy_new: {}\nposes_new:\n{}".format(
+            #     fxfy_pred, poses_pred))
+            # # print(
+            # #     "\nfxfy_new.shape: {}\nposes_new.shape: {}\n".format(fxfy_pred.shape, poses_pred.shape))
+            # print()
 
+            print("\n\nfxfy_actual: {}".format(intrinsics_gt))
+            print("self.intrinsics: {}".format(self.intrinsics))
+            print("fxfy_new: {}".format(fxfy_pred))
             print()
-            print()
-            print("fxfy_actual: {}\nposes_actual: {}".format(
-                intrinsics_gt, poses_gt))
-            # print("fxfy_pred: {} - poses_pred: {}".format(fxfy_pred, poses_pred))
-            print("fxfy_actual.shape: {}\nposes_actual.shape: {}".format(
-                intrinsics_gt.shape, poses_gt.shape))
-            # print(
-            #     "fxfy_pred.shape: {} - poses_pred.shape: {}".format(fxfy.shape, poses_pred.shape))
-            print("fxfy_new: {}\nposes_new: {}".format(
-                fxfy_pred, poses_pred))
-            print(
-                "fxfy_new.shape: {}\nposes_new.shape: {}".format(fxfy_pred.shape, poses_pred.shape))
-            print()
+
+        # bypass rays for testing
+        # rays = {}
+        # rays["inds"] = torch.ones(1, 4096, dtype=torch.long).to(self.device)
+        # rays["inds_s"] = torch.ones(117280, dtype=torch.int16).to(self.device)
+        # rays["inds_d"] = torch.ones(12320, dtype=torch.int16).to(self.device)
+        # rays["rays_o"] = torch.ones(
+        #     1, 4096, 3, dtype=torch.float32).to(self.device)
+        # rays["rays_d"] = torch.ones(
+        #     1, 4096, 3, dtype=torch.float32).to(self.device)
 
         if self.TRAIN_FLAG:
             rays = get_rays(self.poses, self.intrinsics, self.H,
@@ -110,6 +135,16 @@ class Trainer(_Trainer):
                             self.W, self.masks_val, self.num_rays, self.error_map, self.DYNAMIC_ITER, self.DYNAMIC_ITERS)  # sk_debug - added masks
 
         # self.DYNAMIC_ITER += 1
+        # print("rays['inds'].shape: {}".format(rays["inds"].shape))
+        # print("rays['inds_s'].shape: {}".format(rays["inds_s"].shape))
+        # print("rays['inds_d'].shape: {}".format(rays["inds_d"].shape))
+        # print("rays['rays_o'].shape: {}".format(rays["rays_o"].shape))
+        # print("rays['rays_d'].shape: {}".format(rays["rays_d"].shape))
+        # print("rays['inds'].shape: {}".format(rays["inds"]))
+        # print("rays['inds_s'].shape: {}".format(rays["inds_s"]))
+        # print("rays['inds_d'].shape: {}".format(rays["inds_d"]))
+        # print("rays['rays_o'].shape: {}".format(rays["rays_o"]))
+        # print("rays['rays_d'].shape: {}".format(rays["rays_d"]))
 
         if ("inds_s" in rays and "inds_d" in rays):
             self.inds_s = rays["inds_s"]

@@ -49,6 +49,11 @@ class _near_far_from_aabb(Function):
 
         return nears, fars
 
+    @staticmethod
+    @custom_bwd
+    def backward(ctx, grad_nears, grad_fars):
+        return None, None, None, None
+
 
 near_far_from_aabb = _near_far_from_aabb.apply
 
@@ -82,6 +87,11 @@ class _sph_from_ray(Function):
         _backend.sph_from_ray(rays_o, rays_d, radius, N, coords)
 
         return coords
+
+    @staticmethod
+    @custom_bwd
+    def backward(ctx, grad_coords):
+        return None, None, None, None
 
 
 sph_from_ray = _sph_from_ray.apply
@@ -223,7 +233,7 @@ class _march_rays_train(Function):
         xyzs = torch.zeros(M, 3, dtype=rays_o.dtype, device=rays_o.device)
         dirs = torch.zeros(M, 3, dtype=rays_o.dtype, device=rays_o.device)
         deltas = torch.zeros(M, 2, dtype=rays_o.dtype, device=rays_o.device)
-        # id, offset, num_steps
+        # id, offset, num_stepsmarch_rays_train
         rays = torch.empty(N, 3, dtype=torch.int32, device=rays_o.device)
 
         if step_counter is None:
@@ -248,6 +258,11 @@ class _march_rays_train(Function):
             torch.cuda.empty_cache()
 
         return xyzs, dirs, deltas, rays
+
+    @staticmethod
+    @custom_bwd
+    def backward(ctx, grad_xyzs, grad_dirs, grad_deltas, grad_rays):
+        return None, None, None, None, None, None, None, None, None, None, None, None, None, None, None
 
 
 march_rays_train = _march_rays_train.apply
