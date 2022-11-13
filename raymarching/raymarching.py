@@ -44,6 +44,8 @@ class _near_far_from_aabb(Function):
         nears = torch.empty(N, dtype=rays_o.dtype, device=rays_o.device)
         fars = torch.empty(N, dtype=rays_o.dtype, device=rays_o.device)
 
+        ctx.save_for_backward(rays_o, rays_d)
+
         _backend.near_far_from_aabb(
             rays_o, rays_d, aabb, N, min_near, nears, fars)
 
@@ -52,7 +54,14 @@ class _near_far_from_aabb(Function):
     @staticmethod
     @custom_bwd
     def backward(ctx, grad_nears, grad_fars):
-        return None, None, None, None
+        # print("grad_nears.shape: {} - grad_fars.shape: {}".format(grad_nears.shape, grad_fars.shape))
+        # print("grad_nears: {} - grad_fars: {}".format(grad_nears, grad_fars))
+
+        rays_o, rays_d = ctx.saved_tensors
+        grad_nears = torch.ones_like(rays_o)
+        grad_fars = torch.ones_like(rays_d)
+
+        return grad_nears, grad_fars, None, None
 
 
 near_far_from_aabb = _near_far_from_aabb.apply
@@ -88,10 +97,11 @@ class _sph_from_ray(Function):
 
         return coords
 
-    @staticmethod
-    @custom_bwd
-    def backward(ctx, grad_coords):
-        return None, None, None, None
+    # @staticmethod
+    # @custom_bwd
+    # def backward(ctx, grad_coords):
+    #     print("grad_coords: {}".format(grad_coords))
+    #     return 1.0, None, None, None
 
 
 sph_from_ray = _sph_from_ray.apply
@@ -262,7 +272,15 @@ class _march_rays_train(Function):
     @staticmethod
     @custom_bwd
     def backward(ctx, grad_xyzs, grad_dirs, grad_deltas, grad_rays):
-        return None, None, None, None, None, None, None, None, None, None, None, None, None, None, None
+        # print("grad_xyzs: {} - grad_dirs: {} - grad_deltas: {} - grad_rays: {}".format(
+        #     grad_xyzs, grad_dirs, grad_deltas, grad_rays))
+        # print("grad_xyzs: {} - grad_dirs: {} - grad_deltas: {} - grad_rays: {}".format(
+        #     grad_xyzs.shape, grad_dirs.shape, grad_deltas.shape, grad_rays.shape))
+
+        # grad_sigmas = torch.zeros_like(sigmas)
+        grad_rays = torch.ones_like(grad_rays)
+
+        return grad_rays, None, None, None, None, None, None, None, None, None, None, None, None, None, None
 
 
 march_rays_train = _march_rays_train.apply

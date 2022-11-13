@@ -18,6 +18,6 @@ class LearnFocal(nn.Module):
     def forward(self):
         # order = 2, check our supplementary.
         #fxfy = torch.stack([self.fx**2 * self.W, self.fy**2 * self.H])
-        x = torch.stack([self.fx*self.W, self.fy*self.H, self.W, self.H])
+        x = torch.stack([self.fx**2*self.W, self.fy**2*self.H, self.W, self.H])
         fxfy = self.layer(x)
         return fxfy
