@@ -54,12 +54,14 @@ class _near_far_from_aabb(Function):
     @staticmethod
     @custom_bwd
     def backward(ctx, grad_nears, grad_fars):
-        # print("grad_nears.shape: {} - grad_fars.shape: {}".format(grad_nears.shape, grad_fars.shape))
-        # print("grad_nears: {} - grad_fars: {}".format(grad_nears, grad_fars))
+        # print("\n\ngrad_nears.shape: {} - grad_fars.shape: {}".format(grad_nears.shape, grad_fars.shape))
+        # print("grad_nears: {} - grad_fars: {}".format(grad_nears.mean(), grad_fars.mean()))
 
         rays_o, rays_d = ctx.saved_tensors
-        grad_nears = torch.ones_like(rays_o)
-        grad_fars = torch.ones_like(rays_d)
+        # grad_nears = torch.ones_like(rays_o)
+        # grad_fars = torch.ones_like(rays_d)
+        grad_nears = torch.stack(3 * [grad_nears], -1)
+        grad_fars = torch.stack(3 * [grad_fars], -1)
 
         return grad_nears, grad_fars, None, None
 
@@ -276,9 +278,11 @@ class _march_rays_train(Function):
         #     grad_xyzs, grad_dirs, grad_deltas, grad_rays))
         # print("grad_xyzs: {} - grad_dirs: {} - grad_deltas: {} - grad_rays: {}".format(
         #     grad_xyzs.shape, grad_dirs.shape, grad_deltas.shape, grad_rays.shape))
+        # print("xyzs: {} - dirs: {} - deltas: {} - rays: {}".format(
+        #     xyzs.shape, dirs.shape, deltas.shape, rays.shape))
 
         # grad_sigmas = torch.zeros_like(sigmas)
-        grad_rays = torch.ones_like(grad_rays)
+        # grad_rays = torch.ones_like(grad_rays)
 
         return grad_rays, None, None, None, None, None, None, None, None, None, None, None, None, None, None
 
@@ -338,6 +342,13 @@ class _composite_rays_train(Function):
 
         _backend.composite_rays_train_backward(
             grad_weights_sum, grad_image, sigmas, rgbs, deltas, rays, weights_sum, image, M, N, grad_sigmas, grad_rgbs)
+
+        # print("grad_weights_sum: {} - grad_depth: {} - grad_image: {}".format(
+        #     grad_weights_sum, grad_depth, grad_image))
+        # print("grad_weights_sum: {} - grad_depth: {} - grad_image: {}".format(
+        #     grad_weights_sum.shape, grad_depth.shape, grad_image.shape))
+        # print("grad_sigmas: {} - grad_rgbs: {}".format(
+        #     grad_sigmas.shape, grad_rgbs.shape))
 
         return grad_sigmas, grad_rgbs, None, None
 

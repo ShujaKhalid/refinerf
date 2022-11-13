@@ -88,7 +88,7 @@ class Trainer(_Trainer):
 
             # assignments
             self.intrinsics = fxfy_pred
-            self.poses = poses_pred
+            # self.poses = poses_pred
             # self.poses[0, 0, 0] = poses_pred[0, 0]
             # self.poses = torch.unsqueeze(
             #     poses_pred, 0)  # [B, 4, 4]
@@ -112,10 +112,9 @@ class Trainer(_Trainer):
             # #     "\nfxfy_new.shape: {}\nposes_new.shape: {}\n".format(fxfy_pred.shape, poses_pred.shape))
             # print()
 
-            # print("\n\nfxfy_actual: {}".format(intrinsics_gt))
-            # print("self.intrinsics: {}".format(self.intrinsics))
-            # print("fxfy_new: {}".format(fxfy_pred))
-            # print()
+            print("\n\nfxfy_actual: {}".format(intrinsics_gt))
+            print("self.intrinsics: {}".format(self.intrinsics))
+            print()
 
         # bypass rays for testing
         # rays = {}

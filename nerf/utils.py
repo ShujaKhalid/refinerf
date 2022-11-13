@@ -513,7 +513,7 @@ class Trainer(object):
                 self.model, self.opt_state)
 
         self.optimizer_fxfy = optim.Adam(self.model_fxfy.parameters(),
-                                         lr=0.001, weight_decay=5e-4)  # naive adam
+                                         lr=0.0001, weight_decay=5e-4)  # naive adam
         self.optimizer_pose = optim.Adam(self.model_pose.parameters(),
                                          lr=0.001, weight_decay=5e-4)  # naive adam
 
@@ -1069,9 +1069,9 @@ class Trainer(object):
             # for p in self.model.parameters():
             #     print(p.name, p.data, p.requires_grad, p.grad, p.is_leaf)
 
-            print("\n\n\n model_fxfy")
-            for p in self.model_fxfy.parameters():
-                print(p.name, p.data, p.requires_grad, p.grad, p.is_leaf)
+            # print("\n\n\n model_fxfy")
+            # for p in self.model_fxfy.parameters():
+            #     print(p.name, p.data, p.requires_grad, p.grad, p.is_leaf)
 
             self.scaler.scale(loss).backward()
 
@@ -1086,7 +1086,7 @@ class Trainer(object):
 
             self.optimizer_model.step()
             self.optimizer_fxfy.step()
-            self.optimizer_pose.step()
+            # self.optimizer_pose.step()
             # self.optimizer_model.zero_grad()
             # self.optimizer_fxfy.zero_grad()
             # self.optimizer_pose.zero_grad()
