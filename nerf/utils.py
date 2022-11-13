@@ -1065,19 +1065,19 @@ class Trainer(object):
             # print("optimizer_model: {}".format(self.optimizer_model))
             # print("optimizer_cam_model: {}".format(self.optimizer_cam_model))
 
-            # # print("\n\n\n model_parameters")
+            # print("\n\n\n model_parameters")
             # for p in self.model.parameters():
             #     print(p.name, p.data, p.requires_grad, p.grad, p.is_leaf)
 
-            # print("\n\n\n model_fxfy")
-            # for p in self.model_fxfy.parameters():
-            #     print(p.name, p.data, p.requires_grad, p.grad, p.is_leaf)
+            print("\n\n\n model_fxfy")
+            for p in self.model_fxfy.parameters():
+                print(p.name, p.data, p.requires_grad, p.grad, p.is_leaf)
 
             self.scaler.scale(loss).backward()
 
-            # print("\n\n\n model_pose")
-            for p in self.model_pose.parameters():
-                print(p.name, p.data, p.grad, p.is_leaf)
+            # # print("\n\n\n model_pose")
+            # for p in self.model_pose.parameters():
+            #     print(p.name, p.data, p.grad, p.is_leaf)
 
             # Results in nan/inf errors
             # self.scaler.step(self.optimizer_model)
