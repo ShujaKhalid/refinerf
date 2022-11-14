@@ -79,16 +79,18 @@ class Trainer(_Trainer):
             intrinsics_gt = self.intrinsics
             # fxfy_pred, poses_pred = self.model_camera(self.index)
             # fxfy_pred, poses_pred = self.model(None, None, None, svd="camera")
-            fxfy_pred = self.model_fxfy()
-            poses_pred = self.model_pose(self.index)
+
             # print("fxfy: {}\nposes: {}".format(fxfy_pred, poses_pred))
 
-            # make_dot(self.model_fxfy(), params=dict(
-            #     self.model_fxfy.named_parameters()))
-
             # assignments
-            self.intrinsics = fxfy_pred
-            # self.poses = poses_pred
+            INTRINSICS_FLAG = True
+            EXTRINSICS_FLAG = False
+            if (INTRINSICS_FLAG):
+                fxfy_pred = self.model_fxfy()
+                self.intrinsics = fxfy_pred
+            if (EXTRINSICS_FLAG):
+                poses_pred = self.model_pose(self.index)
+                self.poses = poses_pred
             # self.poses[0, 0, 0] = poses_pred[0, 0]
             # self.poses = torch.unsqueeze(
             #     poses_pred, 0)  # [B, 4, 4]

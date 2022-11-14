@@ -49,6 +49,11 @@ class _near_far_from_aabb(Function):
         _backend.near_far_from_aabb(
             rays_o, rays_d, aabb, N, min_near, nears, fars)
 
+        # print("nears: {}".format(nears))
+        # print("fars: {}".format(fars))
+        # print("nears.mean(): {}".format(nears.mean()))
+        # print("fars.mean(): {}".format(fars.mean()))
+
         return nears, fars
 
     @staticmethod
@@ -62,6 +67,8 @@ class _near_far_from_aabb(Function):
         # grad_fars = torch.ones_like(rays_d)
         grad_nears = torch.stack(3 * [grad_nears], -1)
         grad_fars = torch.stack(3 * [grad_fars], -1)
+
+        # print("grad_nears: {} - grad_fars: {}".format(grad_nears.mean(), grad_fars.mean()))
 
         return grad_nears, grad_fars, None, None
 
@@ -274,11 +281,13 @@ class _march_rays_train(Function):
     @staticmethod
     @custom_bwd
     def backward(ctx, grad_xyzs, grad_dirs, grad_deltas, grad_rays):
-        # print("grad_xyzs: {} - grad_dirs: {} - grad_deltas: {} - grad_rays: {}".format(
+        # print("\n\ngrad_xyzs: {} - grad_dirs: {} - grad_deltas: {} - grad_rays: {}".format(
         #     grad_xyzs, grad_dirs, grad_deltas, grad_rays))
-        # print("grad_xyzs: {} - grad_dirs: {} - grad_deltas: {} - grad_rays: {}".format(
+        # # print("\n\ngrad_xyzs: {} - grad_dirs: {} - grad_deltas: {} - grad_rays: {}".format(
+        # #     grad_xyzs.mean(), grad_dirs.mean(), grad_deltas.mean(), grad_rays.mean()))
+        # print("\n\ngrad_xyzs: {} - grad_dirs: {} - grad_deltas: {} - grad_rays: {}".format(
         #     grad_xyzs.shape, grad_dirs.shape, grad_deltas.shape, grad_rays.shape))
-        # print("xyzs: {} - dirs: {} - deltas: {} - rays: {}".format(
+        # print("\n\nxyzs: {} - dirs: {} - deltas: {} - rays: {}".format(
         #     xyzs.shape, dirs.shape, deltas.shape, rays.shape))
 
         # grad_sigmas = torch.zeros_like(sigmas)
