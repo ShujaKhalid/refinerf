@@ -62,7 +62,7 @@ class _near_far_from_aabb(Function):
         # print("\n\ngrad_nears.shape: {} - grad_fars.shape: {}".format(grad_nears.shape, grad_fars.shape))
         # print("grad_nears: {} - grad_fars: {}".format(grad_nears.mean(), grad_fars.mean()))
 
-        rays_o, rays_d = ctx.saved_tensors
+        # rays_o, rays_d = ctx.saved_tensors
         # grad_nears = torch.ones_like(rays_o)
         # grad_fars = torch.ones_like(rays_d)
         grad_nears = torch.stack(3 * [grad_nears], -1)
@@ -73,10 +73,6 @@ class _near_far_from_aabb(Function):
         grad_nears = torch.ones_like(grad_nears, dtype=torch.float32)
         grad_fars = torch.ones_like(grad_fars, dtype=torch.float32)
         # BABA
-        print("grad_nears")
-        print(grad_nears)
-        print("grad_fars")
-        print(grad_fars)
 
         return grad_nears, grad_fars, None, None
 
