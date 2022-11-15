@@ -16,15 +16,7 @@ def convert3x4_4x4(input):
     else:
         output = torch.cat([input, torch.tensor(
             [[0, 0, 0, 1]], dtype=input.dtype, device=input.device)], dim=0)  # (4, 4)
-    # else:
-    #     if len(input.shape) == 3:
-    #         output = np.concatenate(
-    #             [input, np.zeros_like(input[:, 0:1])], axis=1)  # (N, 4, 4)
-    #         output[:, 3, 3] = 1.0
-    #     else:
-    #         output = np.concatenate(
-    #             [input, np.array([[0, 0, 0, 1]], dtype=input.dtype)], axis=0)  # (4, 4)
-    #         output[3, 3] = 1.0
+
     return output
 
 

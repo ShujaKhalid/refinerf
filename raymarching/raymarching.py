@@ -70,6 +70,14 @@ class _near_far_from_aabb(Function):
 
         # print("grad_nears: {} - grad_fars: {}".format(grad_nears.mean(), grad_fars.mean()))
 
+        grad_nears = torch.ones_like(grad_nears, dtype=torch.float32)
+        grad_fars = torch.ones_like(grad_fars, dtype=torch.float32)
+        # BABA
+        print("grad_nears")
+        print(grad_nears)
+        print("grad_fars")
+        print(grad_fars)
+
         return grad_nears, grad_fars, None, None
 
 
@@ -289,9 +297,10 @@ class _march_rays_train(Function):
         #     grad_xyzs.shape, grad_dirs.shape, grad_deltas.shape, grad_rays.shape))
         # print("\n\nxyzs: {} - dirs: {} - deltas: {} - rays: {}".format(
         #     xyzs.shape, dirs.shape, deltas.shape, rays.shape))
-
+        # BABA
         # grad_sigmas = torch.zeros_like(sigmas)
         # grad_rays = torch.ones_like(grad_rays)
+        grad_rays = torch.ones_like(grad_rays, dtype=torch.float32)
 
         return grad_rays, None, None, None, None, None, None, None, None, None, None, None, None, None, None
 

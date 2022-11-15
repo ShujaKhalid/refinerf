@@ -513,7 +513,7 @@ class Trainer(object):
                 self.model, self.opt_state)
 
         self.optimizer_fxfy = optim.Adam(self.model_fxfy.parameters(),
-                                         lr=0.0001, weight_decay=5e-4)  # naive adam
+                                         lr=0.001, weight_decay=5e-4)  # naive adam
         self.optimizer_pose = optim.Adam(self.model_pose.parameters(),
                                          lr=0.001, weight_decay=5e-4)  # naive adam
 
@@ -1060,38 +1060,33 @@ class Trainer(object):
             with torch.cuda.amp.autocast(enabled=self.fp16):
                 preds, truths, loss = self.train_step(data)
 
-            # plot_grad_flow(self.model.named_parameters())
+            self.scaler.scale(loss).backward()
 
-            # print("optimizer_model: {}".format(self.optimizer_model))
-            # print("optimizer_cam_model: {}".format(self.optimizer_cam_model))
+            # Results in nan/inf errors
+            self.scaler.step(self.optimizer_model)
+            self.scaler.step(self.optimizer_fxfy)
+            # self.scaler.step(self.optimizer_pose)
+
+            # print("\n\n\n model_pose")
+            # for p in self.model_pose.parameters():
+            #     print(p.name, p.data, p.grad, p.is_leaf)
+
+            print("\n\n\n model_fxfy")
+            for p in self.model_fxfy.parameters():
+                print(p.name, p.data, p.requires_grad, p.grad, p.is_leaf)
+
+            self.scaler.update()
 
             # print("\n\n\n model_parameters")
             # for p in self.model.parameters():
             #     print(p.name, p.data, p.requires_grad, p.grad, p.is_leaf)
 
-            # print("\n\n\n model_fxfy")
-            # for p in self.model_fxfy.parameters():
-            #     print(p.name, p.data, p.requires_grad, p.grad, p.is_leaf)
-
-            self.scaler.scale(loss).backward()
-
-            # print("\n\n\n model_pose")
-            for p in self.model_pose.parameters():
-                print(p.name, p.data, p.grad, p.is_leaf)
-
-            # Results in nan/inf errors
-            # self.scaler.step(self.optimizer_model)
-            # self.scaler.step(self.optimizer_fxfy)
-            # self.scaler.step(self.optimizer_pose)
-
-            self.optimizer_model.step()
-            self.optimizer_fxfy.step()
+            # self.optimizer_model.step()
+            # self.optimizer_fxfy.step()
             # self.optimizer_pose.step()
             # self.optimizer_model.zero_grad()
             # self.optimizer_fxfy.zero_grad()
             # self.optimizer_pose.zero_grad()
-
-            # self.scaler.update()
 
             if self.scheduler_update_every_step:
                 self.lr_scheduler.step()
