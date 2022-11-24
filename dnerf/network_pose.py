@@ -67,9 +67,11 @@ class LearnPose(nn.Module):
         self.t = nn.Parameter(torch.zeros(
             size=(num_cams, 3), dtype=torch.float32), requires_grad=learn_t)  # (N, 3)
 
-        # test
-        self.c2w_test = torch.unsqueeze(
-            torch.eye(4, dtype=torch.float32), dim=0).cuda()  # (N, 3)
+        print("\n\n\nINITIALIZING\n\n\n")
+
+        # # test
+        # self.c2w_test = torch.unsqueeze(
+        #     torch.eye(4, dtype=torch.float32), dim=0).cuda()  # (N, 3)
 
     def forward(self, cam_id):
         r = torch.squeeze(self.r[cam_id])  # (3, ) axis-angle

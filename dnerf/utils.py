@@ -83,8 +83,8 @@ class Trainer(_Trainer):
             # print("fxfy: {}\nposes: {}".format(fxfy_pred, poses_pred))
 
             # assignments
-            INTRINSICS_FLAG = True
-            EXTRINSICS_FLAG = False
+            INTRINSICS_FLAG = False
+            EXTRINSICS_FLAG = True
             if (INTRINSICS_FLAG):
                 fxfy_pred = self.model_fxfy()
                 self.intrinsics = fxfy_pred
@@ -114,8 +114,12 @@ class Trainer(_Trainer):
             # #     "\nfxfy_new.shape: {}\nposes_new.shape: {}\n".format(fxfy_pred.shape, poses_pred.shape))
             # print()
 
+            # print("\n\nfxfy_actual: {}".format(intrinsics_gt))
+            # print("self.intrinsics: {}".format(self.intrinsics))
+            # print()
+
             print("\n\nfxfy_actual: {}".format(intrinsics_gt))
-            print("self.intrinsics: {}".format(self.intrinsics))
+            print("self.poses: {}".format(self.poses))
             print()
 
         # bypass rays for testing

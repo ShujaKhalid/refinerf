@@ -1064,16 +1064,16 @@ class Trainer(object):
 
             # Results in nan/inf errors
             self.scaler.step(self.optimizer_model)
-            self.scaler.step(self.optimizer_fxfy)
-            # self.scaler.step(self.optimizer_pose)
+            # self.scaler.step(self.optimizer_fxfy)
+            self.scaler.step(self.optimizer_pose)
 
             # print("\n\n\n model_pose")
             # for p in self.model_pose.parameters():
             #     print(p.name, p.data, p.grad, p.is_leaf)
 
-            print("\n\n\n model_fxfy")
-            for p in self.model_fxfy.parameters():
-                print(p.name, p.data, p.requires_grad, p.grad, p.is_leaf)
+            # print("\n\n\n model_fxfy")
+            # for p in self.model_fxfy.parameters():
+            #     print(p.name, p.data, p.requires_grad, p.grad, p.is_leaf)
 
             self.scaler.update()
 
