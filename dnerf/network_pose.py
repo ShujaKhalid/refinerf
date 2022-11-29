@@ -59,15 +59,13 @@ def make_c2w(r, t):
 
 
 class LearnPose(nn.Module):
-    def __init__(self, num_cams, learn_R=True, learn_t=True):
+    def __init__(self, num_cams, learn_R=False, learn_t=False):
         super(LearnPose, self).__init__()
         self.num_cams = num_cams
         self.r = nn.Parameter(torch.zeros(
             size=(num_cams, 3), dtype=torch.float32), requires_grad=learn_R)  # (N, 3)
         self.t = nn.Parameter(torch.zeros(
             size=(num_cams, 3), dtype=torch.float32), requires_grad=learn_t)  # (N, 3)
-
-        print("\n\n\nINITIALIZING\n\n\n")
 
         # # test
         # self.c2w_test = torch.unsqueeze(

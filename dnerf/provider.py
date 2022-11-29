@@ -309,8 +309,8 @@ class NeRFDataset:
 
         # [debug] uncomment to view examples of randomly generated poses.
         # visualize_poses(rand_poses(100, self.device, radius=self.radius).cpu().numpy())
-        self.FLOW_FLAG = True
-        self.PRED_POSE = True
+        self.FLOW_FLAG = False
+        self.PRED_POSE = False
         if (self.FLOW_FLAG):
             # TODO: ADD the additional pre-reqs here
             basedir = self.root_path
@@ -570,11 +570,11 @@ class NeRFDataset:
             'PRED_POSE': self.PRED_POSE,
             'TRAIN_FLAG': self.training,
             'images': self.images,
-            'masks': masks,
-            'all_masks': self.masks,
-            'masks_val': masks_val,
-            'all_masks_val': self.masks_val,
-            'disp': self.disp,
+            'masks': masks if self.FLOW_FLAG else None,
+            'all_masks': self.masks if self.FLOW_FLAG else None,
+            'masks_val': masks_val if self.FLOW_FLAG else None,
+            'all_masks_val': self.masks_val if self.FLOW_FLAG else None,
+            'disp': self.disp if self.FLOW_FLAG else None,
             # 'rays_o': rays['rays_o'],
             # 'rays_d': rays['rays_d'],
             # "inds_s": self.inds_s,

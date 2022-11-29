@@ -325,6 +325,14 @@ class NeRFRenderer(nn.Module):
             N_static = len(inds_s) if type(inds_s) != int else 0
             N_dynamic = len(inds_d) if type(inds_d) != int else 0
 
+            # # bypass (temporary fix)
+            # # dnerf vs. NVIDIA datasets
+            # if N_static == 0:
+            #     inds_d = inds_d[:len(inds_d)]
+            #     N_dynamic = N_dynamic
+            #     inds_s = inds_d
+            #     N_static = N_dynamic
+
             rays_o_s = rays_o[:N_static, :]
             rays_o_d = rays_o[-N_dynamic:, :]
             rays_d_s = rays_d[:N_static, :]
@@ -345,14 +353,14 @@ class NeRFRenderer(nn.Module):
             # no segmentation assistance
             # rend_s = 0
             # rend_d = [v for v in range(480*270)]
-            inds_s = [v for v in range(480*270)]
-            inds_d = [v for v in range(480*270)]
+            # inds_s = [v for v in range(480*270)]
+            # inds_d = [v for v in range(480*270)]
 
             # dNeRF (Bouncing_Balls)
             # rend_s = 0
             # rend_d = [v for v in range(800*800)]
-            # inds_s = [v for v in range(800*800)]
-            # inds_d = [v for v in range(800*800)]
+            inds_s = [v for v in range(800*800)]
+            inds_d = [v for v in range(800*800)]
 
             # custom (cholec80)
             # rend_s = 0

@@ -83,7 +83,7 @@ class Trainer(_Trainer):
             # print("fxfy: {}\nposes: {}".format(fxfy_pred, poses_pred))
 
             # assignments
-            INTRINSICS_FLAG = True
+            INTRINSICS_FLAG = False
             EXTRINSICS_FLAG = False
             if (INTRINSICS_FLAG):
                 fxfy_pred = self.model_fxfy()
@@ -113,15 +113,16 @@ class Trainer(_Trainer):
             # # print(
             # #     "\nfxfy_new.shape: {}\nposes_new.shape: {}\n".format(fxfy_pred.shape, poses_pred.shape))
             # print()
-            #self.intrinsics = [416.44504027, 429.45316301, 240, 125]
-
-            # print("\n\nfxfy_actual: {}".format(intrinsics_gt))
-            # print("self.intrinsics: {}".format(self.intrinsics))
-            # print()
+            # self.intrinsics = [416.44504027, 429.45316301, 240, 125]
+            #self.intrinsics = [1270, 640, 240, 125]
 
             print("\n\nfxfy_actual: {}".format(intrinsics_gt))
-            print("self.poses: {}".format(self.poses))
+            print("self.intrinsics: {}".format(self.intrinsics))
             print()
+
+            # print("\n\nfxfy_actual: {}".format(intrinsics_gt))
+            # print("self.poses: {}".format(self.poses))
+            # print()
 
         # bypass rays for testing
         # rays = {}
@@ -166,6 +167,8 @@ class Trainer(_Trainer):
 
         if (self.FLOW_FLAG):
             grid = self.grid[:, indices, :]
+        else:
+            grid = None
 
         results['rays_o'] = rays['rays_o']
         results['rays_d'] = rays['rays_d']

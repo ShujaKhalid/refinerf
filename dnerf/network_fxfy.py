@@ -58,7 +58,7 @@ class LearnFocal(nn.Module):
         # x = torch.stack([self.H, self.W, self.H_temp, self.W_temp])
         # x = torch.stack([self.H, self.W])
         # fxfy = self.layer1(x)
-        print("self.fact: {}".format(self.fact))
+        # print("self.fact: {}".format(self.fact))
         # fxfy = self.relu(fxfy)
         # fxfy = torch.stack([fxfy[0], -fxfy[1], self.W_temp, self.H_temp])
         fxfy = torch.stack([self.fx**2 * self.W,

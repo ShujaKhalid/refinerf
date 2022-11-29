@@ -175,8 +175,10 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, dynamic_iter=
                 # For dnerf datasets - not sure if required
                 inds = torch.randint(
                     0, H*W, size=[N], device=device)  # may duplicate
-                results['inds_s'] = torch.Tensor([]).cuda()
-                results['inds_d'] = inds
+                # results['inds_s'] = torch.Tensor([]).cuda()
+                # results['inds_d'] = inds
+                results['inds_s'] = inds
+                results['inds_d'] = torch.Tensor([]).cuda()
 
             inds = inds.expand([B, inds.shape[0]])
         else:
@@ -1064,7 +1066,7 @@ class Trainer(object):
 
             # Results in nan/inf errors
             self.scaler.step(self.optimizer_model)
-            self.scaler.step(self.optimizer_fxfy)
+            # self.scaler.step(self.optimizer_fxfy)
             # self.scaler.step(self.optimizer_pose)
 
             # print("\n\n\n model_fxfy")
@@ -1074,6 +1076,7 @@ class Trainer(object):
             # print("\n\n\n model_pose")
             # for p in self.model_pose.parameters():
             #     print(p.name, p.data, p.grad, p.is_leaf)
+            #     # break
 
             self.scaler.update()
 

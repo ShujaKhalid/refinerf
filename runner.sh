@@ -5,8 +5,8 @@ export CXX=/usr/bin/g++-10
 export CUDA_ROOT=/usr/local/cuda
 #export CUDA_HOME=/usr/local/cuda
 
-# DATASET_PATH="../datalake/dnerf/bouncingballs"
-# SCENE="bouncingballs"
+DATASET_PATH="../datalake/dnerf/bouncingballs"
+SCENE="bouncingballs"
 
 # DATASET_PATH="../datalake/dnerf/custom"
 # SCENE="DynamicFace-2" # IGNORE
@@ -18,14 +18,14 @@ export CUDA_ROOT=/usr/local/cuda
 # SCENE="Skating" #COLMAP: DONE & RECON: DONE 
 # SCENE="Balloon1" #COLMAP: DONE & RECON: DONE 
 # SCENE="Balloon2" #COLMAP: DONE & RECON: DONE 
-if [[ "$1" == "--run" && "$2" == "--stream" ]]
-then
-	SCENE=$2
-else
-	SCENE="Umbrella" #COLMAP: DONE & RECON: DONE 
-fi
+# if [[ "$1" == "--run" && "$2" == "--stream" ]]
+# then
+# 	SCENE=$2
+# else
+# 	SCENE="Umbrella" #COLMAP: DONE & RECON: DONE 
+# fi
 
-DATASET_PATH="/home/skhalid/Documents/datalake/dynamic_scene_data_full/nvidia_data_full/$SCENE/dense"
+# DATASET_PATH="/home/skhalid/Documents/datalake/dynamic_scene_data_full/nvidia_data_full/$SCENE/dense"
 
 
 # Run custom scene
