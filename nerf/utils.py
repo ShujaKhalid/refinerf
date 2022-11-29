@@ -100,13 +100,13 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, dynamic_iter=
             if (masks != None):
                 mask = masks[e:masks.shape[0]-e, 0].to(device)
 
-                thresh = 0.0  # training threshold
-                coords_s = torch.where(mask < 0.5)[0]
+                thresh = 0.5  # training threshold
+                coords_s = torch.where(mask < thresh)[0]
                 coords_d = torch.where(mask >= thresh)[0]  # For training
                 coords_s_mask = torch.where(mask < 0.5)[0]
                 coords_d_mask = torch.where(mask >= 0.5)[0]  # For inference
-                # print("\ncoords_s: {}".format(coords_s))
-                # print("coords_d: {}".format(coords_d))
+                #print("\ncoords_s: {}".format(coords_s))
+                #print("coords_d: {}".format(coords_d))
 
                 # inds = torch.cat([coords_s, coords_d], 0)
                 cond = np.array([key for key in dynamic_iters if dynamic_iter >= dynamic_iters[key][0] and dynamic_iter <
@@ -159,7 +159,7 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, dynamic_iter=
                     inds_s = torch.randint(
                         0, coords_s.shape[-1]-1, size=[int(N)], device=device)  # may duplicate
                     inds_d = torch.randint(
-                        0, coords_d.shape[-1]-1, size=[0], device=device)  # may duplicate
+                        0, 1, size=[0], device=device)  # may duplicate
 
                     coords_s = coords_s[inds_s]
                     coords_d = coords_d[inds_d]

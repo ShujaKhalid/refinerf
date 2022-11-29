@@ -116,9 +116,9 @@ class Trainer(_Trainer):
             # self.intrinsics = [416.44504027, 429.45316301, 240, 125]
             #self.intrinsics = [1270, 640, 240, 125]
 
-            print("\n\nfxfy_actual: {}".format(intrinsics_gt))
-            print("self.intrinsics: {}".format(self.intrinsics))
-            print()
+            # print("\n\nfxfy_actual: {}".format(intrinsics_gt))
+            # print("self.intrinsics: {}".format(self.intrinsics))
+            # print()
 
             # print("\n\nfxfy_actual: {}".format(intrinsics_gt))
             # print("self.poses: {}".format(self.poses))
@@ -168,7 +168,7 @@ class Trainer(_Trainer):
         if (self.FLOW_FLAG):
             grid = self.grid[:, indices, :]
         else:
-            grid = None
+            grid = self.grid
 
         results['rays_o'] = rays['rays_o']
         results['rays_d'] = rays['rays_d']
