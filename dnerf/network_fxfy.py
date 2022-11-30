@@ -23,6 +23,8 @@ class LearnFocal(nn.Module):
         #     W/2, dtype=torch.float32).cuda()
         self.fact = torch.round(
             self.W/self.H) if self.W >= self.H else torch.round(self.H/self.W)
+        if self.W == self.H:
+            self.fact *= 2
         self.W_temp = torch.tensor(
             self.W/self.fact, dtype=torch.float32).cuda()
         self.H_temp = torch.tensor(

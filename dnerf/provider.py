@@ -310,7 +310,7 @@ class NeRFDataset:
         # [debug] uncomment to view examples of randomly generated poses.
         # visualize_poses(rand_poses(100, self.device, radius=self.radius).cpu().numpy())
         self.FLOW_FLAG = True
-        self.PRED_POSE = False
+        self.PRED_POSE = True
         if (self.FLOW_FLAG):
             # TODO: ADD the additional pre-reqs here
             basedir = self.root_path
@@ -424,12 +424,12 @@ class NeRFDataset:
             i, j = np.meshgrid(np.arange(self.W, dtype=np.float32),
                                np.arange(self.H, dtype=np.float32), indexing='xy')
 
-            print("i.shape: {}".format(i.shape))
-            print("j.shape: {}".format(j.shape))
-            print("flows_b.shape: {}".format(flows_b.shape))
-            print("flows_f.shape: {}".format(flows_f.shape))
-            print("flow_masks_b.shape: {}".format(flow_masks_b.shape))
-            print("flow_masks_f.shape: {}".format(flow_masks_f.shape))
+            # print("i.shape: {}".format(i.shape))
+            # print("j.shape: {}".format(j.shape))
+            # print("flows_b.shape: {}".format(flows_b.shape))
+            # print("flows_f.shape: {}".format(flows_f.shape))
+            # print("flow_masks_b.shape: {}".format(flow_masks_b.shape))
+            # print("flow_masks_f.shape: {}".format(flow_masks_f.shape))
 
             self.grid = np.empty(
                 (len(self.images), self.H, self.W, 8), np.float32)
@@ -453,13 +453,13 @@ class NeRFDataset:
             self.flow_masks_f = flow_masks_f
             self.flows_b = flows_b
             self.flow_masks_b = flow_masks_b
-            print("self.grid.shape: {}".format(self.grid.shape))
-            print("imgs.shape: {}".format(imgs.shape))
-            print("disp.shape: {}".format(disp.shape))
-            print("flows_f.shape: {}".format(flows_f.shape))
-            print("flow_masks_f.shape: {}".format(flow_masks_f.shape))
-            print("flows_b.shape: {}".format(flows_b.shape))
-            print("flow_masks_b.shape: {}".format(flow_masks_b.shape))
+            # print("self.grid.shape: {}".format(self.grid.shape))
+            # print("imgs.shape: {}".format(imgs.shape))
+            # print("disp.shape: {}".format(disp.shape))
+            # print("flows_f.shape: {}".format(flows_f.shape))
+            # print("flow_masks_f.shape: {}".format(flow_masks_f.shape))
+            # print("flows_b.shape: {}".format(flows_b.shape))
+            # print("flow_masks_b.shape: {}".format(flow_masks_b.shape))
             self.masks = torch.Tensor(masks).to(self.device)
             self.masks_val = torch.Tensor(masks_val).to(self.device)
             self.disp = disp

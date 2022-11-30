@@ -1066,7 +1066,7 @@ class Trainer(object):
 
             # Results in nan/inf errors
             self.scaler.step(self.optimizer_model)
-            # self.scaler.step(self.optimizer_fxfy)
+            self.scaler.step(self.optimizer_fxfy)
             # self.scaler.step(self.optimizer_pose)
 
             # print("\n\n\n model_fxfy")

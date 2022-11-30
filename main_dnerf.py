@@ -136,7 +136,8 @@ if __name__ == '__main__':
         w=opt.W,
         num_cams=24
     )
-    model_fxfy = LearnFocal(H=270, W=480).cuda()  # FIXME
+    # model_fxfy = LearnFocal(H=270, W=480).cuda()  # FIXME
+    model_fxfy = LearnFocal(H=800, W=800).cuda()  # FIXME
     model_pose = LearnPose(num_cams=24).cuda()  # FIXME
     # model_camera = CameraNetwork(opt.H, opt.W, num_cams=24)  # FIXME
     # send to provider for predicting int/ext camera params
