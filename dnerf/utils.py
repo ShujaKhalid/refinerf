@@ -83,13 +83,13 @@ class Trainer(_Trainer):
             # print("fxfy: {}\nposes: {}".format(fxfy_pred, poses_pred))
 
             # assignments
-            INTRINSICS_FLAG = True
-            EXTRINSICS_FLAG = False
+            INTRINSICS_FLAG = False
+            EXTRINSICS_FLAG = True
             if (INTRINSICS_FLAG):
                 fxfy_pred = self.model_fxfy()
                 self.intrinsics = fxfy_pred
             if (EXTRINSICS_FLAG):
-                poses_pred = self.model_pose(self.index)
+                poses_pred = self.model_pose(self.index, poses_gt)
                 self.poses = poses_pred
             # self.poses[0, 0, 0] = poses_pred[0, 0]
             # self.poses = torch.unsqueeze(
@@ -116,9 +116,9 @@ class Trainer(_Trainer):
             # self.intrinsics = [416.44504027, 429.45316301, 240, 125]
             #self.intrinsics = [1270, 640, 240, 125]
 
-            print("\n\nfxfy_actual: {}".format(intrinsics_gt))
-            print("self.intrinsics: {}".format(self.intrinsics))
-            print()
+            # print("\n\nfxfy_actual: {}".format(intrinsics_gt))
+            # print("self.intrinsics: {}".format(self.intrinsics))
+            # print()
 
             # print("\n\nextrinsics_actual: {}".format(poses_gt))
             # print("self.poses: {}".format(self.poses))

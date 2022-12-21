@@ -77,7 +77,7 @@ class NeRFRenderer(nn.Module):
 
         self.bound = bound
         self.cascade = 1 + math.ceil(math.log2(bound))
-        self.time_size = 24  # FIXME 64
+        self.time_size = 64  # FIXME 64
         self.grid_size = 128  # FIXME 128
         self.density_scale = density_scale * 1  # TODO: used to be 1
         self.min_near = min_near
@@ -353,14 +353,14 @@ class NeRFRenderer(nn.Module):
             # no segmentation assistance
             # rend_s = 0
             # rend_d = [v for v in range(480*270)]
-            # inds_s = [v for v in range(480*270)]
-            # inds_d = [v for v in range(480*270)]
+            inds_s = [v for v in range(480*270)]
+            inds_d = [v for v in range(480*270)]
 
             # dNeRF (Bouncing_Balls)
             # rend_s = 0
             # rend_d = [v for v in range(800*800)]
-            inds_s = [v for v in range(800*800)]
-            inds_d = [v for v in range(800*800)]
+            # inds_s = [v for v in range(800*800)]
+            # inds_d = [v for v in range(800*800)]
 
             # custom (cholec80)
             # rend_s = 0
@@ -873,7 +873,9 @@ class NeRFRenderer(nn.Module):
                     (1 - weights_sum_d).unsqueeze(-1)[rend_d, :] * bg_color
 
                 image = image_d + (1 - weights_sum_d).unsqueeze(-1) * bg_color
+                # image = image_d_tmp
                 image = image_s_tmp + image_d_tmp
+                # image[image_s_tmp > 0] = 0
                 # FIXME: nears and fars are logically incorrect
                 depth = torch.clamp(depth_d - nears_d,
                                     min=0, max=1) / (fars_d - nears_d)

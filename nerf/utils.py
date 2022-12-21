@@ -98,15 +98,18 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, dynamic_iter=
             e = 0  # buffer
             # N = 2*N  # FIXME
             if (masks != None):
-                mask = masks[e:masks.shape[0]-e, 0].to(device)
+                #mask = masks[e:masks.shape[0]-e, -1].to(device)
+                # mask = torch.amax(masks, -1).to(device)
+                mask = masks.mean(1).to(device)
 
-                thresh = 0.5  # training threshold
-                coords_s = torch.where(mask < thresh)[0]
-                coords_d = torch.where(mask >= thresh)[0]  # For training
-                coords_s_mask = torch.where(mask < 0.5)[0]
-                coords_d_mask = torch.where(mask >= 0.5)[0]  # For inference
-                #print("\ncoords_s: {}".format(coords_s))
-                #print("coords_d: {}".format(coords_d))
+                thresh = 0.0  # training threshold
+                coords_s = torch.where(mask == thresh)[0]
+                coords_d = torch.where(mask > thresh)[0]  # For training
+                coords_s_mask = torch.where(mask == 0.0)[0]
+                coords_d_mask = torch.where(mask > 0.0)[0]  # For inference
+                # print("\ncoords_s: {}".format(coords_s))
+                # print("coords_d: {}".format(coords_d))
+                # print("mask.unique: {}".format(np.unique(mask.cpu().numpy())))
 
                 # inds = torch.cat([coords_s, coords_d], 0)
                 cond = np.array([key for key in dynamic_iters if dynamic_iter >= dynamic_iters[key][0] and dynamic_iter <
@@ -210,14 +213,16 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, dynamic_iter=
 
     else:
         if (masks != None):
-            mask = masks[:masks.shape[0], 0].to(device)
+            #mask = masks[e:masks.shape[0]-e, -1].to(device)
+            mask = masks.mean(1).to(device)
 
-            # print("0: {}".format(masks[:masks.shape[0], 0].mean()))
-            # print("1: {}".format(masks[:masks.shape[0], 1].mean()))
-            # print("2: {}".format(masks[:masks.shape[0], 2].mean()))
+            coords_s = torch.where(mask == 0.0)[0]
+            coords_d = torch.where(mask > 0.0)[0]
 
-            coords_s = torch.where(mask < 0.5)[0]
-            coords_d = torch.where(mask >= 0.5)[0]
+            # print("\n\ncoords_s.shape: {}".format(coords_s.shape))
+            # print("coords_d.shape: {}".format(coords_d.shape))
+            # print("mask.shape: {}".format(mask.shape))
+            # print("masks.shape: {}".format(masks.shape))
 
             # no segmentation assistance
             # coords_s = torch.randint(
@@ -517,7 +522,7 @@ class Trainer(object):
         self.optimizer_fxfy = optim.Adam(self.model_fxfy.parameters(),
                                          lr=0.01, weight_decay=5e-4)  # naive adam
         self.optimizer_pose = optim.Adam(self.model_pose.parameters(),
-                                         lr=0.001, weight_decay=5e-4)  # naive adam
+                                         lr=0.0001, weight_decay=5e-4)  # naive adam
 
         if lr_scheduler is None:
             self.lr_scheduler = optim.lr_scheduler.LambdaLR(
@@ -1065,9 +1070,16 @@ class Trainer(object):
             self.scaler.scale(loss).backward()
 
             # Results in nan/inf errors
+            # break
+
+            # print("local_step: {}".format(self.local_step))
+            # print("global_step: {}".format(self.global_step))
+
             self.scaler.step(self.optimizer_model)
-            self.scaler.step(self.optimizer_fxfy)
-            # self.scaler.step(self.optimizer_pose)
+            # self.scaler.step(self.optimizer_fxfy)
+            # TODO: Add to config
+            if (self.global_step <= 1200):
+                self.scaler.step(self.optimizer_pose)
 
             # print("\n\n\n model_fxfy")
             # for p in self.model_fxfy.parameters():
@@ -1076,7 +1088,6 @@ class Trainer(object):
             # print("\n\n\n model_pose")
             # for p in self.model_pose.parameters():
             #     print(p.name, p.data, p.grad, p.is_leaf)
-            #     # break
 
             self.scaler.update()
 

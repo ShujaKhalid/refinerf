@@ -12,8 +12,8 @@ from .renderer import NeRFRenderer
 class NeRFNetwork(NeRFRenderer):
     def __init__(self,
                  encoding="tiledgrid",  # tiledgrid
-                 encoding_dir="frequency",  # sphere_harmonics
-                 encoding_time="frequency",
+                 encoding_dir="sphere_harmonics",  # sphere_harmonics
+                 encoding_time="frequency",  # frequency
                  encoding_deform="frequency",  # "hashgrid" seems worse
                  encoding_bg="hashgrid",
                  num_layers=3,
@@ -24,7 +24,7 @@ class NeRFNetwork(NeRFRenderer):
                  num_layers_bg=2,
                  hidden_dim_bg=64,
                  # a deeper MLP is very necessary for performance.
-                 num_layers_deform=3,
+                 num_layers_deform=2,
                  hidden_dim_deform=128,
                  bound=1,
                  w=None,
