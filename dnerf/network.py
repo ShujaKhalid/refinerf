@@ -11,21 +11,22 @@ from .renderer import NeRFRenderer
 
 class NeRFNetwork(NeRFRenderer):
     def __init__(self,
-                 encoding="tiledgrid",  # tiledgrid
-                 encoding_dir="sphere_harmonics",  # sphere_harmonics
+                 encoding="tiledgrid",  # tiledgrid (position_encoding)
+                 # sphere_harmonics (direction_-encoding)
+                 encoding_dir="sphere_harmonics",
                  encoding_time="frequency",  # frequency
                  encoding_deform="frequency",  # "hashgrid" seems worse
                  encoding_bg="hashgrid",
                  num_layers=3,
                  hidden_dim=128,
                  geo_feat_dim=64,  # change me
-                 num_layers_color=4,
-                 hidden_dim_color=128,
+                 num_layers_color=8,
+                 hidden_dim_color=256,
                  num_layers_bg=2,
                  hidden_dim_bg=64,
                  # a deeper MLP is very necessary for performance.
-                 num_layers_deform=2,
-                 hidden_dim_deform=128,
+                 num_layers_deform=8,
+                 hidden_dim_deform=256,
                  bound=1,
                  w=None,
                  h=None,
@@ -58,14 +59,14 @@ class NeRFNetwork(NeRFRenderer):
         self.num_layers = num_layers
         self.hidden_dim = hidden_dim
         self.geo_feat_dim = geo_feat_dim
-        # self.encoder_s, self.in_dim_s = get_encoder(
-        #     encoding, desired_resolution=2048 * bound)
-        # self.encoder_d, self.in_dim_d = get_encoder(
-        #     encoding, desired_resolution=2048 * bound)
         self.encoder_s, self.in_dim_s = get_encoder(
-            encoding, multires=10)
+            encoding, desired_resolution=2048 * bound)
         self.encoder_d, self.in_dim_d = get_encoder(
-            encoding, multires=10)
+            encoding, desired_resolution=2048 * bound)
+        # self.encoder_s, self.in_dim_s = get_encoder(
+        #     encoding, multires=10)
+        # self.encoder_d, self.in_dim_d = get_encoder(
+        #     encoding, multires=10)
 
         sigma_s_net = []
         for l in range(num_layers):
@@ -86,12 +87,12 @@ class NeRFNetwork(NeRFRenderer):
         # color network ============================================
         self.num_layers_color = num_layers_color
         self.hidden_dim_color = hidden_dim_color
-        # self.encoder_dir_s, self.in_dim_dir_s = get_encoder(encoding_dir)
-        # self.encoder_dir_d, self.in_dim_dir_d = get_encoder(encoding_dir)
-        self.encoder_dir_s, self.in_dim_dir_s = get_encoder(
-            encoding_dir, multires=4)
-        self.encoder_dir_d, self.in_dim_dir_d = get_encoder(
-            encoding_dir, multires=4)
+        self.encoder_dir_s, self.in_dim_dir_s = get_encoder(encoding_dir)
+        self.encoder_dir_d, self.in_dim_dir_d = get_encoder(encoding_dir)
+        # self.encoder_dir_s, self.in_dim_dir_s = get_encoder(
+        #     encoding_dir, multires=4)
+        # self.encoder_dir_d, self.in_dim_dir_d = get_encoder(
+        #     encoding_dir, multires=4)
 
         color_s_net = []
         for l in range(num_layers_color):
@@ -274,7 +275,10 @@ class NeRFNetwork(NeRFRenderer):
             if l != self.num_layers_deform - 1:
                 deform = F.relu(deform, inplace=True)
 
-        x_def = x + deform  # FIXME: x + deform
+        # print(x)
+        # print()
+        # print(deform)
+        x_def = deform.float()  # FIXME: x + deform
 
         # sigma
         x_def = self.encoder_d(x_def, bound=self.bound)
