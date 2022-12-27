@@ -23,3 +23,6 @@ volsdf/
 tensorf/
 **tensorf*
 *tfevents*
+
+*run/*
+
