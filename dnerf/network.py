@@ -288,14 +288,14 @@ class NeRFNetwork(NeRFRenderer):
         # print(deform)
         x_def = deform.float()  # FIXME: x + deform
         # x_def = x + deform  # FIXME: x + deform
-        print("\nx_def.shape: {}".format(x_def.shape))
+        # print("\nx_def.shape: {}".format(x_def.shape))
 
         # sigma
         # x_def = self.encoder_d(x_def, bound=self.bound)
         x_def = self.encoder_deform(x_def, bound=4096*self.bound)
-        print("x_def.shape: {}".format(x_def.shape))
-        print("enc_ori_x.shape: {}".format(enc_ori_x.shape))
-        print("enc_t.shape: {}".format(enc_t.shape))
+        # print("x_def.shape: {}".format(x_def.shape))
+        # print("enc_ori_x.shape: {}".format(enc_ori_x.shape))
+        # print("enc_t.shape: {}".format(enc_t.shape))
         # TODO: Added -> confirm
         if (len(x.shape) == 3):
             h = torch.cat([x_def, enc_ori_x, enc_t], dim=-1)
