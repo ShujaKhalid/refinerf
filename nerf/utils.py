@@ -1078,8 +1078,8 @@ class Trainer(object):
             self.scaler.step(self.optimizer_model)
             # self.scaler.step(self.optimizer_fxfy)
             # TODO: Add to config
-            if (self.global_step <= 1200):
-                self.scaler.step(self.optimizer_pose)
+            # if (self.global_step <= 1200):
+            #     self.scaler.step(self.optimizer_pose)
 
             # print("\n\n\n model_fxfy")
             # for p in self.model_fxfy.parameters():

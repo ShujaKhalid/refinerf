@@ -84,7 +84,7 @@ class Trainer(_Trainer):
 
             # assignments
             INTRINSICS_FLAG = False
-            EXTRINSICS_FLAG = True
+            EXTRINSICS_FLAG = False
             if (INTRINSICS_FLAG):
                 fxfy_pred = self.model_fxfy()
                 self.intrinsics = fxfy_pred

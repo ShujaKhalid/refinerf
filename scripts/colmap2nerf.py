@@ -108,7 +108,7 @@ def run_ffmpeg_images(args):
     max_imgs = 120
     MULTI_IMG_TRN = False
     args.MULTI_IMG_TRN = MULTI_IMG_TRN
-    LARGE_DATASET_TRN = True  # 24 images to train
+    LARGE_DATASET_TRN = False  # 24 images to train
 
     if (args.mode == "train"):
         new_loc = base + "images_scaled"
@@ -223,51 +223,54 @@ def run_ffmpeg_images(args):
                 #print("cmd: {}".format(cmd))
                 os.system(cmd)
 
-            # Use existing validation masks
-            query_loc = "/home/skhalid/Documents/datalake/dynamic_scene_data_full_bkp/nvidia_data_full/" + \
-                prod+"/dense/"
-            query_loc_val = "/home/skhalid/Documents/datalake/dynamic_scene_data_full/nvidia_data_full/" + \
-                prod+"/dense/"
-            query_loc_imgs = query_loc + "mv_images"
-            query_loc_masks = query_loc + "mv_masks"
-            query_loc_val_masks = query_loc_val + "motion_masks_val/"
+            if (LARGE_DATASET_TRN):  # 24 images
+                # Use existing validation masks
+                query_loc = "/home/skhalid/Documents/datalake/dynamic_scene_data_full_bkp/nvidia_data_full/" + \
+                    prod+"/dense/"
+                query_loc_val = "/home/skhalid/Documents/datalake/dynamic_scene_data_full/nvidia_data_full/" + \
+                    prod+"/dense/"
+                query_loc_imgs = query_loc + "mv_images"
+                query_loc_masks = query_loc + "mv_masks"
+                query_loc_val_masks = query_loc_val + "motion_masks_val/"
 
-            # gt
-            # COMMENT TO KEEP OLD GT
-            folders = glob.glob(query_loc_imgs+"/*")
-            print("prod: {}".format(prod))
-            print("query_loc: {}".format(query_loc))
-            print("folders: {}".format(folders))
-            folders.sort()
-            for indx, folder in enumerate(folders[:24]):
-                pose = 0
-                files = glob.glob(folder+"/*.jpg")
-                files.sort()
-                file = files[pose]
-                # fn = "v000t0"+str(indx).zfill(2)+".jpg"
-                fn = "v0"+str(pose).zfill(2)+"_t0"+str(indx).zfill(2)+".png"
-                # fn = file.split("/")[-1]
-                cmd = "ffmpeg -i "+file+" -vf scale=" + \
-                    str(args.W)+":"+str(args.H) + " " + trn_base + "/" + fn
-                print("cmd: {}".format(cmd))
-                os.system(cmd)
+                # gt
+                # COMMENT TO KEEP OLD GT
+                folders = glob.glob(query_loc_imgs+"/*")
+                print("prod: {}".format(prod))
+                print("query_loc: {}".format(query_loc))
+                print("folders: {}".format(folders))
+                folders.sort()
+                for indx, folder in enumerate(folders[:24]):
+                    pose = 0
+                    files = glob.glob(folder+"/*.jpg")
+                    files.sort()
+                    file = files[pose]
+                    # fn = "v000t0"+str(indx).zfill(2)+".jpg"
+                    fn = "v0"+str(pose).zfill(2)+"_t0" + \
+                        str(indx).zfill(2)+".png"
+                    # fn = file.split("/")[-1]
+                    cmd = "ffmpeg -i "+file+" -vf scale=" + \
+                        str(args.W)+":"+str(args.H) + " " + trn_base + "/" + fn
+                    print("cmd: {}".format(cmd))
+                    os.system(cmd)
 
-            # masks
-            folders_masks = glob.glob(query_loc_masks+"/*")
-            folders_masks.sort()
-            os.system("mkdir -p "+query_loc_val_masks)
+                # masks
+                folders_masks = glob.glob(query_loc_masks+"/*")
+                folders_masks.sort()
+                os.system("mkdir -p "+query_loc_val_masks)
 
-            for indx, folder in enumerate(folders_masks[:24]):
-                files = glob.glob(folder+"/*.png")
-                files.sort()
-                file = files[0]
-                # fn = "v000t0"+str(indx).zfill(2)+".jpg"
-                fn = "000"+str(indx).zfill(2)+".png"
-                # fn = file.split("/")[-1]
-                cmd = "ffmpeg -i "+file+" -vf scale=" + \
-                    str(args.W)+":"+str(args.H) + " " + query_loc_val_masks+fn
-                print("cmd: {}".format(cmd))
-                os.system(cmd)
+                for indx, folder in enumerate(folders_masks[:24]):
+                    files = glob.glob(folder+"/*.png")
+                    files.sort()
+                    file = files[0]
+                    # fn = "v000t0"+str(indx).zfill(2)+".jpg"
+                    fn = "000"+str(indx).zfill(2)+".png"
+                    # fn = file.split("/")[-1]
+                    cmd = "ffmpeg -i "+file+" -vf scale=" + \
+                        str(args.W)+":"+str(args.H) + \
+                        " " + query_loc_val_masks+fn
+                    print("cmd: {}".format(cmd))
+                    os.system(cmd)
 
             args.images = new_loc
         elif (args.dataset == "custom"):
@@ -306,7 +309,7 @@ def run_colmap(args):
         # f"colmap feature_extractor --ImageReader.camera_model OPENCV --SiftExtraction.estimate_affine_shape {flag_EAS} --SiftExtraction.domain_size_pooling {flag_EAS} --ImageReader.single_camera 1 --SiftExtraction.max_num_features 100000 --database_path {db} --image_path {images}")
         f"colmap feature_extractor --ImageReader.camera_model OPENCV --SiftExtraction.estimate_affine_shape {flag_EAS} --SiftExtraction.domain_size_pooling {flag_EAS} --ImageReader.single_camera 1 --database_path {db} --image_path {images}")
     do_system(
-        f"colmap {args.colmap_matcher}_matcher --SiftMatching.guided_matching {flag_EAS} --SiftMatching.confidence 0.1 --database_path {db}")
+        f"colmap {args.colmap_matcher}_matcher --SiftMatching.guided_matching {flag_EAS} --SiftMatching.confidence 0.99 --database_path {db}")
     try:
         shutil.rmtree(sparse)
     except:
@@ -505,6 +508,9 @@ if __name__ == "__main__":
                 name = '_'.join(elems[9:])
                 full_name = os.path.join(args.images, name)
                 rel_name = full_name[len(root_dir) + 1:]
+                rel_name_trn = rel_name.replace("images", "images_scaled")
+                print("\nfull_name: {}".format(full_name))
+                print("\rel_name_trn: {}".format(rel_name_trn))
 
                 # if (args.MULTI_IMG_TRN):
                 #     # sk_debug <======================================
@@ -543,7 +549,7 @@ if __name__ == "__main__":
                 up += c2w[0:3, 1]
 
                 frame = {
-                    "file_path": rel_name[1:] if args.mode == "val" else rel_name,
+                    "file_path": rel_name[1:] if args.mode == "val" else rel_name_trn,
                     "sharpness": b,
                     "transform_matrix": c2w
                 }
