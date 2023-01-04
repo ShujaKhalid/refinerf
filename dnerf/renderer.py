@@ -351,8 +351,8 @@ class NeRFRenderer(nn.Module):
             rend_s = kwargs['inds_s']
             rend_d = kwargs['inds_d']
             # no segmentation assistance
-            # rend_s = 0
-            # rend_d = [v for v in range(480*270)]
+            rend_s = 0
+            rend_d = [v for v in range(480*270)]
             inds_s = [v for v in range(480*270)]
             inds_d = [v for v in range(480*270)]
 

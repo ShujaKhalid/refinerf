@@ -23,7 +23,7 @@ if [[ "$1" == "--run" && "$2" == "--stream" ]]
 then
 	SCENE=$2
 else
-	SCENE="Playground" #COLMAP: DONE & RECON: DONE 
+	SCENE="Umbrella" #COLMAP: DONE & RECON: DONE 
 fi
 
 DATASET_PATH="/home/skhalid/Documents/datalake/dynamic_scene_data_full/nvidia_data_full/$SCENE/dense"
@@ -129,16 +129,16 @@ then
 
 	# train
 # 	echo "===> TRAINING!!!"
-	# python utils/generate_depth.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_MIDAS --input_folder images_colmap --output_folder disp --output_img_folder disp_img 
-	# python utils/generate_flow.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_RAFT --input_folder images_colmap --output_folder flow --output_img_folder flow_img 
-# 	# # python utils/generate_motion_mask.py --dataset_path $DATASET_PATH --input_folder images_colmap --output_sem_mask_folder semantic_mask --output_mot_seg_folder motion_segmentation --output_mot_mask_folder motion_masks
+	python utils/generate_depth.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_MIDAS --input_folder images_colmap --output_folder disp --output_img_folder disp_img 
+	python utils/generate_flow.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_RAFT --input_folder images_colmap --output_folder flow --output_img_folder flow_img 
+	python utils/generate_motion_mask.py --dataset_path $DATASET_PATH --input_folder images_colmap --output_sem_mask_folder semantic_mask --output_mot_seg_folder motion_segmentation --output_mot_mask_folder motion_masks
 
 # 	# val
 # 	echo "===> VALIDATING!!!"
-	# python utils/generate_depth.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_MIDAS --input_folder val --output_folder disp_val --output_img_folder disp_img_val 
-	# python utils/generate_flow.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_RAFT --input_folder val --output_folder flow_val --output_img_folder flow_img_val 
-# 	# python utils/generate_motion_mask.py --dataset_path $DATASET_PATH --input_folder val --output_sem_mask_folder semantic_mask_val \
-# 	#   	--output_mot_seg_folder motion_segmentation_val --output_mot_mask_folder motion_masks_val
+	python utils/generate_depth.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_MIDAS --input_folder val --output_folder disp_val --output_img_folder disp_img_val 
+	python utils/generate_flow.py --dataset_path $DATASET_PATH$CASE --model $WEIGHTS_RAFT --input_folder val --output_folder flow_val --output_img_folder flow_img_val 
+	python utils/generate_motion_mask.py --dataset_path $DATASET_PATH --input_folder val --output_sem_mask_folder semantic_mask_val \
+	  	--output_mot_seg_folder motion_segmentation_val --output_mot_mask_folder motion_masks_val
 fi
 
 if [[ "$1" == "--run" || "$2" == "--run" || "$3" == "--run"  ]]

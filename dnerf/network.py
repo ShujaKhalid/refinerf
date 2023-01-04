@@ -59,14 +59,17 @@ class NeRFNetwork(NeRFRenderer):
         self.num_layers = num_layers
         self.hidden_dim = hidden_dim
         self.geo_feat_dim = geo_feat_dim
-        self.encoder_s, self.in_dim_s = get_encoder(
-            encoding, desired_resolution=4096 * bound)
-        self.encoder_d, self.in_dim_d = get_encoder(
-            encoding, desired_resolution=4096 * bound)
-        # self.encoder_s, self.in_dim_s = get_encoder(
-        #     encoding, multires=10)
-        # self.encoder_d, self.in_dim_d = get_encoder(
-        #     encoding, multires=10)
+
+        if (encoding == "hashgrid" or encoding == "tiledgrid"):
+            self.encoder_s, self.in_dim_s = get_encoder(
+                encoding, desired_resolution=4096 * bound)
+            self.encoder_d, self.in_dim_d = get_encoder(
+                encoding, desired_resolution=4096 * bound)
+        else:
+            self.encoder_s, self.in_dim_s = get_encoder(
+                encoding, multires=10)
+            self.encoder_d, self.in_dim_d = get_encoder(
+                encoding, multires=10)
 
         sigma_s_net = []
         for l in range(num_layers):
@@ -87,12 +90,15 @@ class NeRFNetwork(NeRFRenderer):
         # color network ============================================
         self.num_layers_color = num_layers_color
         self.hidden_dim_color = hidden_dim_color
-        self.encoder_dir_s, self.in_dim_dir_s = get_encoder(encoding_dir)
-        self.encoder_dir_d, self.in_dim_dir_d = get_encoder(encoding_dir)
-        # self.encoder_dir_s, self.in_dim_dir_s = get_encoder(
-        #     encoding_dir, multires=4)
-        # self.encoder_dir_d, self.in_dim_dir_d = get_encoder(
-        #     encoding_dir, multires=4)
+
+        if (encoding_dir == "hashgrid" or encoding_dir == "tiledgrid"):
+            self.encoder_dir_s, self.in_dim_dir_s = get_encoder(encoding_dir)
+            self.encoder_dir_d, self.in_dim_dir_d = get_encoder(encoding_dir)
+        else:
+            self.encoder_dir_s, self.in_dim_dir_s = get_encoder(
+                encoding_dir, multires=4)
+            self.encoder_dir_d, self.in_dim_dir_d = get_encoder(
+                encoding_dir, multires=4)
 
         color_s_net = []
         for l in range(num_layers_color):
@@ -130,15 +136,19 @@ class NeRFNetwork(NeRFRenderer):
         self.num_layers_deform = num_layers_deform
         self.hidden_dim_deform = hidden_dim_deform
 
-        # self.encoder_deform, self.in_dim_deform = get_encoder(
-        #     encoding_deform, desired_resolution=4096 * bound)
-        # self.encoder_time, self.in_dim_time = get_encoder(
-        #     encoding_time, desired_resolution=4096 * bound)
+        if (encoding_deform == "hashgrid" or encoding_deform == "tiledgrid"):
+            self.encoder_deform, self.in_dim_deform = get_encoder(
+                encoding_deform, desired_resolution=4096 * bound)
+        else:
+            self.encoder_deform, self.in_dim_deform = get_encoder(
+                encoding_deform, multires=10)  # FIXME: used to be 10
 
-        self.encoder_deform, self.in_dim_deform = get_encoder(
-            encoding_deform, multires=3)  # FIXME: used to be 10
-        self.encoder_time, self.in_dim_time = get_encoder(
-            encoding_time, input_dim=1, multires=0)  # FIXME: used to be 6
+        if (encoding_time == "hashgrid" or encoding_time == "tiledgrid"):
+            self.encoder_time, self.in_dim_time = get_encoder(
+                encoding_time, desired_resolution=4096 * bound)
+        else:
+            self.encoder_time, self.in_dim_time = get_encoder(
+                encoding_time, input_dim=1, multires=6)  # FIXME: used to be 6
 
         # print("\nin_dim_deform: {}".format(self.in_dim_deform))
         # print("in_dim_time: {}".format(self.in_dim_time))
@@ -417,75 +427,75 @@ class NeRFNetwork(NeRFRenderer):
 
         return rgbs
 
-    def vec2skew(self, v):
-        """
-        :param v:  (3, ) torch tensor
-        :return:   (3, 3)
-        """
-        zero = torch.zeros(1, dtype=torch.float32, device=v.device)
-        skew_v0 = torch.cat([zero,    -v[2:3],   v[1:2]])  # (3, 1)
-        skew_v1 = torch.cat([v[2:3],   zero,    -v[0:1]])
-        skew_v2 = torch.cat([-v[1:2],   v[0:1],   zero])
-        skew_v = torch.stack([skew_v0, skew_v1, skew_v2], dim=0)  # (3, 3)
-        return skew_v  # (3, 3)
+    # def vec2skew(self, v):
+    #     """
+    #     :param v:  (3, ) torch tensor
+    #     :return:   (3, 3)
+    #     """
+    #     zero = torch.zeros(1, dtype=torch.float32, device=v.device)
+    #     skew_v0 = torch.cat([zero,    -v[2:3],   v[1:2]])  # (3, 1)
+    #     skew_v1 = torch.cat([v[2:3],   zero,    -v[0:1]])
+    #     skew_v2 = torch.cat([-v[1:2],   v[0:1],   zero])
+    #     skew_v = torch.stack([skew_v0, skew_v1, skew_v2], dim=0)  # (3, 3)
+    #     return skew_v  # (3, 3)
 
-    def Exp(self, r):
-        """so(3) vector to SO(3) matrix
-        :param r: (3, ) axis-angle, torch tensor
-        :return:  (3, 3)
-        """
-        skew_r = self.vec2skew(r)  # (3, 3)
-        norm_r = r.norm() + 1e-15
-        eye = torch.eye(3, dtype=torch.float32, device=r.device)
-        R = eye + (torch.sin(norm_r) / norm_r) * skew_r + \
-            ((1 - torch.cos(norm_r)) / norm_r**2) * (skew_r @ skew_r)
-        return R
+    # def Exp(self, r):
+    #     """so(3) vector to SO(3) matrix
+    #     :param r: (3, ) axis-angle, torch tensor
+    #     :return:  (3, 3)
+    #     """
+    #     skew_r = self.vec2skew(r)  # (3, 3)
+    #     norm_r = r.norm() + 1e-15
+    #     eye = torch.eye(3, dtype=torch.float32, device=r.device)
+    #     R = eye + (torch.sin(norm_r) / norm_r) * skew_r + \
+    #         ((1 - torch.cos(norm_r)) / norm_r**2) * (skew_r @ skew_r)
+    #     return R
 
-    def make_c2w(self, r, t):
-        """
-        :param r:  (3, ) axis-angle             torch tensor
-        :param t:  (3, ) translation vector     torch tensor
-        :return:   (4, 4)
-        """
-        R = self.Exp(r)  # (3, 3)
-        c2w = torch.cat([R, t.unsqueeze(1)], dim=1)  # (3, 4)
-        c2w = self.convert3x4_4x4(c2w)  # (4, 4)
-        return c2w
+    # def make_c2w(self, r, t):
+    #     """
+    #     :param r:  (3, ) axis-angle             torch tensor
+    #     :param t:  (3, ) translation vector     torch tensor
+    #     :return:   (4, 4)
+    #     """
+    #     R = self.Exp(r)  # (3, 3)
+    #     c2w = torch.cat([R, t.unsqueeze(1)], dim=1)  # (3, 4)
+    #     c2w = self.convert3x4_4x4(c2w)  # (4, 4)
+    #     return c2w
 
-    def run_pose_network(self, cam_id=0):
-        r = torch.squeeze(self.r[cam_id])  # (3, ) axis-angle
-        t = torch.squeeze(self.t[cam_id])  # (3, )
+    # def run_pose_network(self, cam_id=0):
+    #     r = torch.squeeze(self.r[cam_id])  # (3, ) axis-angle
+    #     t = torch.squeeze(self.t[cam_id])  # (3, )
 
-        c2w = self.make_c2w(r, t)  # (4, 4)
-        return c2w
+    #     c2w = self.make_c2w(r, t)  # (4, 4)
+    #     return c2w
 
-    def run_fxfy_network(self, h, w):
-        fxfy = torch.stack([self.fx**2 * w, self.fy**2 * h])
-        return fxfy
+    # def run_fxfy_network(self, h, w):
+    #     fxfy = torch.stack([self.fx**2 * w, self.fy**2 * h])
+    #     return fxfy
 
-    def convert3x4_4x4(self, input):
-        """
-        :param input:  (N, 3, 4) or (3, 4) torch or np
-        :return:       (N, 4, 4) or (4, 4) torch or np
-        """
-        if torch.is_tensor(input):
-            if len(input.shape) == 3:
-                output = torch.cat([input, torch.zeros_like(
-                    input[:, 0:1])], dim=1)  # (N, 4, 4)
-                output[:, 3, 3] = 1.0
-            else:
-                output = torch.cat([input, torch.tensor(
-                    [[0, 0, 0, 1]], dtype=input.dtype, device=input.device)], dim=0)  # (4, 4)
-        else:
-            if len(input.shape) == 3:
-                output = np.concatenate(
-                    [input, np.zeros_like(input[:, 0:1])], axis=1)  # (N, 4, 4)
-                output[:, 3, 3] = 1.0
-            else:
-                output = np.concatenate(
-                    [input, np.array([[0, 0, 0, 1]], dtype=input.dtype)], axis=0)  # (4, 4)
-                output[3, 3] = 1.0
-        return output
+    # def convert3x4_4x4(self, input):
+    #     """
+    #     :param input:  (N, 3, 4) or (3, 4) torch or np
+    #     :return:       (N, 4, 4) or (4, 4) torch or np
+    #     """
+    #     if torch.is_tensor(input):
+    #         if len(input.shape) == 3:
+    #             output = torch.cat([input, torch.zeros_like(
+    #                 input[:, 0:1])], dim=1)  # (N, 4, 4)
+    #             output[:, 3, 3] = 1.0
+    #         else:
+    #             output = torch.cat([input, torch.tensor(
+    #                 [[0, 0, 0, 1]], dtype=input.dtype, device=input.device)], dim=0)  # (4, 4)
+    #     else:
+    #         if len(input.shape) == 3:
+    #             output = np.concatenate(
+    #                 [input, np.zeros_like(input[:, 0:1])], axis=1)  # (N, 4, 4)
+    #             output[:, 3, 3] = 1.0
+    #         else:
+    #             output = np.concatenate(
+    #                 [input, np.array([[0, 0, 0, 1]], dtype=input.dtype)], axis=0)  # (4, 4)
+    #             output[3, 3] = 1.0
+    #     return output
 
     # optimizer utils
     def get_params(self, lr, lr_net, svd):
