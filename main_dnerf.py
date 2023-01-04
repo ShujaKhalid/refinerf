@@ -30,7 +30,7 @@ if __name__ == '__main__':
     parser.add_argument('--lr_net', type=float, default=1e-3,  # 1e-3
                         help="initial learning rate")
     parser.add_argument('--ckpt', type=str, default='latest')
-    parser.add_argument('--num_rays', type=int, default=1024,
+    parser.add_argument('--num_rays', type=int, default=4096,
                         help="num rays sampled per image for each training step")
     parser.add_argument('--cuda_ray', action='store_true',
                         help="use CUDA raymarching instead of pytorch")
@@ -136,9 +136,10 @@ if __name__ == '__main__':
         w=opt.W,
         num_cams=24
     )
-    # model_fxfy = LearnFocal(H=270, W=480).cuda()  # FIXME
-    model_fxfy = LearnFocal(H=800, W=800).cuda()  # FIXME
-    model_pose = LearnPose(num_cams=150).cuda()  # FIXME
+    model_fxfy = LearnFocal(H=270, W=480).cuda()  # FIXME
+    model_pose = LearnPose(num_cams=24).cuda()  # FIXME
+    # model_fxfy = LearnFocal(H=800, W=800).cuda()  # FIXME
+    # model_pose = LearnPose(num_cams=150).cuda()  # FIXME
     # model_camera = CameraNetwork(opt.H, opt.W, num_cams=24)  # FIXME
     # send to provider for predicting int/ext camera params
     #opt.model_camera = model_camera

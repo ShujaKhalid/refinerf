@@ -23,7 +23,7 @@ if [[ "$1" == "--run" && "$2" == "--stream" ]]
 then
 	SCENE=$2
 else
-	SCENE="Umbrella" #COLMAP: DONE & RECON: DONE 
+	SCENE="Playground" #COLMAP: DONE & RECON: DONE 
 fi
 
 DATASET_PATH="/home/skhalid/Documents/datalake/dynamic_scene_data_full/nvidia_data_full/$SCENE/dense"
