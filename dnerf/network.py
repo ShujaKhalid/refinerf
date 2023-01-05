@@ -17,15 +17,15 @@ class NeRFNetwork(NeRFRenderer):
                  encoding_time="frequency",  # frequency
                  encoding_deform="frequency",  # "hashgrid" seems worse
                  encoding_bg="hashgrid",
-                 num_layers=4,
-                 hidden_dim=128,
-                 geo_feat_dim=16,  # change me
-                 num_layers_color=4,
-                 hidden_dim_color=128,
+                 num_layers=2,
+                 hidden_dim=256,
+                 geo_feat_dim=64,  # change me
+                 num_layers_color=3,
+                 hidden_dim_color=256,
                  num_layers_bg=2,
                  hidden_dim_bg=64,
                  # a deeper MLP is very necessary for performance.
-                 num_layers_deform=8,
+                 num_layers_deform=4,
                  hidden_dim_deform=128,
                  bound=1,
                  w=None,
@@ -73,11 +73,16 @@ class NeRFNetwork(NeRFRenderer):
         self.encoder_deform = 3
         self.encoder_time = 0
 
-        if (encoding == "hashgrid" or encoding == "tiledgrid"):
+        if (encoding == "hashgrid"):
             self.encoder_s, self.in_dim_s = get_encoder(
                 encoding, desired_resolution=self.encoder_s_fact*bound)
             self.encoder_d, self.in_dim_d = get_encoder(
                 encoding, desired_resolution=self.encoder_d_fact*bound)
+        elif (encoding == "tiledgrid"):
+            self.encoder_s, self.in_dim_s = get_encoder(
+                encoding, multires=10)
+            self.encoder_d, self.in_dim_d = get_encoder(
+                encoding, multires=10)
         else:
             self.encoder_s, self.in_dim_s = get_encoder(
                 encoding, multires=10)
