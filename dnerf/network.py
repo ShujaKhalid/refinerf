@@ -15,7 +15,7 @@ class NeRFNetwork(NeRFRenderer):
                  # sphere_harmonics (direction_-encoding)
                  encoding_dir="sphere_harmonics",
                  encoding_time="frequency",  # frequency
-                 encoding_deform="frequency",  # "hashgrid" seems worse
+                 encoding_deform="tiledgrid",  # "hashgrid" seems worse
                  encoding_bg="hashgrid",
                  num_layers=2,
                  hidden_dim=256,
@@ -25,8 +25,8 @@ class NeRFNetwork(NeRFRenderer):
                  num_layers_bg=2,
                  hidden_dim_bg=64,
                  # a deeper MLP is very necessary for performance.
-                 num_layers_deform=4,
-                 hidden_dim_deform=128,
+                 num_layers_deform=3,
+                 hidden_dim_deform=256,
                  bound=1,
                  w=None,
                  h=None,
@@ -64,11 +64,11 @@ class NeRFNetwork(NeRFRenderer):
         # Frequency encoding
         # ==================
         # static
-        self.encoder_s_fact = 4096
-        self.encoder_dir_s_fact = 4
+        self.encoder_s_fact = 10   # 10 works
+        self.encoder_dir_s_fact = 4  # 10 works
         # dynamic
-        self.encoder_d_fact = 1024
-        self.encoder_dir_d_fact = 10
+        self.encoder_d_fact = 10   # 10 works
+        self.encoder_dir_d_fact = 4  # 10 works
         self.encoder_d_constant = 1
         self.encoder_deform = 3
         self.encoder_time = 0
@@ -80,9 +80,9 @@ class NeRFNetwork(NeRFRenderer):
                 encoding, desired_resolution=self.encoder_d_fact*bound)
         elif (encoding == "tiledgrid"):
             self.encoder_s, self.in_dim_s = get_encoder(
-                encoding, multires=10)
+                encoding, multires=self.encoder_s_fact)
             self.encoder_d, self.in_dim_d = get_encoder(
-                encoding, multires=10)
+                encoding, multires=self.encoder_d_fact)
         else:
             self.encoder_s, self.in_dim_s = get_encoder(
                 encoding, multires=10)
@@ -109,11 +109,16 @@ class NeRFNetwork(NeRFRenderer):
         self.num_layers_color = num_layers_color
         self.hidden_dim_color = hidden_dim_color
 
-        if (encoding_dir == "hashgrid" or encoding_dir == "tiledgrid"):
+        if (encoding_dir == "hashgrid"):
             self.encoder_dir_s, self.in_dim_dir_s = get_encoder(
                 encoding_dir, degree=self.encoder_dir_s_fact)
             self.encoder_dir_d, self.in_dim_dir_d = get_encoder(
                 encoding_dir, degree=self.encoder_dir_d_fact)
+        elif (encoding_dir == "tiledgrid"):
+            self.encoder_dir_s, self.in_dim_dir_s = get_encoder(
+                encoding_dir, multires=self.encoder_dir_s_fact)
+            self.encoder_dir_d, self.in_dim_dir_d = get_encoder(
+                encoding_dir, multires=self.encoder_dir_d_fact)
         else:
             self.encoder_dir_s, self.in_dim_dir_s = get_encoder(
                 encoding_dir, multires=4)
@@ -156,16 +161,22 @@ class NeRFNetwork(NeRFRenderer):
         self.num_layers_deform = num_layers_deform
         self.hidden_dim_deform = hidden_dim_deform
 
-        if (encoding_deform == "hashgrid" or encoding_deform == "tiledgrid"):
+        if (encoding_deform == "hashgrid"):
             self.encoder_deform, self.in_dim_deform = get_encoder(
                 encoding_deform, desired_resolution=bound)
+        elif (encoding_deform == "tiledgrid"):
+            self.encoder_deform, self.in_dim_deform = get_encoder(
+                encoding_deform, multires=self.encoder_deform)  # FIXME: used to be 10
         else:
             self.encoder_deform, self.in_dim_deform = get_encoder(
                 encoding_deform, multires=self.encoder_deform)  # FIXME: used to be 10
 
-        if (encoding_time == "hashgrid" or encoding_time == "tiledgrid"):
+        if (encoding_time == "hashgrid"):
             self.encoder_time, self.in_dim_time = get_encoder(
                 encoding_time, desired_resolution=bound)
+        elif (encoding_time == "tiledgrid"):
+            self.encoder_time, self.in_dim_time = get_encoder(
+                encoding_time, input_dim=1, multires=self.encoder_time)  # FIXME: used to be 6
         else:
             self.encoder_time, self.in_dim_time = get_encoder(
                 encoding_time, input_dim=1, multires=self.encoder_time)  # FIXME: used to be 6
