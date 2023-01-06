@@ -108,7 +108,7 @@ def run_ffmpeg_images(args):
     max_imgs = 120
     MULTI_IMG_TRN = False
     args.MULTI_IMG_TRN = MULTI_IMG_TRN
-    LARGE_DATASET_TRN = False  # 24 images to train
+    LARGE_DATASET_TRN = True  # 24 images to train
 
     if (args.mode == "train"):
         new_loc = base + "images_scaled"

@@ -77,7 +77,7 @@ class NeRFRenderer(nn.Module):
 
         self.bound = bound
         self.cascade = 1 + math.ceil(math.log2(bound))
-        self.time_size = 60  # FIXME 64
+        self.time_size = 12  # FIXME 64
         self.grid_size = 128  # FIXME 128
         self.density_scale = density_scale * 5  # TODO: used to be 1
         self.min_near = min_near

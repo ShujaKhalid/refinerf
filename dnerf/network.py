@@ -72,8 +72,8 @@ class NeRFNetwork(NeRFRenderer):
         self.encoder_d_fact = 10   # 10 works
         self.encoder_dir_d_fact = 4  # 10 works
         self.encoder_d_constant = 1
-        self.encoder_deform = 3
-        self.encoder_time = 0
+        self.encoder_deform = 10
+        self.encoder_time = 6
 
         if (encoding == "hashgrid"):
             self.encoder_s, self.in_dim_s = get_encoder(
