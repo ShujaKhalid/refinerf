@@ -435,10 +435,10 @@ class PSNRMeter:
     def write(self, writer, global_step, prefix=""):
         writer.add_scalar(os.path.join(prefix, "PSNR"),
                           self.measure_psnr(), global_step)
-        # writer.add_scalar(os.path.join(prefix, "SSIM"),
-        #                   self.measure_ssim(), global_step)
-        # writer.add_scalar(os.path.join(prefix, "LPIPS"),
-        #                   self.measure_lpips(), global_step)
+        writer.add_scalar(os.path.join(prefix, "SSIM"),
+                          self.measure_ssim(), global_step)
+        writer.add_scalar(os.path.join(prefix, "LPIPS"),
+                          self.measure_lpips(), global_step)
 
     def report(self):
 

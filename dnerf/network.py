@@ -27,7 +27,7 @@ class NeRFNetwork(NeRFRenderer):
                  # a deeper MLP is very necessary for performance (generalization)
                  num_layers_deform=8,
                  # a wider MLP is very necessary for performance (details)
-                 hidden_dim_deform=256,
+                 hidden_dim_deform=64,
                  bound=1,
                  w=None,
                  h=None,
@@ -72,8 +72,8 @@ class NeRFNetwork(NeRFRenderer):
         self.encoder_d_fact = 10   # 10 works
         self.encoder_dir_d_fact = 4  # 10 works
         self.encoder_d_constant = 1
-        self.encoder_deform = 10
-        self.encoder_time = 6
+        self.encoder_deform = 3
+        self.encoder_time = 0
 
         if (encoding == "hashgrid"):
             self.encoder_s, self.in_dim_s = get_encoder(
