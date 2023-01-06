@@ -19,7 +19,8 @@ if __name__ == '__main__':
                         help="equals --fp16 --cuda_ray --preload")
     parser.add_argument('--test', action='store_true', help="test mode")
     parser.add_argument('--workspace', type=str, default='workspace')
-    parser.add_argument('--tensorboard_folder', type=str, default='tensorboard_folder')
+    parser.add_argument('--tensorboard_folder', type=str,
+                        default='tensorboard_folder')
     parser.add_argument('--seed', type=int, default=0)
 
     # =================================================================================

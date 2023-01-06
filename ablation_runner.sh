@@ -2,11 +2,11 @@
 
 #cases=('Playground' 'Balloon1' 'Balloon2' 'Umbrella' 'Truck' 'Jumping')
 cases=('Umbrella')
-deform_dims=(3 5 7 9)
-time_dims=(0 1 3)
+deform_dims=(3 5 9)
+time_dims=(0 3)
 deform_qty_arr=(4 8)
 deform_hidden_qty_arr=(64 128 256)
-iters=10000
+iters=25000
 
 for scene in "${cases[@]}";
 do
