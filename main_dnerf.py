@@ -103,6 +103,38 @@ if __name__ == '__main__':
     parser.add_argument('--rand_pose', type=int, default=-1,
                         help="<0 uses no rand pose, =0 only uses rand pose, >0 sample one rand pose every $ known poses")
 
+    # encodinig parameters
+    parser.add_argument('--encoder_s_fact', type=int,
+                        default=0, help="static frequency constant")
+    parser.add_argument('--encoder_dir_s_fact', type=int,
+                        default=0, help="static frequency constant")
+    parser.add_argument('--encoder_d_fact', type=int,
+                        default=0, help="dynamic frequency constant")
+    parser.add_argument('--encoder_dir_d_fact', type=int,
+                        default=0, help="dynamic frequency constant")
+    parser.add_argument('--encoder_d_constant', type=int,
+                        default=0, help="dynamic frequency constant")
+    parser.add_argument('--encoder_deform', type=int,
+                        default=0, help="deform dim of encoder")
+    parser.add_argument('--encoder_time', type=int,
+                        default=0, help="time dim of encoder")
+
+    # model parameters
+    parser.add_argument('--num_layers', type=int,
+                        default=0, help="deform dim of encoder")
+    parser.add_argument('--hidden_dim', type=int,
+                        default=0, help="time dim of encoder")
+    parser.add_argument('--geo_feat_dim', type=int,
+                        default=0, help="deform dim of encoder")
+    parser.add_argument('--num_layers_color', type=int,
+                        default=0, help="time dim of encoder")
+    parser.add_argument('--hidden_dim_color', type=int,
+                        default=0, help="time dim of encoder")
+    parser.add_argument('--num_layers_deform', type=int,
+                        default=0, help="time dim of encoder")
+    parser.add_argument('--hidden_dim_deform', type=int,
+                        default=0, help="time dim of encoder")
+
     opt = parser.parse_args()
 
     if opt.O:
@@ -134,7 +166,24 @@ if __name__ == '__main__':
         bg_radius=opt.bg_radius,
         h=opt.H,
         w=opt.W,
-        num_cams=24
+        num_cams=24,
+        num_layers=opt.num_layers,
+        hidden_dim=opt.hidden_dim,
+        geo_feat_dim=opt.geo_feat_dim,  # change me
+        num_layers_color=opt.num_layers_color,
+        hidden_dim_color=opt.hidden_dim_color,
+        # a deeper MLP is very necessary for performance (generalization)
+        num_layers_deform=opt.num_layers_deform,
+        # a wider MLP is very necessary for performance (details)
+        hidden_dim_deform=opt.hidden_dim_deform,
+        encoder_s_fact=opt.encoder_s_fact,   # 10 works
+        encoder_dir_s_fact=opt.encoder_dir_s_fact,  # 10 works
+        # dynamic
+        encoder_d_fact=opt.encoder_d_fact,   # 10 works
+        encoder_dir_d_fact=opt.encoder_dir_d_fact,  # 10 works
+        encoder_d_constant=opt.encoder_d_constant,
+        encoder_deform=opt.encoder_deform,
+        encoder_time=opt.encoder_time,
     )
     model_fxfy = LearnFocal(H=270, W=480).cuda()  # FIXME
     model_pose = LearnPose(num_cams=24).cuda()  # FIXME

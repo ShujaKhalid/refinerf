@@ -79,7 +79,7 @@ class NeRFRenderer(nn.Module):
         self.cascade = 1 + math.ceil(math.log2(bound))
         self.time_size = 12  # FIXME 64
         self.grid_size = 128  # FIXME 128
-        self.density_scale = density_scale * 5  # TODO: used to be 1
+        self.density_scale = density_scale * 50  # TODO: used to be 1
         self.min_near = min_near
         self.density_thresh = density_thresh
         self.bg_radius = bg_radius  # radius of the background sphere.
