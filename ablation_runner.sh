@@ -2,18 +2,15 @@
 
 #cases=('Playground' 'Balloon1' 'Balloon2' 'Umbrella' 'Truck' 'Jumping')
 cases=('Umbrella')
-deform_dims=(10)
-time_dims=(0)
-deform_qty_arr=(8)
-deform_hidden_qty_arr=(64)
+deform_dims=(3 5 7 9)
+time_dims=(0 1 3)
+deform_qty_arr=(4 8)
+deform_hidden_qty_arr=(64 128 256)
 iters=10000
 
 for scene in "${cases[@]}";
 do
 	DATASET_PATH="/home/skhalid/Documents/datalake/dynamic_scene_data_full/nvidia_data_full/$scene/dense"
-
-	rm -rf $item/checkpoints/*
-
 	for time_dim in "${time_dims[@]}";
 	do
 		for deform_dim in "${deform_dims[@]}";
@@ -22,8 +19,11 @@ do
 			do
 				for deform_hidden_qty in "${deform_hidden_qty_arr[@]}";
 				do
+					rm -rf $scene/checkpoints/*
+					tensorboard_folder=$scene"_encoder_deform_"$deform_dim"_time_dim_"$time_dim"_deform_qty_"$deform_qty"_deform_hidden_qty_"$deform_hidden_qty"_iters_"$iters
 					python main_dnerf.py $DATASET_PATH \
-						--workspace $scene"_encoder_deform_"$deform_dim"_time_dim_"$time_dim"_deform_qty_"$deform_qty"_deform_hidden_qty_"$deform_hidden_qty"_iters_"$iters \
+						--workspace $scene \
+						--tensorboard_folder $tensorboard_folder \
 						--encoder_s_fact 10 \
 						--encoder_dir_s_fact 4  \
 						--encoder_d_fact 10 \
@@ -41,6 +41,7 @@ do
 						--iters $iters \
 						--fp16 \
 						-O
+					cp -pr /home/skhalid/Documents/torch-ngp/results/Ours/$scene/* ./$scene/run/ngp/$tensorboard_folder
 				done
 			done
 		done

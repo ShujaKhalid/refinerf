@@ -487,6 +487,7 @@ class Trainer(object):
         self.local_rank = local_rank
         self.world_size = world_size
         self.workspace = workspace
+        self.tensorboard_folder = opt.tensorboard_folder
         self.ema_decay = ema_decay
         self.fp16 = fp16
         self.best_mode = best_mode
@@ -801,8 +802,10 @@ class Trainer(object):
 
     def train(self, train_loader, valid_loader, max_epochs):
         if self.use_tensorboardX and self.local_rank == 0:
+            # self.writer = tensorboardX.SummaryWriter(
+            #     os.path.join(self.workspace, "run", self.name, str(int(time.time()))))
             self.writer = tensorboardX.SummaryWriter(
-                os.path.join(self.workspace, "run", self.name, str(int(time.time()))))
+                os.path.join(self.workspace, "run", self.name, self.tensorboard_folder))
 
         # mark untrained region (i.e., not covered by any camera from the training dataset)
         if self.model.cuda_ray:
