@@ -9,7 +9,7 @@ deform_qty_arr=(4)
 deform_hidden_qty_arr=(128)
 deform_intrinsics_arr=(0)
 deform_extrinsics_arr=(0 1)
-iters=10000
+iters=10
 
 for scene in "${cases[@]}";
 do
@@ -26,8 +26,9 @@ do
 					do
 						for extrinsics in "${deform_extrinsics_arr[@]}";
 						do
-							rm -rf $scene/checkpoints/*
 							out_folder="refinerf" 
+							rm -rf $out_folder/checkpoints/*
+							#mkdir -p $outfolder
 							tensorboard_folder=$scene"_encoder_deform_"$deform_dim"_time_dim_"$time_dim"_deform_qty_"$deform_qty"_deform_hidden_qty_"$deform_hidden_qty"_iters_"$iters"_intrinsics_"$intrinsics"_extrinsics_"$extrinsics
 							python main_dnerf.py $DATASET_PATH \
 								--workspace $out_folder \
