@@ -488,6 +488,8 @@ class Trainer(object):
         self.world_size = world_size
         self.workspace = workspace
         self.tensorboard_folder = opt.tensorboard_folder
+        self.pred_intrinsics = opt.pred_intrinsics
+        self.pred_extrinsics = opt.pred_extrinsics
         self.ema_decay = ema_decay
         self.fp16 = fp16
         self.best_mode = best_mode
@@ -1096,8 +1098,10 @@ class Trainer(object):
             self.scaler.step(self.optimizer_model)
             # self.scaler.step(self.optimizer_fxfy)
             # TODO: Add to config
-            # if (self.global_step <= 1200):
-            #     self.scaler.step(self.optimizer_pose)
+            if (self.global_step <= 1200 and self.pred_extrinsics):
+                self.scaler.step(self.optimizer_pose)
+            if (self.global_step <= 1200 and self.pred_intrinsics):
+                self.scaler.step(self.optimizer_fxfy)
 
             # print("\n\n\n model_fxfy")
             # for p in self.model_fxfy.parameters():

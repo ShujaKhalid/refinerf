@@ -52,7 +52,8 @@ class Trainer(_Trainer):
 
         results = data
         B = 1
-        self.PRED_POSE = data['PRED_POSE']
+        self.PRED_INTRINSICS = data['PRED_INTRINSICS']
+        self.PRED_EXTRINSICS = data['PRED_EXTRINSICS']
         self.FLOW_FLAG = data['FLOW_FLAG']
         self.TRAIN_FLAG = data['TRAIN_FLAG']
         self.DYNAMIC_ITER = data['dynamic_iter']
@@ -73,7 +74,7 @@ class Trainer(_Trainer):
         self.images = data['images']
         self.disp = data['disp']
 
-        if (self.PRED_POSE):
+        if (self.PRED_INTRINSICS or self.PRED_EXTRINSICS):
             # print("\n\nPREDICTING POSES!\n\n")
             poses_gt = self.poses
             intrinsics_gt = self.intrinsics
@@ -83,8 +84,8 @@ class Trainer(_Trainer):
             # print("fxfy: {}\nposes: {}".format(fxfy_pred, poses_pred))
 
             # assignments
-            INTRINSICS_FLAG = False
-            EXTRINSICS_FLAG = False
+            INTRINSICS_FLAG = self.PRED_INTRINSICS
+            EXTRINSICS_FLAG = self.PRED_EXTRINSICS
             if (INTRINSICS_FLAG):
                 fxfy_pred = self.model_fxfy()
                 self.intrinsics = fxfy_pred

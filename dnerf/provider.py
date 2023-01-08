@@ -124,6 +124,8 @@ class NeRFDataset:
         self.rand_pose = opt.rand_pose
         self.DYNAMIC_ITERS = eval(opt.dynamic_iters)
         self.DYNAMIC_ITER = 0
+        self.PRED_INTRINSICS = opt.pred_intrinsics
+        self.PRED_EXTRINSICS = opt.pred_extrinsics
 
         # auto-detect transforms.json and split mode.
         if os.path.exists(os.path.join(self.root_path, 'transforms.json')):
@@ -310,7 +312,7 @@ class NeRFDataset:
         # [debug] uncomment to view examples of randomly generated poses.
         # visualize_poses(rand_poses(100, self.device, radius=self.radius).cpu().numpy())
         self.FLOW_FLAG = True
-        self.PRED_POSE = True
+        # self.PRED_POSE = True
         if (self.FLOW_FLAG):
             # TODO: ADD the additional pre-reqs here
             basedir = self.root_path
@@ -608,7 +610,8 @@ class NeRFDataset:
             'dynamic_iters': self.DYNAMIC_ITERS,
             'num_rays': self.num_rays,
             'FLOW_FLAG': self.FLOW_FLAG,
-            'PRED_POSE': self.PRED_POSE,
+            'PRED_INTRINSICS': self.PRED_INTRINSICS,
+            'PRED_EXTRINSICS': self.PRED_EXTRINSICS,
             'TRAIN_FLAG': self.training,
             'images': self.images,
             'masks': masks,
