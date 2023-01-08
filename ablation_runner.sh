@@ -1,12 +1,12 @@
 #!/bin/bash
 
 #cases=('Playground' 'Balloon1' 'Balloon2' 'Umbrella' 'Truck' 'Jumping')
-cases=('Umbrella' 'Playground' 'Balloon1' 'Balloon2')
+cases=('Umbrella' 'Playground' 'Balloon1' 'Balloon2' 'Skating' )
 # cases=('Umbrella')
-deform_dims=(7)
+deform_dims=(5)
 time_dims=(1)
 deform_qty_arr=(4)
-deform_hidden_qty_arr=(64)
+deform_hidden_qty_arr=(128)
 deform_intrinsics_arr=(0)
 deform_extrinsics_arr=(0 1)
 iters=10000
@@ -27,9 +27,10 @@ do
 						for extrinsics in "${deform_extrinsics_arr[@]}";
 						do
 							rm -rf $scene/checkpoints/*
-							tensorboard_folder=$scene"_encoder_deform_"$deform_dim"_time_dim_"$time_dim"_deform_qty_"$deform_qty"_deform_hidden_qty_"$deform_hidden_qty"_iters_"$iters
+							out_folder="refinerf" 
+							tensorboard_folder=$scene"_encoder_deform_"$deform_dim"_time_dim_"$time_dim"_deform_qty_"$deform_qty"_deform_hidden_qty_"$deform_hidden_qty"_iters_"$iters"_intrinsics_"$intrinsics"_extrinsics_"$extrinsics
 							python main_dnerf.py $DATASET_PATH \
-								--workspace $scene \
+								--workspace $out_folder \
 								--tensorboard_folder $tensorboard_folder \
 								--encoder_s_fact 10 \
 								--encoder_dir_s_fact 4  \
@@ -50,7 +51,7 @@ do
 								--pred_intrinsics $intrinsics \
 								--pred_extrinsics $extrinsics \
 								-O
-							cp -pr /home/skhalid/Documents/torch-ngp/results/Ours/$scene/* ./$scene/run/ngp/$tensorboard_folder
+							cp -pr /home/skhalid/Documents/torch-ngp/results/Ours/$scene/* ./$out_folder/run/ngp/$tensorboard_folder
 						done
 					done
 				done
