@@ -32,7 +32,7 @@ if __name__ == '__main__':
     parser.add_argument('--lr_net', type=float, default=1e-3,  # 1e-3
                         help="initial learning rate")
     parser.add_argument('--ckpt', type=str, default='latest')
-    parser.add_argument('--num_rays', type=int, default=4096,
+    parser.add_argument('--num_rays', type=int, default=2048,
                         help="num rays sampled per image for each training step")
     parser.add_argument('--cuda_ray', action='store_true',
                         help="use CUDA raymarching instead of pytorch")
@@ -43,7 +43,7 @@ if __name__ == '__main__':
     # parser.add_argument('--dynamic_iters', type=str, default="{'d1': (2400, 3600), 'b1': (3600, 4800), 'd3': (6000, 7200), 'b3': (10800, 14400), 'd2': (15600, 16800)}",  # 2400 iters # BOOOO
     # parser.add_argument('--dynamic_iters', type=str, default="{'d2': (1200, 6000), 'd3': (7200, 8400), 'd4': (9600, 10800)}",  # 2400 iters
     # parser.add_argument('--dynamic_iters', type=str, default="{'d1': (1200, 2400), 'd2': (3600, 100000)}",  # 2400 iters
-    parser.add_argument('--dynamic_iters', type=str, default="{'d1': (2400, 200000)}",  # 2400 iters
+    parser.add_argument('--dynamic_iters', type=str, default="{'d1': (10800, 21600)}",  # 2400 iters
                         # parser.add_argument('--dynamic_iters', type=str, default="{'d1': (0, 12000)}",  # 24000 iters
                         help="intervals to train the dynamic model for")
     parser.add_argument('--update_extra_interval', type=int, default=12000000,  # TODO: used to be 100
@@ -248,7 +248,7 @@ if __name__ == '__main__':
             optimizer, lambda iter: 0.1 ** min(iter / opt.iters, 1))
 
         trainer = Trainer('ngp', opt, model, model_fxfy, model_pose, device=device, workspace=opt.workspace, optimizer_model=optimizer_model, criterion=criterion, ema_decay=None,
-                          fp16=opt.fp16, lr_scheduler=scheduler, scheduler_update_every_step=True, metrics=[PSNRMeter()], use_checkpoint=opt.ckpt, eval_interval=25)
+                          fp16=opt.fp16, lr_scheduler=scheduler, scheduler_update_every_step=True, metrics=[PSNRMeter()], use_checkpoint=opt.ckpt, eval_interval=10)
 
         if opt.gui:
             gui = NeRFGUI(opt, trainer, train_loader)

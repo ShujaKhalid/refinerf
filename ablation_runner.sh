@@ -1,15 +1,15 @@
 #!/bin/bash
 
 #cases=('Playground' 'Balloon1' 'Balloon2' 'Umbrella' 'Truck' 'Jumping')
-cases=('Umbrella' 'Playground' 'Balloon1' 'Balloon2' 'Skating' )
-# cases=('Umbrella')
-deform_dims=(5)
-time_dims=(1)
-deform_qty_arr=(4)
-deform_hidden_qty_arr=(128)
-deform_intrinsics_arr=(0)
-deform_extrinsics_arr=(0 1)
-iters=10
+# cases=('Umbrella' 'Playground' 'Balloon1' 'Balloon2' 'Skating' 'Jumping')
+cases=('Playground')
+deform_dims=(3)
+time_dims=(0)
+deform_qty_arr=(3)
+deform_hidden_qty_arr=(64)
+deform_intrinsics_arr=(1)
+deform_extrinsics_arr=(0)
+iters=5000
 
 for scene in "${cases[@]}";
 do
