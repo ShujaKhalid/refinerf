@@ -121,9 +121,9 @@ class Trainer(_Trainer):
             # print("self.intrinsics: {}".format(self.intrinsics))
             # print()
 
-            print("\n\nextrinsics_actual: {}".format(poses_gt))
-            print("self.poses: {}".format(self.poses))
-            print()
+            # print("\n\nextrinsics_actual: {}".format(poses_gt))
+            # print("self.poses: {}".format(self.poses))
+            # print()
 
         # bypass rays for testing
         # rays = {}
