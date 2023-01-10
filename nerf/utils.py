@@ -538,7 +538,7 @@ class Trainer(object):
                 self.model, self.opt_state)
 
         self.optimizer_fxfy = optim.Adam(self.model_fxfy.parameters(),
-                                         lr=0.0001, weight_decay=5e-4)  # naive adam
+                                         lr=0.00025, weight_decay=5e-4)  # naive adam
         self.optimizer_pose = optim.Adam(self.model_pose.parameters(),
                                          lr=0.0001, weight_decay=5e-4)  # naive adam
 
