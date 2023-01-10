@@ -2,14 +2,14 @@
 
 #cases=('Playground' 'Balloon1' 'Balloon2' 'Umbrella' 'Truck' 'Jumping')
 # cases=('Umbrella' 'Playground' 'Balloon1' 'Balloon2' 'Skating' 'Jumping')
-cases=('Umbrella')
+cases=('Jumping')
 deform_dims=(3)
 time_dims=(0)
 deform_qty_arr=(3)
 deform_hidden_qty_arr=(64)
 deform_intrinsics_arr=(1)
 deform_extrinsics_arr=(0)
-iters=5000
+iters=12000
 
 for scene in "${cases[@]}";
 do

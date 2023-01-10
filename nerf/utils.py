@@ -1100,7 +1100,7 @@ class Trainer(object):
             # TODO: Add to config
             if (self.global_step <= 1200 and self.pred_extrinsics):
                 self.scaler.step(self.optimizer_pose)
-            if (self.global_step <= 1200 and self.pred_intrinsics):
+            if (self.global_step <= 1800 and self.pred_intrinsics):
                 self.scaler.step(self.optimizer_fxfy)
 
             # print("\n\n\n model_fxfy")

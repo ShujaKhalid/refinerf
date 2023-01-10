@@ -46,7 +46,7 @@ class LearnFocal(nn.Module):
     def forward(self):
         # order = 2, check our supplementary.
 
-        PREDICT = "fxfycxcy"
+        PREDICT = "fxfy"
 
         if (PREDICT == "fxfy"):
             fxfy = torch.stack([self.fx**2 * self.W_temp,
@@ -59,14 +59,11 @@ class LearnFocal(nn.Module):
                                 self.cx**2 * self.W_temp,
                                 self.cy**2 * self.W_temp])
         elif (PREDICT == "fxfycxcy"):
-            fxfy = torch.stack([self.fx**2 * self.H,
-                                self.fy**2 * self.H,
-                                self.cx**2 * self.W//2,
-                                self.cy**2 * self.W//2])
-            # fxfy = torch.stack([((self.fx*self.H)**3)/self.W**2,
-            #                     ((self.fy*self.H)**3)/self.W**2,
-            #                     ((self.cx*self.H)**3)/self.W**2,
-            #                     ((self.cy*self.H)**3)/self.W**2])
+            fxfy = torch.stack([self.fx**2 * self.W_temp,
+                                self.fy**2 * self.W_temp,
+                                self.cx**2 * self.W_temp,
+                                self.cy**2 * self.W_temp])
+
         elif (PREDICT == "fxfymodel"):
             x = torch.stack([self.H, self.W])
             fxfy = self.layer2(x)
