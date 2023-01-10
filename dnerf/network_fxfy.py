@@ -46,7 +46,7 @@ class LearnFocal(nn.Module):
     def forward(self):
         # order = 2, check our supplementary.
 
-        PREDICT = "fxfycxcymodel"
+        PREDICT = "fxfycxcy"
 
         if (PREDICT == "fxfy"):
             fxfy = torch.stack([self.fx**2 * self.W_temp,
@@ -59,10 +59,14 @@ class LearnFocal(nn.Module):
                                 self.cx**2 * self.W_temp,
                                 self.cy**2 * self.W_temp])
         elif (PREDICT == "fxfycxcy"):
-            fxfy = torch.stack([self.fx**2 * self.W_temp,
-                                self.fy**2 * self.W_temp,
-                                self.cx**2 * self.W_temp,
-                                self.cy**2 * self.W_temp])
+            fxfy = torch.stack([self.fx**2 * self.H,
+                                self.fy**2 * self.H,
+                                self.cx**2 * self.W//2,
+                                self.cy**2 * self.W//2])
+            # fxfy = torch.stack([((self.fx*self.H)**3)/self.W**2,
+            #                     ((self.fy*self.H)**3)/self.W**2,
+            #                     ((self.cx*self.H)**3)/self.W**2,
+            #                     ((self.cy*self.H)**3)/self.W**2])
         elif (PREDICT == "fxfymodel"):
             x = torch.stack([self.H, self.W])
             fxfy = self.layer2(x)
@@ -79,33 +83,9 @@ class LearnFocal(nn.Module):
             fxfy = self.relu(fxfy)
             fxfy = torch.stack([fxfy[0], -fxfy[1], fxfy[2], fxfy[3]])
 
-        # predict fxfy
-        # fxfy = torch.stack([self.fx**2 * self.W if PREDICT_FXFY else self.H,
-        #                     self.fx**2 * self.W if PREDICT_FXFY else self.W,
-        #                     self.H_temp if PREDICT_FXFY else self.fx ** 2 * self.H,
-        #                     self.W_temp if PREDICT_FXFY else self.fy ** 2 * self.W,
-        #                     # self.cx**2 * self.H_temp,
-        #                     # self.cy**2 * self.W_temp
-        #                     ])
-
-        # Model test
-        # x = torch.stack([self.H, self.W, self.H_temp, self.W_temp])
-        # x = torch.stack([self.H, self.W])
-        # fxfy = self.layer1(x)
-        # print("self.fact: {}".format(self.fact))
-        # fxfy = self.relu(fxfy)
-        # fxfy = torch.stack([fxfy[0], -fxfy[1], self.W_temp, self.H_temp])
-        fxfy = torch.stack([self.fx**2 * self.W_temp,
-                            self.fy**2 * self.W_temp,
-                            self.cx**2 * self.W_temp,
-                            self.cy**2 * self.W_temp])
-
-        # constant
-        # x = torch.stack([self.H, self.W])
-        # fxfy = torch.stack([self.fx,
-        #                     self.fy,
-        #                     self.H_temp,
-        #                     self.W_temp])
-        # fxfy = torch.stack([fxfy[0], fxfy[1], fxfy[2], fxfy[3]])
+        # fxfy = torch.stack([self.fx**2 * self.W_temp,
+        #                     self.fy**2 * self.W_temp,
+        #                     self.cx**2 * self.W_temp,
+        #                     self.cy**2 * self.W_temp])
 
         return fxfy
