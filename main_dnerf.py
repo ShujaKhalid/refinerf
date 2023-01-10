@@ -140,6 +140,8 @@ if __name__ == '__main__':
                         default=0, help="pred_intrinsics")
     parser.add_argument('--pred_extrinsics', type=int,
                         default=0, help="pred_extrinsics")
+    parser.add_argument('--noise_pct', type=float,
+                        default=0.1, help="noise_pct")
 
     opt = parser.parse_args()
 
@@ -192,7 +194,8 @@ if __name__ == '__main__':
         encoder_time=opt.encoder_time,
     )
     model_fxfy = LearnFocal(H=270, W=480).cuda()  # FIXME
-    model_pose = LearnPose(num_cams=24).cuda()  # FIXME
+    model_pose = LearnPose(
+        num_cams=24, noise_pct=opt.noise_pct).cuda()  # FIXME
     # model_fxfy = LearnFocal(H=800, W=800).cuda()  # FIXME
     # model_pose = LearnPose(num_cams=150).cuda()  # FIXME
     # model_camera = CameraNetwork(opt.H, opt.W, num_cams=24)  # FIXME

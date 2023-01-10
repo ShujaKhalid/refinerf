@@ -1,4 +1,5 @@
 import torch
+import random
 import numpy as np
 import torch.nn as nn
 
@@ -59,13 +60,14 @@ def make_c2w(r, t):
 
 
 class LearnPose(nn.Module):
-    def __init__(self, num_cams, learn_R=True, learn_t=True):
+    def __init__(self, num_cams, noise_pct, learn_R=True, learn_t=True):
         super(LearnPose, self).__init__()
         self.num_cams = num_cams
         self.r = nn.Parameter(torch.zeros(
             size=(num_cams, 3), dtype=torch.float32), requires_grad=learn_R)  # (N, 3)
         self.t = nn.Parameter(torch.zeros(
             size=(num_cams, 3), dtype=torch.float32), requires_grad=learn_t)  # (N, 3)
+        self.noise_pct = noise_pct
         self.c2w_noise = nn.Parameter(torch.ones(
             size=(4, 4), dtype=torch.float32), requires_grad=True)  # (N, 3)
 
@@ -74,18 +76,25 @@ class LearnPose(nn.Module):
         #     torch.eye(4, dtype=torch.float32), dim=0).cuda()  # (N, 3)
 
     def forward(self, cam_id, poses_gt):
-        r = torch.squeeze(self.r[cam_id])  # (3, ) axis-angle
-        t = torch.squeeze(self.t[cam_id])  # (3, )
-        # c2w = make_c2w(r, t)  # (4, 4)
-        # c2w = (c2w + torch.rand_like(c2w))/2
 
-        # Adding noise to original poses
-        # self.c2w_noise = poses_gt + torch.rand_like(poses_gt)
-        # print("self.c2w_noise: \n{}".format(self.c2w_noise))
-        #print("poses_gt: \n{}".format(poses_gt))
-        c2w = self.c2w_noise * poses_gt
+        NOISE_ABLATION = True
+
+        # c2w = (c2w + torch.rand_like(c2w))/2
+        if NOISE_ABLATION:
+            # self.c2w_noise = poses_gt + torch.rand_like(poses_gt)
+            c2w_noise = self.c2w_noise*poses_gt*self.noise_pct
+            c2w_signs = torch.rand_like(c2w_noise)
+            c2w_signs[c2w_signs > 0.5] = 1
+            c2w_signs[c2w_signs <= 0.5] = -1
+            c2w_noise = c2w_noise * c2w_signs
+            c2w = poses_gt + c2w_noise
+        else:
+            r = torch.squeeze(self.r[cam_id])  # (3, ) axis-angle
+            t = torch.squeeze(self.t[cam_id])  # (3, )
+            c2w = make_c2w(r, t)  # (4, 4)
+            c2w = torch.unsqueeze(c2w, dim=0)
 
         # bypass
         # c2w = self.c2w_test
-        #c2w = torch.unsqueeze(c2w, dim=0)
+        # c2w = torch.unsqueeze(c2w, dim=0)
         return c2w
