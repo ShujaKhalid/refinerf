@@ -70,6 +70,9 @@ class LearnPose(nn.Module):
         self.noise_pct = noise_pct
         self.c2w_noise = nn.Parameter(torch.ones(
             size=(4, 4), dtype=torch.float32), requires_grad=True)  # (N, 3)
+        self.c2w_signs = torch.rand_like(self.c2w_noise).cuda()
+        self.c2w_signs[self.c2w_signs > 0.5] = 1
+        self.c2w_signs[self.c2w_signs <= 0.5] = -1
 
         # # test
         # self.c2w_test = torch.unsqueeze(
@@ -83,11 +86,12 @@ class LearnPose(nn.Module):
         if NOISE_ABLATION:
             # self.c2w_noise = poses_gt + torch.rand_like(poses_gt)
             c2w_noise = self.c2w_noise*poses_gt*self.noise_pct
-            c2w_signs = torch.rand_like(c2w_noise)
-            c2w_signs[c2w_signs > 0.5] = 1
-            c2w_signs[c2w_signs <= 0.5] = -1
-            c2w_noise = c2w_noise * c2w_signs
+            c2w_noise = c2w_noise * self.c2w_signs
             c2w = poses_gt + c2w_noise
+
+            print(
+                "\nError - R: {:.4f} - t: {:.4f} - all: {:.4f}".format(torch.mean(
+                    c2w_noise[:3, :3]), torch.mean(c2w_noise[:3, -1]), torch.mean(c2w_noise)))
         else:
             r = torch.squeeze(self.r[cam_id])  # (3, ) axis-angle
             t = torch.squeeze(self.t[cam_id])  # (3, )

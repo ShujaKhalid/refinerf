@@ -538,9 +538,9 @@ class Trainer(object):
                 self.model, self.opt_state)
 
         self.optimizer_fxfy = optim.Adam(self.model_fxfy.parameters(),
-                                         lr=0.00025, weight_decay=5e-4)  # naive adam
+                                         lr=0.000025, weight_decay=5e-4)  # naive adam
         self.optimizer_pose = optim.Adam(self.model_pose.parameters(),
-                                         lr=0.0001, weight_decay=5e-4)  # naive adam
+                                         lr=0.000025, weight_decay=5e-4)  # naive adam
 
         if lr_scheduler is None:
             self.lr_scheduler = optim.lr_scheduler.LambdaLR(
@@ -1098,9 +1098,9 @@ class Trainer(object):
             self.scaler.step(self.optimizer_model)
             # self.scaler.step(self.optimizer_fxfy)
             # TODO: Add to config
-            if (self.global_step <= 1200 and self.pred_extrinsics):
+            if (self.global_step <= 20000 and self.pred_extrinsics):
                 self.scaler.step(self.optimizer_pose)
-            if (self.global_step <= 1800 and self.pred_intrinsics):
+            if (self.global_step <= 3600 and self.pred_intrinsics):
                 self.scaler.step(self.optimizer_fxfy)
 
             # print("\n\n\n model_fxfy")

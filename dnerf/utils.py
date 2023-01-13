@@ -87,7 +87,7 @@ class Trainer(_Trainer):
             INTRINSICS_FLAG = self.PRED_INTRINSICS
             EXTRINSICS_FLAG = self.PRED_EXTRINSICS
             if (INTRINSICS_FLAG):
-                fxfy_pred = self.model_fxfy()
+                fxfy_pred = self.model_fxfy(fxfy_gt=self.intrinsics)
                 self.intrinsics = fxfy_pred
             if (EXTRINSICS_FLAG):
                 poses_pred = self.model_pose(self.index, poses_gt)
