@@ -90,8 +90,10 @@ class LearnPose(nn.Module):
             c2w = poses_gt + c2w_noise
 
             print(
-                "\nError - R: {:.4f} - t: {:.4f} - all: {:.4f}".format(torch.mean(
-                    c2w_noise[:3, :3]), torch.mean(c2w_noise[:3, -1]), torch.mean(c2w_noise)))
+                "\nError - R: {:.4f} - t: {:.4f} - all: {:.4f}".format(
+                    torch.sum(torch.abs(c2w_noise[:3, :3])),
+                    torch.sum(torch.abs(c2w_noise[:3, -1])),
+                    torch.sum(torch.abs(c2w_noise))))
         else:
             r = torch.squeeze(self.r[cam_id])  # (3, ) axis-angle
             t = torch.squeeze(self.t[cam_id])  # (3, )

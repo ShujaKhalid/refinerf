@@ -36,7 +36,7 @@ if __name__ == '__main__':
                         help="num rays sampled per image for each training step")
     parser.add_argument('--cuda_ray', action='store_true',
                         help="use CUDA raymarching instead of pytorch")
-    parser.add_argument('--max_steps', type=int, default=128,  # sk_debug: used to be 1024
+    parser.add_argument('--max_steps', type=int, default=1024,  # sk_debug: used to be 1024
                         help="max num steps sampled per ray (only valid when using --cuda_ray)")
     # parser.add_argument('--dynamic_iters', type=str, default="[(204,312), (480,600), (2400, 3000)]",  # 2400 iters
     # parser.add_argument('--dynamic_iters', type=str, default="[(480, 960), (1200, 1440), (2400, 3600), (6000, 7200), (9600, 10800), (14400, 18000), (21600, 24000)]",  # 2400 iters
@@ -252,7 +252,7 @@ if __name__ == '__main__':
             optimizer, lambda iter: 0.1 ** min(iter / opt.iters, 1))
 
         trainer = Trainer('ngp', opt, model, model_fxfy, model_pose, device=device, workspace=opt.workspace, optimizer_model=optimizer_model, criterion=criterion, ema_decay=None,
-                          fp16=opt.fp16, lr_scheduler=scheduler, scheduler_update_every_step=True, metrics=[PSNRMeter()], use_checkpoint=opt.ckpt, eval_interval=5)
+                          fp16=opt.fp16, lr_scheduler=scheduler, scheduler_update_every_step=True, metrics=[PSNRMeter()], use_checkpoint=opt.ckpt, eval_interval=25)
 
         if opt.gui:
             gui = NeRFGUI(opt, trainer, train_loader)
