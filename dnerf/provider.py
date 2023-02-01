@@ -434,7 +434,7 @@ class NeRFDataset:
             # print("flow_masks_f.shape: {}".format(flow_masks_f.shape))
 
             self.grid = np.empty(
-                (len(self.images), self.H, self.W, 8), np.float32)
+                (len(self.images), self.H, self.W, 8), np.float32).cuda()
             # self.grid = np.empty((0, self.H, self.W, 8), np.float32)
             # for idx in range(num_img):
             #     self.grid = np.concatenate((self.grid, np.stack([i,
@@ -555,7 +555,7 @@ class NeRFDataset:
                 :, :, index].to(self.device)  # [B, N]
             masks_val = torch.reshape(self.masks_val, (-1, self.masks.shape[2], self.masks.shape[3]))[
                 :, :, index].to(self.device)  # [B, N]
-            grid = torch.Tensor(self.grid)
+            grid = torch.Tensor(self.grid).cuda()
             grid = torch.reshape(
                 grid, (grid.shape[0], -1, grid.shape[-1]))
         else:
