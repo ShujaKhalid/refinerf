@@ -294,6 +294,9 @@ class Trainer(_Trainer):
 
         pred_rgb = ret['image']
 
+        np.save("./results/Ours/refinerf/poses_step_"+str(data["index"][0]),
+                data['poses'].cpu().numpy())
+
         # TODO: Get outputs here
         # depth_s = outputs['depth_s']
         # depth_d = outputs['depth_d']
