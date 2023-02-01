@@ -29,15 +29,16 @@ export CUDA_ROOT=/usr/local/cuda
 #cases=('Playground' 'Balloon1' 'Balloon2' 'Umbrella' 'Truck' 'Jumping')
 cases=('Umbrella' 'Playground' 'Balloon1' 'Balloon2' 'Skating' 'Jumping')
 # cases=('Umbrella' 'Playground')
-# cases=('Playground')
+cases=('Umbrella')
 deform_dims=(3)
 time_dims=(0)
 deform_qty_arr=(3)
 deform_hidden_qty_arr=(64)
 deform_intrinsics_arr=(0)
 #noise_pct_arr=(0.5 0.25 0.0)
-deform_extrinsics_arr=(0 1)
-noise_pct_arr=(0.1 0.05 0.025 0.0)
+deform_extrinsics_arr=(0)
+# noise_pct_arr=(0.1 0.05 0.025 0.0)
+noise_pct_arr=(0)
 iters=10000
 
 for scene in "${cases[@]}";
