@@ -3,24 +3,24 @@ export CC=/usr/bin/gcc-10
 export CXX=/usr/bin/g++-10
 export CUDA_ROOT=/usr/local/cuda
 
-pip install -r requirements.txt
-pip install git+https://github.com/NVlabs/tiny-cuda-nn/#subdirectory=bindings/torch
+# pip install -r requirements.txt
+# pip install git+https://github.com/NVlabs/tiny-cuda-nn/#subdirectory=bindings/torch
 
-cd raymarching 
-pip install .
-cd ..
+# cd raymarching 
+# pip install .
+# cd ..
 
-cd gridencoder
-pip install .
-cd ..
+# cd gridencoder
+# pip install .
+# cd ..
 
-cd shencoder
-pip install .
-cd .. 
+# cd shencoder
+# pip install .
+# cd .. 
 
-cd ffmlp
-pip install .
-cd ..
+# cd ffmlp
+# pip install .
+# cd ..
 
 # cd detectron2 
 # pip install .
