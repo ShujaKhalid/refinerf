@@ -434,7 +434,7 @@ class NeRFDataset:
             # print("flow_masks_f.shape: {}".format(flow_masks_f.shape))
 
             self.grid = np.empty(
-                (len(self.images), self.H, self.W, 8), np.float32).cuda()
+                (len(self.images), self.H, self.W, 8), np.float32)
             # self.grid = np.empty((0, self.H, self.W, 8), np.float32)
             # for idx in range(num_img):
             #     self.grid = np.concatenate((self.grid, np.stack([i,
