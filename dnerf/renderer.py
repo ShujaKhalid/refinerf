@@ -452,7 +452,7 @@ class NeRFRenderer(nn.Module):
 
                 # print("\nxyzs_s.shape: {}".format(xyzs_s.shape))
                 sigmas_s, rgbs_s = self(
-                    xyzs_s, dirs_s, time, svd="static")
+                    xyzs_s, dirs_s, time, step=self.local_step, svd="static")
                 sigmas_s = self.density_scale * sigmas_s
 
             # Amazing visualization (POINT-CLOUDS)
@@ -501,7 +501,7 @@ class NeRFRenderer(nn.Module):
                 # print("\nt: {}".format(t))
                 # print("time: {}\n".format(time))
                 sigmas_d, rgbs_d, deform_d, blend, sf = self(
-                    xyzs_d, dirs_d, time, svd="dynamic")
+                    xyzs_d, dirs_d, time, step=self.local_step, svd="dynamic")
                 # Amazing visualization (POINT-CLOUDS)
                 # plot_pointcloud(xyzs_d.reshape(-1, 3).detach().cpu().numpy())
                 # We need the sceneflow from the dynamicNeRF.
@@ -775,7 +775,7 @@ class NeRFRenderer(nn.Module):
                     # print("time: {}".format(time))
                     # time = torch.Tensor([[0.9167]], device='cpu')  # FIXME
                     sigmas_s, rgbs_s = self(
-                        xyzs_s, dirs_s, time, svd="static")
+                        xyzs_s, dirs_s, time, step=self.local_step, svd="static")
                     sigmas_s = self.density_scale * sigmas_s
 
                     # print("sigmas_s.mean: {}".format(sigmas_s.mean()))
@@ -821,7 +821,7 @@ class NeRFRenderer(nn.Module):
                                                                       self.density_bitfield[t], self.cascade, self.grid_size, nears_d, fars_d, 128, perturb, dt_gamma, max_steps)
 
                     sigmas_d, rgbs_d, deform_d, blend, sf = self(
-                        xyzs_d, dirs_d, time, svd="dynamic")
+                        xyzs_d, dirs_d, time, step=self.local_step, svd="dynamic")
                     sigmas_d = self.density_scale * sigmas_d
 
                     if (DEBUG):

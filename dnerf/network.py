@@ -191,10 +191,10 @@ class NeRFNetwork(NeRFRenderer):
             self.encoder_time, self.in_dim_time = get_encoder(
                 encoding_time, input_dim=1, multires=self.encoder_time)  # FIXME: used to be 6
 
-        # print("\nin_dim_deform: {}".format(self.in_dim_deform))
-        # print("in_dim_time: {}".format(self.in_dim_time))
-        # print("in_dim_dir_d: {}".format(self.in_dim_dir_d))
-        # print("geo_feat_dim: {}".format(self.geo_feat_dim))
+        print("\nin_dim_deform: {}".format(self.in_dim_deform))
+        print("in_dim_time: {}".format(self.in_dim_time))
+        print("in_dim_dir_d: {}".format(self.in_dim_dir_d))
+        print("geo_feat_dim: {}".format(self.geo_feat_dim))
 
         deform_d_net = []
         for l in range(num_layers_deform):
@@ -261,16 +261,16 @@ class NeRFNetwork(NeRFRenderer):
         # self.sf_net = nn.Linear(self.input_ch + self.input_ch_time, 6)
         # self.blend_net = nn.Linear(self.input_ch + self.input_ch_time, 1)
 
-    def forward(self, x, d, t, svd):
+    def forward(self, x, d, t, step, svd):
         # x: [N, 3], in [-bound, bound]
         # d: [N, 3], nomalized in [-1, 1]
         # t: [1, 1], in [0, 1]
         # svd: [1], in ["static", "dynamic"]
         if (svd == "static"):
-            sigma, rgbs = self.run_snerf(x, d)
+            sigma, rgbs = self.run_snerf(x, d, step)
             return sigma, rgbs
         elif (svd == "dynamic"):
-            sigma, rgbs, deform, blend, sf = self.run_dnerf(x, d, t)
+            sigma, rgbs, deform, blend, sf = self.run_dnerf(x, d, t, step)
             return sigma, rgbs, deform, blend, sf
         elif (svd == "camera"):
             #fxfy = self.run_fxfy_network(self.h, self.w)
@@ -283,7 +283,7 @@ class NeRFNetwork(NeRFRenderer):
         else:
             raise Exception("Run NeRF in either `static` or `dynamic` mode")
 
-    def run_snerf(self, x, d):
+    def run_snerf(self, x, d, step):
 
         # sigma
         h = self.encoder_s(x, bound=self.bound)
@@ -310,11 +310,12 @@ class NeRFNetwork(NeRFRenderer):
 
         return sigma, rgbs
 
-    def run_dnerf(self, x, d, t):
+    def run_dnerf(self, x, d, t, step):
         # static
         # deform
-        enc_ori_x = self.encoder_deform(x, bound=self.bound)  # [N, C]
-        enc_t = self.encoder_time(t)  # [1, 1] --> [1, C']
+        enc_ori_x = self.encoder_deform(
+            x, bound=self.bound, step=step)  # [N, C]
+        enc_t = self.encoder_time(t, step=step)  # [1, 1] --> [1, C']
         # print("\nt: {}".format(t))
         # print("x.mean: {}".format(x.mean()))
         if enc_t.shape[0] == 1:
@@ -347,10 +348,10 @@ class NeRFNetwork(NeRFRenderer):
         # 4096 -> dim=32
         # 4096 -> dim=32
         if (self.mode == "deform"):
-            x_def = self.encoder_deform(x_def, bound=self.bound)
+            x_def = self.encoder_deform(x_def, bound=self.bound, step=step)
         else:
             x_def = self.encoder_d(
-                x_def, bound=self.encoder_d_constant*self.bound)
+                x_def, bound=self.encoder_d_constant*self.bound, step=step)
 
         # print("x_def.shape: {}".format(x_def.shape))
         # print("enc_ori_x.shape: {}".format(enc_ori_x.shape))
@@ -382,7 +383,7 @@ class NeRFNetwork(NeRFRenderer):
 
         return sigma, rgbs, deform, blending, sf
 
-    def density(self, x, t):
+    def density(self, x, t, step=1000000):  # FIXME
         # x: [N, 3], in [-bound, bound]
         # t: [1, 1], in [0, 1]
 
@@ -391,8 +392,9 @@ class NeRFNetwork(NeRFRenderer):
         # print("enc_t: {}".format(enc_t))
 
         # deformation
-        enc_ori_x = self.encoder_deform(x, bound=self.bound)  # [N, C]
-        enc_t = self.encoder_time(t)  # [1, 1] --> [1, C']
+        enc_ori_x = self.encoder_deform(
+            x, bound=self.bound, step=step)  # [N, C]
+        enc_t = self.encoder_time(t, step=step)  # [1, 1] --> [1, C']
         if enc_t.shape[0] == 1:
             enc_t = enc_t.repeat(x.shape[0], 1)  # [1, C'] --> [N, C']
         # print("t: {}".format(t))
@@ -410,7 +412,7 @@ class NeRFNetwork(NeRFRenderer):
 
         # sigma
         # x = self.encoder_d(x, bound=self.bound)  # FIXME
-        x = self.encoder_deform(x, bound=self.bound)
+        x = self.encoder_deform(x, bound=self.bound, step=step)
         h = torch.cat([x, enc_ori_x, enc_t], dim=1)
         for l in range(self.num_layers):
             h = self.sigma_d_net[l](h)

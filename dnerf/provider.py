@@ -309,6 +309,10 @@ class NeRFDataset:
         # [debug] uncomment to view all training poses.
         # visualize_poses(self.poses.numpy())
 
+        # FIXME
+        np.save("./results/Ours/refinerf/poses_init_"+str(type),
+                self.poses.cpu().numpy())
+
         # [debug] uncomment to view examples of randomly generated poses.
         # visualize_poses(rand_poses(100, self.device, radius=self.radius).cpu().numpy())
         self.FLOW_FLAG = True
