@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 class LearnFocal(nn.Module):
-    def __init__(self, H, W, noise_pct):
+    def __init__(self, H, W, noise_pct, nerfmm):
         super(LearnFocal, self).__init__()
         # self.H = torch.tensor(
         #     H, dtype=torch.float32).cuda()
@@ -24,7 +24,7 @@ class LearnFocal(nn.Module):
         self.fact = torch.round(
             self.W/self.H) if self.W >= self.H else torch.round(self.H/self.W)
         if self.W == self.H:
-            self.fact *= 2
+            self.fact *= 1
         self.W_temp = torch.tensor(
             self.W/self.fact, dtype=torch.float32).cuda()
         self.H_temp = torch.tensor(
@@ -46,16 +46,17 @@ class LearnFocal(nn.Module):
             size=(1, 2), dtype=torch.float32), requires_grad=True)  # (N, 3)
         # self.layer2 = nn.Linear(2, 2, bias=False)
         # self.layer3 = nn.Linear(2, 2, bias=False)
+        self.nerfmm = nerfmm
 
     def forward(self, fxfy_gt):
         # order = 2, check our supplementary.
 
-        PREDICT = "gt_ablation"
+        PREDICT = "fxfycxcy" if self.nerfmm else "gt_ablation"  # TODO: fix to preferred mode
         fxfy_gt = torch.Tensor(fxfy_gt).cuda()
 
         if (PREDICT == "fxfy"):
-            fxfy = torch.stack([self.fx**2 * self.W_temp,
-                                self.fy**2 * self.W_temp,
+            fxfy = torch.stack([self.fx**2 * self.W,
+                                self.fy**2 * self.W,
                                 self.W_temp,
                                 self.H_temp])
 

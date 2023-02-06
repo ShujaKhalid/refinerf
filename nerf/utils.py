@@ -441,7 +441,6 @@ class PSNRMeter:
                           self.measure_lpips(), global_step)
 
     def report(self):
-
         return f'PSNR = {self.measure_psnr():.6f} - SSIM = {self.measure_ssim():.6f} - LPIPS = {self.measure_lpips():.6f}'
 
 
@@ -1098,9 +1097,9 @@ class Trainer(object):
             self.scaler.step(self.optimizer_model)
             # self.scaler.step(self.optimizer_fxfy)
             # TODO: Add to config
-            if (self.global_step <= 5000 and self.pred_extrinsics):
+            if (self.global_step <= 1000 and self.pred_extrinsics):
                 self.scaler.step(self.optimizer_pose)
-            if (self.global_step <= 3600 and self.pred_intrinsics):
+            if (self.global_step <= 480 and self.pred_intrinsics):
                 self.scaler.step(self.optimizer_fxfy)
 
             # print("\n\n\n model_fxfy")

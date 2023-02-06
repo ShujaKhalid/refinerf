@@ -89,9 +89,26 @@ class Trainer(_Trainer):
             if (INTRINSICS_FLAG):
                 fxfy_pred = self.model_fxfy(fxfy_gt=self.intrinsics)
                 self.intrinsics = fxfy_pred
+                # print("\n\nfxfy_actual: {}".format(intrinsics_gt))
+                # print("self.intrinsics: {}".format(self.intrinsics))
+                # print()
+                self.writer.add_scalar(os.path.join("error", "fx"),
+                                       self.intrinsics[0], self.global_step)
+                self.writer.add_scalar(os.path.join("error", "fy"),
+                                       self.intrinsics[1], self.global_step)
             if (EXTRINSICS_FLAG):
-                poses_pred = self.model_pose(self.index, poses_gt)
+                poses_pred, error = self.model_pose(self.index, poses_gt)
                 self.poses = poses_pred
+                # print("\n\nextrinsics_actual: {}".format(poses_gt))
+                # print("self.poses: {}".format(self.poses))
+                # print(error["R"])
+                # print(error["t"])
+                self.writer.add_scalar(os.path.join("error", "R"),
+                                       error["R"], self.global_step)
+                self.writer.add_scalar(os.path.join("error", "t"),
+                                       error["t"], self.global_step)
+                # print()
+
             # self.poses[0, 0, 0] = poses_pred[0, 0]
             # self.poses = torch.unsqueeze(
             #     poses_pred, 0)  # [B, 4, 4]

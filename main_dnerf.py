@@ -43,7 +43,7 @@ if __name__ == '__main__':
     # parser.add_argument('--dynamic_iters', type=str, default="{'d1': (2400, 3600), 'b1': (3600, 4800), 'd3': (6000, 7200), 'b3': (10800, 14400), 'd2': (15600, 16800)}",  # 2400 iters # BOOOO
     # parser.add_argument('--dynamic_iters', type=str, default="{'d2': (1200, 6000), 'd3': (7200, 8400), 'd4': (9600, 10800)}",  # 2400 iters
     # parser.add_argument('--dynamic_iters', type=str, default="{'d1': (1200, 2400), 'd2': (3600, 100000)}",  # 2400 iters
-    parser.add_argument('--dynamic_iters', type=str, default="{'d1': (0, 100000)}",  # 2400 iters
+    parser.add_argument('--dynamic_iters', type=str, default="{'d1': (200000, 200000)}",  # 2400 iters
                         # parser.add_argument('--dynamic_iters', type=str, default="{'d1': (0, 12000)}",  # 24000 iters
                         help="intervals to train the dynamic model for")
     parser.add_argument('--update_extra_interval', type=int, default=12000000,  # TODO: used to be 100
@@ -142,6 +142,10 @@ if __name__ == '__main__':
                         default=0, help="pred_extrinsics")
     parser.add_argument('--noise_pct', type=float,
                         default=0.1, help="noise_pct")
+    parser.add_argument('--barf', type=int,
+                        default=0, help="noise_pct")
+    parser.add_argument('--nerfmm', type=int,
+                        default=0, help="noise_pct")
 
     opt = parser.parse_args()
 
@@ -192,11 +196,12 @@ if __name__ == '__main__':
         encoder_d_constant=opt.encoder_d_constant,
         encoder_deform=opt.encoder_deform,
         encoder_time=opt.encoder_time,
+        barf=opt.barf
     )
     model_fxfy = LearnFocal(
-        H=270, W=480, noise_pct=opt.noise_pct).cuda()  # FIXME
+        H=270, W=480, noise_pct=opt.noise_pct, nerfmm=opt.nerfmm).cuda()  # FIXME
     model_pose = LearnPose(
-        num_cams=24, noise_pct=opt.noise_pct).cuda()  # FIXME
+        num_cams=24, noise_pct=opt.noise_pct, nerfmm=opt.nerfmm).cuda()  # FIXME
     # model_fxfy = LearnFocal(H=800, W=800).cuda()  # FIXME
     # model_pose = LearnPose(num_cams=150).cuda()  # FIXME
     # model_camera = CameraNetwork(opt.H, opt.W, num_cams=24)  # FIXME

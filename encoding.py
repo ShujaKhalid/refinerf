@@ -46,17 +46,23 @@ class FreqEncoder(nn.Module):
 
         out = []
 
-        print(kwargs)
+        # print()
+        # print(kwargs)
         step = kwargs["step"]
-        alpha = step // 200
 
-        print("alpha: {}".format(alpha))
+        # alpha = 3*(2.718)**(step//2000)  # TODO: used to be 2000
+        alpha = 500  # TODO: used to be 2000
+
+        if alpha <= 3:
+            alpha = 3
+
+        # print("alpha: {}".format(alpha))
 
         if self.include_input:
             out.append(input)
 
         for i in range(len(self.freq_bands)):
-            print(w(alpha, self.freq_bands[i]))
+            # print(w(alpha, self.freq_bands[i]))
             freq = w(alpha, self.freq_bands[i]) * self.freq_bands[i]
             for p_fn in self.periodic_fns:
                 out.append(p_fn(input * freq))

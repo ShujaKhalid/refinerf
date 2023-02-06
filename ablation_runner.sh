@@ -27,19 +27,22 @@ export CUDA_ROOT=/usr/local/cuda
 # cd ..
 
 #cases=('Playground' 'Balloon1' 'Balloon2' 'Umbrella' 'Truck' 'Jumping')
-#cases=('Umbrella' 'Playground' 'Balloon1' 'Balloon2' 'Skating' 'Jumping')
+cases=('Umbrella' 'Playground' 'Balloon1' 'Balloon2' 'Skating' 'Jumping')
 #cases=('Umbrella' 'Playground')
-cases=('Umbrella')
-deform_dims=(10)
-time_dims=(6)
-deform_qty_arr=(8)
-deform_hidden_qty_arr=(256)
-deform_intrinsics_arr=(0)
-#noise_pct_arr=(0.5 0.25 0.0)
-deform_extrinsics_arr=(0)
+# cases=('Playground')
+deform_dims=(15)
+time_dims=(3)
+deform_qty_arr=(4)
+deform_hidden_qty_arr=(64)
+deform_intrinsics_arr=(0 1)
+# noise_pct_arr=(1.0)
+deform_extrinsics_arr=(0 1)
+noise_pct_arr=(0.3)
+barf_arr=(1)
+nerfmm_arr=(0 1)
 # noise_pct_arr=(0.1 0.05 0.025 0.0)
-noise_pct_arr=(0)
-iters=100000
+# noise_pct_arr=(0)
+iters=1200
 
 for scene in "${cases[@]}";
 do
@@ -58,34 +61,42 @@ do
 						do
 							for noise_pct in "${noise_pct_arr[@]}";
 							do
-								out_folder="refinerf" 
-								rm -rf $out_folder/checkpoints/*
-								#mkdir -p $outfolder
-								tensorboard_folder=$scene"_encoder_deform_"$deform_dim"_time_dim_"$time_dim"_deform_qty_"$deform_qty"_deform_hidden_qty_"$deform_hidden_qty"_iters_"$iters"_intrinsics_"$intrinsics"_extrinsics_"$extrinsics"_noise_pct_"$noise_pct
-								python main_dnerf.py $DATASET_PATH \
-									--workspace $out_folder \
-									--tensorboard_folder $tensorboard_folder \
-									--encoder_s_fact 10 \
-									--encoder_dir_s_fact 4  \
-									--encoder_d_fact 10 \
-									--encoder_dir_d_fact 4 \
-									--encoder_d_constant 1  \
-									--encoder_deform $deform_dim  \
-									--encoder_time $time_dim \
-									--num_layers 2 \
-									--hidden_dim 256 \
-									--geo_feat_dim 64 \
-									--num_layers_color 3 \
-									--hidden_dim_color 256  \
-									--num_layers_deform $deform_qty \
-									--hidden_dim_deform $deform_hidden_qty \
-									--iters $iters \
-									--noise_pct $noise_pct \
-									--fp16 \
-									--pred_intrinsics $intrinsics \
-									--pred_extrinsics $extrinsics \
-									-O
-								cp -pr /home/skhalid/Documents/torch-ngp/results/Ours/$out_folder/* ./$out_folder/run/ngp/$tensorboard_folder
+								for barf in "${barf_arr[@]}";
+								do
+									for nerfmm in "${nerfmm_arr[@]}";
+									do
+										out_folder="refinerf" 
+										rm -rf $out_folder/checkpoints/*
+										#mkdir -p $outfolder
+										tensorboard_folder=$scene"_encoder_deform_"$deform_dim"_time_dim_"$time_dim"_deform_qty_"$deform_qty"_deform_hidden_qty_"$deform_hidden_qty"_iters_"$iters"_intrinsics_"$intrinsics"_extrinsics_"$extrinsics"_noise_pct_"$noise_pct"_barf_"$barf"_nerfmm_"$nerfmm
+										python main_dnerf.py $DATASET_PATH \
+											--workspace $out_folder \
+											--tensorboard_folder $tensorboard_folder \
+											--encoder_s_fact 10 \
+											--encoder_dir_s_fact 4  \
+											--encoder_d_fact 10 \
+											--encoder_dir_d_fact 4 \
+											--encoder_d_constant 1  \
+											--encoder_deform $deform_dim  \
+											--encoder_time $time_dim \
+											--num_layers 2 \
+											--hidden_dim 256 \
+											--geo_feat_dim 64 \
+											--num_layers_color 3 \
+											--hidden_dim_color 256  \
+											--num_layers_deform $deform_qty \
+											--hidden_dim_deform $deform_hidden_qty \
+											--iters $iters \
+											--noise_pct $noise_pct \
+											--fp16 \
+											--pred_intrinsics $intrinsics \
+											--pred_extrinsics $extrinsics \
+											--barf $barf \
+											--nerfmm $nerfmm \
+											-O
+										cp -pr /home/skhalid/Documents/torch-ngp/results/Ours/$out_folder/* ./$out_folder/run/ngp/$tensorboard_folder
+									done
+								done										
 							done
 						done
 					done

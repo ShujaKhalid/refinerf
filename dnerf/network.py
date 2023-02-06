@@ -37,6 +37,7 @@ class NeRFNetwork(NeRFRenderer):
                  encoder_d_constant=1,
                  encoder_deform=10,
                  encoder_time=0,
+                 barf=0,
                  w=None,
                  h=None,
                  num_cams=None,
@@ -50,6 +51,7 @@ class NeRFNetwork(NeRFRenderer):
 
         # Camera params
         self.num_cams = num_cams  # FIXME
+        self.barf = barf
         self.h, self.w = h, w
         self.r = nn.Parameter(torch.zeros(
             size=(1, 3), dtype=torch.float32), requires_grad=learn_R)  # (N, 3)
@@ -266,6 +268,11 @@ class NeRFNetwork(NeRFRenderer):
         # d: [N, 3], nomalized in [-1, 1]
         # t: [1, 1], in [0, 1]
         # svd: [1], in ["static", "dynamic"]
+
+        # FIXME - temporary override
+        if not self.barf:
+            step = 1000000
+
         if (svd == "static"):
             sigma, rgbs = self.run_snerf(x, d, step)
             return sigma, rgbs
