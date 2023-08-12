@@ -17,17 +17,17 @@ class NeRFNetwork(NeRFRenderer):
                  encoding_time="frequency",  # frequency
                  encoding_deform="frequency",  # "hashgrid" seems worse
                  encoding_bg="hashgrid",
-                 num_layers=2,
-                 hidden_dim=256,
-                 geo_feat_dim=64,  # change me
-                 num_layers_color=3,
-                 hidden_dim_color=256,
-                 num_layers_bg=2,
-                 hidden_dim_bg=64,
+                 num_layers=1,
+                 hidden_dim=1,
+                 geo_feat_dim=1,  # change me
+                 num_layers_color=1,
+                 hidden_dim_color=1,
+                 num_layers_bg=1,
+                 hidden_dim_bg=1,
                  # a deeper MLP is very necessary for performance (generalization)
-                 num_layers_deform=8,
+                 num_layers_deform=1,
                  # a wider MLP is very necessary for performance (details)
-                 hidden_dim_deform=256,
+                 hidden_dim_deform=1,
                  bound=1,
                  encoder_s_fact=10,   # 10 works
                  encoder_dir_s_fact=4,  # 10 works
@@ -280,8 +280,8 @@ class NeRFNetwork(NeRFRenderer):
             sigma, rgbs, deform, blend, sf = self.run_dnerf(x, d, t, step)
             return sigma, rgbs, deform, blend, sf
         elif (svd == "camera"):
-            #fxfy = self.run_fxfy_network(self.h, self.w)
-            #pose = self.run_pose_network()
+            # fxfy = self.run_fxfy_network(self.h, self.w)
+            # pose = self.run_pose_network()
             fxfy = nn.Parameter(torch.zeros(
                 size=(1, 2), dtype=torch.float32), requires_grad=True)
             pose = nn.Parameter(torch.zeros(
@@ -373,7 +373,7 @@ class NeRFNetwork(NeRFRenderer):
             if l != self.num_layers - 1:
                 h = F.relu(h, inplace=True)
 
-        #sigma = F.relu(h[..., 0])
+        # sigma = F.relu(h[..., 0])
         sigma = trunc_exp(h[..., 0])
         geo_feat = h[..., 1:]
 
@@ -426,7 +426,7 @@ class NeRFNetwork(NeRFRenderer):
             if l != self.num_layers - 1:
                 h = F.relu(h, inplace=True)
 
-        #sigma = F.relu(h[..., 0])
+        # sigma = F.relu(h[..., 0])
         sigma = trunc_exp(h[..., 0])
         geo_feat = h[..., 1:]
 

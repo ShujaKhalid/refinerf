@@ -132,7 +132,7 @@ class Trainer(_Trainer):
             # #     "\nfxfy_new.shape: {}\nposes_new.shape: {}\n".format(fxfy_pred.shape, poses_pred.shape))
             # print()
             # self.intrinsics = [416.44504027, 429.45316301, 240, 125]
-            #self.intrinsics = [1270, 640, 240, 125]
+            # self.intrinsics = [1270, 640, 240, 125]
 
             # print("\n\nfxfy_actual: {}".format(intrinsics_gt))
             # print("self.intrinsics: {}".format(self.intrinsics))
@@ -311,8 +311,9 @@ class Trainer(_Trainer):
 
         pred_rgb = ret['image']
 
-        np.save("./results/Ours/refinerf/poses_step_"+str(data["index"][0]),
-                data['poses'].cpu().numpy())
+        # FIXME
+        # np.save("./results/Ours/refinerf/poses_step_"+str(data["index"][0]),
+        #         data['poses'].cpu().numpy())
 
         # TODO: Get outputs here
         # depth_s = outputs['depth_s']

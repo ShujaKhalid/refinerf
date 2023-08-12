@@ -107,9 +107,9 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, dynamic_iter=
                 coords_d = torch.where(mask > thresh)[0]  # For training
                 coords_s_mask = torch.where(mask == 0.0)[0]
                 coords_d_mask = torch.where(mask > 0.0)[0]  # For inference
-                #print("\ncoords_s: {}".format(coords_s))
-                #print("coords_d: {}".format(coords_d))
-                #print("mask.unique: {}".format(np.unique(mask.cpu().numpy())))
+                # print("\ncoords_s: {}".format(coords_s))
+                # print("coords_d: {}".format(coords_d))
+                # print("mask.unique: {}".format(np.unique(mask.cpu().numpy())))
 
                 # inds = torch.cat([coords_s, coords_d], 0)
                 cond = np.array([key for key in dynamic_iters if dynamic_iter >= dynamic_iters[key][0] and dynamic_iter <
@@ -405,7 +405,7 @@ class PSNRMeter:
                 lpips = self.lpips_loss.forward(
                     self.im2tensor(truth_int), self.im2tensor(pred_int)).item()
                 psnr = cv2.PSNR(truth_int, pred_int)
-                #psnr = -10 * np.log10(np.mean((pred_int - truth_int) ** 2))
+                # psnr = -10 * np.log10(np.mean((pred_int - truth_int) ** 2))
                 # print("pred_f16.mean: {}".format(pred_f16.mean()))
                 # print("truth_f16.mean: {}".format(truth_f16.mean()))
 
@@ -1080,8 +1080,8 @@ class Trainer(object):
             self.global_step += 1
 
             self.optimizer_model.zero_grad()
-            self.optimizer_fxfy.zero_grad()
-            self.optimizer_pose.zero_grad()
+            # self.optimizer_fxfy.zero_grad()
+            # self.optimizer_pose.zero_grad()
 
             with torch.cuda.amp.autocast(enabled=self.fp16):
                 preds, truths, loss = self.train_step(data)
@@ -1097,10 +1097,10 @@ class Trainer(object):
             self.scaler.step(self.optimizer_model)
             # self.scaler.step(self.optimizer_fxfy)
             # TODO: Add to config
-            if (self.global_step <= 1000 and self.pred_extrinsics):
-                self.scaler.step(self.optimizer_pose)
-            if (self.global_step <= 480 and self.pred_intrinsics):
-                self.scaler.step(self.optimizer_fxfy)
+            # if (self.global_step <= 1000 and self.pred_extrinsics):
+            #     self.scaler.step(self.optimizer_pose)
+            # if (self.global_step <= 480 and self.pred_intrinsics):
+            #     self.scaler.step(self.optimizer_fxfy)
 
             # print("\n\n\n model_fxfy")
             # for p in self.model_fxfy.parameters():
@@ -1199,7 +1199,7 @@ class Trainer(object):
                 self.local_step += 1
 
                 # print("data.keys(): {}".format(data.keys()))
-                # print("data.time: {}".format(data["time"]))
+                print("data.time: {}".format(data["time"]))
 
                 with torch.cuda.amp.autocast(enabled=self.fp16):
                     preds, preds_depth, truths, loss = self.eval_step(data)

@@ -296,7 +296,7 @@ class NeRFDataset:
 
         # calculate mean radius of all camera poses
         self.radius = self.poses[:, :3, 3].norm(dim=-1).mean(0).item()
-        #print(f'[INFO] dataset camera poses: radius = {self.radius:.4f}, bound = {self.bound}')
+        # print(f'[INFO] dataset camera poses: radius = {self.radius:.4f}, bound = {self.bound}')
 
         # initialize error_map
         if self.training and self.opt.error_map:
@@ -310,8 +310,8 @@ class NeRFDataset:
         # visualize_poses(self.poses.numpy())
 
         # FIXME
-        np.save("./results/Ours/refinerf/poses_init_"+str(type),
-                self.poses.cpu().numpy())
+        # np.save("./results/Ours/refinerf/poses_init_"+str(type),
+        #         self.poses.cpu().numpy())
 
         # [debug] uncomment to view examples of randomly generated poses.
         # visualize_poses(rand_poses(100, self.device, radius=self.radius).cpu().numpy())

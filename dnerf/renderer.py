@@ -497,7 +497,7 @@ class NeRFRenderer(nn.Module):
                 xyzs_d, dirs_d, deltas_d, rays_d = raymarching.march_rays_train(
                     rays_o_d, rays_d_d, self.bound, self.density_bitfield[t], self.cascade, self.grid_size, nears_d, fars_d, counter, self.mean_count, perturb, 128, force_all_rays, dt_gamma, max_steps)
 
-                #print("\nxyzs_d.shape: {}".format(xyzs_d.shape))
+                # print("\nxyzs_d.shape: {}".format(xyzs_d.shape))
                 # print("\nt: {}".format(t))
                 # print("time: {}\n".format(time))
                 sigmas_d, rgbs_d, deform_d, blend, sf = self(
@@ -744,7 +744,7 @@ class NeRFRenderer(nn.Module):
             # print("\n\n\nRunning Inference for time t: {}\n\n\n".format(t))
             # allocate outputs
             # if use autocast, must init as half so it won't be autocasted and lose reference.
-            #dtype = torch.half if torch.is_autocast_enabled() else torch.float32
+            # dtype = torch.half if torch.is_autocast_enabled() else torch.float32
             # output should always be float32! only network inference uses half.
             dtype = torch.float32
 
@@ -837,7 +837,7 @@ class NeRFRenderer(nn.Module):
                         print("rays_alive_d.shape (after): {}".format(
                             rays_alive_d.shape))
 
-                    #print(f'step = {step}, n_step = {n_step}, n_alive = {n_alive}, xyzs: {xyzs.shape}')
+                    # print(f'step = {step}, n_step = {n_step}, n_alive = {n_alive}, xyzs: {xyzs.shape}')
 
                     step += n_step
 
@@ -860,8 +860,8 @@ class NeRFRenderer(nn.Module):
                 # print("weights_sum_s.shape: {}".format(weights_sum_s.shape))
                 # print("weights_sum_d.shape: {}".format(weights_sum_d.shape))
 
-                #image_s_tmp[rend_s, :] = image_s[rend_s, :]
-                #image_d_tmp[rend_d, :] = image_d[rend_d, :]
+                # image_s_tmp[rend_s, :] = image_s[rend_s, :]
+                # image_d_tmp[rend_d, :] = image_d[rend_d, :]
 
                 # image_s_tmp[rend_s, :] = (
                 #     weights_sum_s).unsqueeze(-1)[rend_s, :] * bg_color
@@ -893,7 +893,7 @@ class NeRFRenderer(nn.Module):
                 depth = image[:, 0]  # FIXME
 
             elif (N_dynamic > 0):
-                #image = image_d + (1 - weights_sum_d).unsqueeze(-1) * bg_color
+                # image = image_d + (1 - weights_sum_d).unsqueeze(-1) * bg_color
                 # FIXME: nears and fars are logically incorrect
                 depth = torch.clamp(depth_d - nears_d,
                                     min=0) / (fars_d - nears_d)
@@ -990,7 +990,7 @@ class NeRFRenderer(nn.Module):
         self.density_grid[count.unsqueeze(
             0).expand_as(self.density_grid) == 0] = -1
 
-        #print(f'[mark untrained grid] {(count == 0).sum()} from {resolution ** 3 * self.cascade}')
+        # print(f'[mark untrained grid] {(count == 0).sum()} from {resolution ** 3 * self.cascade}')
 
     @torch.no_grad()
     def update_extra_state(self, decay=0.95, S=128):
@@ -1119,7 +1119,7 @@ class NeRFRenderer(nn.Module):
                 self.step_counter[:total_step, 0].sum().item() / total_step)
         self.local_step = 0
 
-        #print(f'[density grid] min={self.density_grid.min().item():.4f}, max={self.density_grid.max().item():.4f}, mean={self.mean_density:.4f}, occ_rate={(self.density_grid > 0.01).sum() / (128**3 * self.cascade):.3f} | [step counter] mean={self.mean_count}')
+        # print(f'[density grid] min={self.density_grid.min().item():.4f}, max={self.density_grid.max().item():.4f}, mean={self.mean_density:.4f}, occ_rate={(self.density_grid > 0.01).sum() / (128**3 * self.cascade):.3f} | [step counter] mean={self.mean_count}')
 
     def render(self, rays_o, rays_d, time, staged=False, max_ray_batch=4096, **kwargs):
         # rays_o, rays_d: [B, N, 3], assumes B == 1
