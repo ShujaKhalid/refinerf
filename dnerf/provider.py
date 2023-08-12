@@ -232,9 +232,16 @@ class NeRFDataset:
             self.times = []
 
             # print("frames: {}".format(frames))
+            # Modify data here to account for interpolation
+            # NOTE: Only run this in validation mode
+            FACTOR = 9  # FIXME: Add to config file
+            if (FACTOR > 1 and type == 'val'):
+                frames = np.repeat(frames, FACTOR)
+            else:
+                frames = np.repeat(frames, FACTOR)  # DEBUGGING
 
             # assume frames are already sorted by time!
-            for f in tqdm.tqdm(frames, desc=f'Loading {type} data'):
+            for t, f in enumerate(tqdm.tqdm(frames, desc=f'Loading {type} data')):
                 f_path = os.path.join(self.root_path, f['file_path'])
                 if self.mode == 'blender' and '.' not in os.path.basename(f_path):
                     f_path += '.png'  # so silly...
@@ -276,9 +283,12 @@ class NeRFDataset:
                     # assume frame index as time
                     time = int(os.path.basename(f['file_path'])[:-4])
 
+                if (type == 'val'):
+                    time = t/(len(frames))
+                    print('updated_time: {}'.format(time))
+
                 self.poses.append(pose)
                 self.images.append(image)
-                # print("image.shape: {}".format(image.shape))
                 self.times.append(time)
 
         self.poses = torch.from_numpy(
@@ -322,7 +332,7 @@ class NeRFDataset:
             basedir = self.root_path
             disp_dir = os.path.join(basedir, 'disp')
             sh = image.shape[:2]
-            num_img = len(frames)  # FIXME
+            num_img = len(frames) // FACTOR  # FIXME
 
             # disp files
             if (os.path.exists(disp_dir)):
@@ -333,6 +343,10 @@ class NeRFDataset:
                                    (sh[1], sh[0]),
                                    interpolation=cv2.INTER_NEAREST) for f in dispfiles]
                 disp = np.stack(disp, -1)
+
+                # FIXME
+                disp = np.repeat(disp, FACTOR, axis=-1)
+
             else:
                 disp = torch.zeros(
                     (self.H, self.W, len(self.images)))
@@ -347,6 +361,10 @@ class NeRFDataset:
                                     interpolation=cv2.INTER_NEAREST) for f in maskfiles]
                 masks = np.stack(masks, -1)
                 masks = np.float32(masks > 1e-3)
+
+                # FIXME
+                masks = np.repeat(masks, FACTOR, axis=-1)
+
             else:
                 masks = torch.zeros(
                     (self.H, self.W, 3, len(self.images)))
@@ -361,6 +379,11 @@ class NeRFDataset:
                                         interpolation=cv2.INTER_NEAREST) for f in maskfiles_val]
                 masks_val = np.stack(masks_val, -1)
                 masks_val = np.float32(masks_val > 1e-3)
+
+                # FIXME - for interpolation
+                # if (FACTOR > 1 and type == 'val'):
+                masks_val = np.repeat(masks_val, FACTOR, axis=-1)
+
             else:
                 masks_val = torch.zeros(
                     (self.H, self.W, 3, len(self.images)))
@@ -557,7 +580,7 @@ class NeRFDataset:
         if (self.FLOW_FLAG):
             masks = torch.reshape(self.masks, (-1, self.masks.shape[2], self.masks.shape[3]))[
                 :, :, index].to(self.device)  # [B, N]
-            masks_val = torch.reshape(self.masks_val, (-1, self.masks.shape[2], self.masks.shape[3]))[
+            masks_val = torch.reshape(self.masks_val, (-1, self.masks_val.shape[2], self.masks_val.shape[3]))[
                 :, :, index].to(self.device)  # [B, N]
             grid = torch.Tensor(self.grid).cuda()
             grid = torch.reshape(
@@ -600,6 +623,11 @@ class NeRFDataset:
         #     print(
         #         "fxfy_new.shape: {}\nposes_new.shape: {}".format(self.intrinsics.shape, poses.shape))
         #     print()
+
+        # print('\nself.masks_val: {}'.format(self.masks_val.shape))
+        # print('masks_val: {}'.format(masks_val.shape))
+        # print('self.masks: {}'.format(self.masks.shape))
+        # print('masks: {}'.format(masks.shape))
 
         results = {
             'H': self.H,

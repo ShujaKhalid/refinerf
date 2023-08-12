@@ -142,16 +142,6 @@ class Trainer(_Trainer):
             # print("self.poses: {}".format(self.poses))
             # print()
 
-        # bypass rays for testing
-        # rays = {}
-        # rays["inds"] = torch.ones(1, 4096, dtype=torch.long).to(self.device)
-        # rays["inds_s"] = torch.ones(117280, dtype=torch.int16).to(self.device)
-        # rays["inds_d"] = torch.ones(12320, dtype=torch.int16).to(self.device)
-        # rays["rays_o"] = torch.ones(
-        #     1, 4096, 3, dtype=torch.float32).to(self.device)
-        # rays["rays_d"] = torch.ones(
-        #     1, 4096, 3, dtype=torch.float32).to(self.device)
-
         if self.TRAIN_FLAG:
             rays = get_rays(self.poses, self.intrinsics, self.H,
                             self.W, self.masks, self.num_rays, self.error_map, self.DYNAMIC_ITER, self.DYNAMIC_ITERS)  # sk_debug - added masks

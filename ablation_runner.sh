@@ -30,10 +30,10 @@ export CUDA_ROOT=/usr/local/cuda
 #cases=('Umbrella' 'Playground' 'Balloon1' 'Balloon2' 'Skating' 'Jumping')
 #cases=('Umbrella' 'Playground')
 cases=('Playground')
-deform_dims=(15)
-time_dims=(10)
-deform_qty_arr=(4)
-deform_hidden_qty_arr=(256)
+deform_dims=(9)
+time_dims=(3)
+deform_qty_arr=(3)
+deform_hidden_qty_arr=(1024)
 deform_intrinsics_arr=(0)
 # noise_pct_arr=(1.0)
 deform_extrinsics_arr=(0)
@@ -74,9 +74,9 @@ do
 											--workspace $out_folder \
 											--tensorboard_folder $tensorboard_folder \
 											--encoder_s_fact 10 \
-											--encoder_dir_s_fact 4  \
+											--encoder_dir_s_fact 10  \
 											--encoder_d_fact 10 \
-											--encoder_dir_d_fact 4 \
+											--encoder_dir_d_fact 10 \
 											--encoder_d_constant 1  \
 											--encoder_time $time_dim \
 											--encoder_deform $deform_dim  \

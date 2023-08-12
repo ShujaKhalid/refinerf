@@ -215,6 +215,9 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, dynamic_iter=
         if (masks != None):
             # mask = masks[e:masks.shape[0]-e, -1].to(device)
             mask = masks.mean(1).to(device)
+            # print()
+            # print(masks.shape)
+            # print(mask.shape)
 
             coords_s = torch.where(mask == 0.0)[0]
             coords_d = torch.where(mask > 0.0)[0]
@@ -1199,7 +1202,7 @@ class Trainer(object):
                 self.local_step += 1
 
                 # print("data.keys(): {}".format(data.keys()))
-                print("data.time: {}".format(data["time"]))
+                # print("\ndata.time: {}".format(data["time"]))
 
                 with torch.cuda.amp.autocast(enabled=self.fp16):
                     preds, preds_depth, truths, loss = self.eval_step(data)

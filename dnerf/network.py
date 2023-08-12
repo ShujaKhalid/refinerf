@@ -17,27 +17,27 @@ class NeRFNetwork(NeRFRenderer):
                  encoding_time="frequency",  # frequency
                  encoding_deform="frequency",  # "hashgrid" seems worse
                  encoding_bg="hashgrid",
-                 num_layers=1,
-                 hidden_dim=1,
-                 geo_feat_dim=1,  # change me
-                 num_layers_color=1,
-                 hidden_dim_color=1,
-                 num_layers_bg=1,
-                 hidden_dim_bg=1,
+                 num_layers=None,
+                 hidden_dim=None,
+                 geo_feat_dim=None,  # change me
+                 num_layers_color=None,
+                 hidden_dim_color=None,
+                 num_layers_bg=None,
+                 hidden_dim_bg=None,
                  # a deeper MLP is very necessary for performance (generalization)
-                 num_layers_deform=1,
+                 num_layers_deform=None,
                  # a wider MLP is very necessary for performance (details)
-                 hidden_dim_deform=1,
+                 hidden_dim_deform=None,
                  bound=1,
-                 encoder_s_fact=10,   # 10 works
-                 encoder_dir_s_fact=4,  # 10 works
+                 encoder_s_fact=None,   # 10 works
+                 encoder_dir_s_fact=None,  # 10 works
                  # dynamic
-                 encoder_d_fact=10,   # 10 works
-                 encoder_dir_d_fact=4,  # 10 works
-                 encoder_d_constant=1,
-                 encoder_deform=10,
-                 encoder_time=0,
-                 barf=0,
+                 encoder_d_fact=None,   # 10 works
+                 encoder_dir_d_fact=None,  # 10 works
+                 encoder_d_constant=None,
+                 encoder_deform=None,
+                 encoder_time=None,
+                 barf=None,
                  w=None,
                  h=None,
                  num_cams=None,
