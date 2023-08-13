@@ -234,7 +234,7 @@ class NeRFDataset:
             # print("frames: {}".format(frames))
             # Modify data here to account for interpolation
             # NOTE: Only run this in validation mode
-            FACTOR = 9  # FIXME: Add to config file
+            FACTOR = 10  # FIXME: Add to config file
             if (FACTOR > 1 and type == 'val'):
                 frames = np.repeat(frames, FACTOR)
             else:

@@ -27,13 +27,13 @@ export CUDA_ROOT=/usr/local/cuda
 # cd ..
 
 #cases=('Playground' 'Balloon1' 'Balloon2' 'Umbrella' 'Truck' 'Jumping')
-#cases=('Umbrella' 'Playground' 'Balloon1' 'Balloon2' 'Skating' 'Jumping')
+cases=('Umbrella' 'Playground' 'Balloon1' 'Balloon2' 'Skating' 'Jumping')
 #cases=('Umbrella' 'Playground')
-cases=('Playground')
+#cases=('Playground')
 deform_dims=(9)
 time_dims=(3)
-deform_qty_arr=(3)
-deform_hidden_qty_arr=(1024)
+deform_qty_arr=(4)
+deform_hidden_qty_arr=(512)
 deform_intrinsics_arr=(0)
 # noise_pct_arr=(1.0)
 deform_extrinsics_arr=(0)
