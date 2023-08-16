@@ -42,7 +42,7 @@ def parse_args():
     parser.add_argument("--video_fps", default=5)
     parser.add_argument("--time_slice", default="", help="time (in seconds) in the format t1,t2 within which the images should be generated from the video. eg: \"--time_slice '10,300'\" will generate images only from 10th second to 300th second of the video")
 
-    parser.add_argument("--colmap_matcher", default="sequential", choices=["exhaustive", "sequential", "spatial", "transitive",
+    parser.add_argument("--colmap_matcher", default="exhaustive", choices=["exhaustive", "sequential", "spatial", "transitive",
                         "vocab_tree"], help="select which matcher colmap should use. sequential for videos, exhaustive for adhoc images")
     parser.add_argument("--skip_early", default=0,
                         help="skip this many images from the start")
@@ -182,7 +182,7 @@ def run_ffmpeg_images(args):
                 # Copy over all of the images
                 for img in all_imgs:
                     new_img = "00" + img.split("/")[-1].split(".")[0] + ".jpg"
-                    #cmd = "cp -pr " + img + " " + base+"images"
+                    # cmd = "cp -pr " + img + " " + base+"images"
                     cmd = "ffmpeg -i " + img + " -vf scale=" + \
                         str(1280)+":"+str(720) + " " + base+"images/"+new_img
                     os.system(cmd)
@@ -204,7 +204,7 @@ def run_ffmpeg_images(args):
                     print(cmd)
                     os.system(cmd)
         # TODO: validate
-        #args.images = new_loc
+        # args.images = new_loc
     else:
         if (args.dataset == "nvidia"):
             new_loc = base + "/" + args.mode + "/"
@@ -220,7 +220,7 @@ def run_ffmpeg_images(args):
                 # fn = file.split("/")[-1]
                 cmd = "ffmpeg -i "+file+" -vf scale=" + \
                     str(args.W)+":"+str(args.H) + " " + new_loc+fn
-                #print("cmd: {}".format(cmd))
+                # print("cmd: {}".format(cmd))
                 os.system(cmd)
 
             if (LARGE_DATASET_TRN):  # 24 images
@@ -285,7 +285,7 @@ def run_ffmpeg_images(args):
                 # fn = file.split("/")[-1]
                 cmd = "ffmpeg -i "+file+" -vf scale=" + \
                     str(960)+":"+str(540) + " " + new_loc+fn
-                #print("cmd: {}".format(cmd))
+                # print("cmd: {}".format(cmd))
                 os.system(cmd)
 
 
@@ -309,7 +309,7 @@ def run_colmap(args):
         # f"colmap feature_extractor --ImageReader.camera_model OPENCV --SiftExtraction.estimate_affine_shape {flag_EAS} --SiftExtraction.domain_size_pooling {flag_EAS} --ImageReader.single_camera 1 --SiftExtraction.max_num_features 100000 --database_path {db} --image_path {images}")
         f"colmap feature_extractor --ImageReader.camera_model OPENCV --SiftExtraction.estimate_affine_shape {flag_EAS} --SiftExtraction.domain_size_pooling {flag_EAS} --ImageReader.single_camera 1 --database_path {db} --image_path {images}")
     do_system(
-        f"colmap {args.colmap_matcher}_matcher --SiftMatching.guided_matching {flag_EAS} --SiftMatching.confidence 0.99 --database_path {db}")
+        f"colmap {args.colmap_matcher}_matcher --SiftMatching.guided_matching {flag_EAS} --SiftMatching.confidence 0.5 --database_path {db}")
     try:
         shutil.rmtree(sparse)
     except:
@@ -643,8 +643,8 @@ if __name__ == "__main__":
         if (args.dataset == "nvidia" or args.dataset == "custom"):
             BASE = args.images.split("images_")[0]
             imgs = [v["file_path"] for v in frames]
-            #folder = output_path.split("/")[-1].split(".")[0].split("_")[-1]
-            #print("folder: {}".format(folder))
+            # folder = output_path.split("/")[-1].split(".")[0].split("_")[-1]
+            # print("folder: {}".format(folder))
             # for img in imgs:
             #     cmd = "cp -pr " + img + " " + \
             #         BASE+"/"+args.mode+"/"+img.split("/")[-1]
@@ -655,7 +655,7 @@ if __name__ == "__main__":
                 json.dump(out, outfile, indent=2)
         else:
             imgs = [v["file_path"] for v in frames]
-            #folder = output_path.split("/")[-1].split(".")[0].split("_")[-1]
+            # folder = output_path.split("/")[-1].split(".")[0].split("_")[-1]
             BASE = args.images.split("images_")[0]
             # print("folder: {}".format(folder))
             for img in imgs:

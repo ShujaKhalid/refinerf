@@ -234,11 +234,13 @@ class NeRFDataset:
             # print("frames: {}".format(frames))
             # Modify data here to account for interpolation
             # NOTE: Only run this in validation mode
-            FACTOR = 10  # FIXME: Add to config file
+            FACTOR = 1  # FIXME: Add to config file
             if (FACTOR > 1 and type == 'val'):
                 frames = np.repeat(frames, FACTOR)
             else:
                 frames = np.repeat(frames, FACTOR)  # DEBUGGING
+
+            # print('frames: {}'.format(frames))
 
             # assume frames are already sorted by time!
             for t, f in enumerate(tqdm.tqdm(frames, desc=f'Loading {type} data')):
@@ -247,6 +249,7 @@ class NeRFDataset:
                     f_path += '.png'  # so silly...
 
                 # there are non-exist paths in fox...
+                # print('f_path: {}'.format(f_path))
                 if not os.path.exists(f_path):
                     continue
 
@@ -325,7 +328,7 @@ class NeRFDataset:
 
         # [debug] uncomment to view examples of randomly generated poses.
         # visualize_poses(rand_poses(100, self.device, radius=self.radius).cpu().numpy())
-        self.FLOW_FLAG = True
+        self.FLOW_FLAG = False
         # self.PRED_POSE = True
         if (self.FLOW_FLAG):
             # TODO: ADD the additional pre-reqs here
@@ -501,12 +504,14 @@ class NeRFDataset:
             # assert(imgs.shape[1] == disp.shape[-1])
             # assert(imgs.shape[1] == masks.shape[-1])
 
-        # else:
-        #     self.masks = torch.zeros_like(self.images).to(self.device)
-        #     self.masks_val = torch.zeros_like(self.images).to(self.device)
-        #     self.disp = torch.zeros_like(self.images).to(self.device)
-        #     self.grid = np.empty(
-        #         (len(self.images), self.H, self.W, 8), np.float32)
+        else:
+            self.masks = torch.ones(
+                (self.H, self.W, 3, len(self.images))).to(self.device)
+            self.masks_val = torch.ones(
+                (self.H, self.W, 3, len(self.images))).to(self.device)
+            self.disp = torch.ones_like(self.images).to(self.device)
+            self.grid = np.empty(
+                (len(self.images), self.H, self.W, 8), np.float32)
 
         if self.preload:
             self.poses = self.poses.to(self.device)
@@ -578,6 +583,7 @@ class NeRFDataset:
         error_map = None if self.error_map is None else self.error_map[index]
 
         if (self.FLOW_FLAG):
+
             masks = torch.reshape(self.masks, (-1, self.masks.shape[2], self.masks.shape[3]))[
                 :, :, index].to(self.device)  # [B, N]
             masks_val = torch.reshape(self.masks_val, (-1, self.masks_val.shape[2], self.masks_val.shape[3]))[
@@ -585,12 +591,42 @@ class NeRFDataset:
             grid = torch.Tensor(self.grid).cuda()
             grid = torch.reshape(
                 grid, (grid.shape[0], -1, grid.shape[-1]))
+
+            print('masks.shape: {}'.format(masks.shape))
+            print('masks_val.shape: {}'.format(masks_val.shape))
+
         else:
-            masks = torch.zeros_like(self.images)
-            masks_val = torch.zeros_like(self.images)
-            self.masks = torch.zeros_like(self.images)
-            self.masks_val = torch.zeros_like(self.images)
-            self.disp = torch.zeros_like(self.images)
+            # FIXME: custom
+            # masks = torch.ones_like(self.images)
+            # masks_val = torch.ones_like(self.images)
+            # self.masks = torch.ones_like(self.images)
+            # self.masks_val = torch.ones_like(self.images)
+            # self.disp = torch.ones_like(self.images)
+
+            # print('masks.shape: {}'.format(masks.shape))
+            # print('masks_val.shape: {}'.format(masks_val.shape))
+
+            masks = torch.reshape(self.masks, (-1, self.masks.shape[2], self.masks.shape[3]))[
+                :, :, index]  # [B, N]
+            masks_val = torch.reshape(self.masks_val, (-1, self.masks_val.shape[2], self.masks_val.shape[3]))[
+                :, :, index]  # [B, N]
+            # self.masks = torch.reshape(self.masks, (-1, self.masks.shape[2], self.masks.shape[3]))[
+            #     :, :, index]  # [B, N]
+            # self.masks_val = torch.reshape(self.masks_val, (-1, self.masks_val.shape[2], self.masks_val.shape[3]))[
+            #     :, :, index]  # [B, N]
+            # self.disp = torch.reshape(self.disp, (-1, self.disp.shape[2], self.disp.shape[3]))[
+            #     :, :, index]  # [B, N]
+
+            print('masks.shape: {}'.format(masks.shape))
+            print('masks_val.shape: {}'.format(masks_val.shape))
+
+            # self.grid = np.empty(
+            #     (len(self.images), self.H, self.W, 8), np.float32)
+
+            # grid = torch.Tensor(self.grid)
+            # grid = torch.reshape(
+            #     grid, (grid.shape[0], -1, grid.shape[-1]))
+
             grid = None
 
         # if (self.PRED_POSE):

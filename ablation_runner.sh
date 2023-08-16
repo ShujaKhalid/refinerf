@@ -27,8 +27,8 @@ export CUDA_ROOT=/usr/local/cuda
 # cd ..
 
 #cases=('Playground' 'Balloon1' 'Balloon2' 'Umbrella' 'Truck' 'Jumping')
-cases=('Umbrella' 'Playground' 'Balloon1' 'Balloon2' 'Skating' 'Jumping')
-#cases=('Umbrella' 'Playground')
+#cases=('Umbrella' 'Playground' 'Balloon1' 'Balloon2' 'Skating' 'Jumping')
+cases=('Umbrella' 'Playground')
 #cases=('Playground')
 deform_dims=(9)
 time_dims=(3)

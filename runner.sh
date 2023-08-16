@@ -26,12 +26,12 @@ else
 	SCENE="Umbrella" #COLMAP: DONE & RECON: DONE 
 fi
 
-DATASET_PATH="/home/skhalid/Documents/datalake/dynamic_scene_data_full/nvidia_data_full/$SCENE/dense"
+#DATASET_PATH="/home/skhalid/Documents/datalake/dynamic_scene_data_full/nvidia_data_full/$SCENE/dense"
 
 
 # Run custom scene
-# SCENE="custom"
-# DATASET_PATH="../datalake/dnerf/custom"
+SCENE="custom"
+DATASET_PATH="../datalake/dnerf/custom"
 
 NM_WEIGHTS="/home/skhalid/Documents/datalake/neural_motion_weights/"
 WEIGHTS_MIDAS=$NM_WEIGHTS"midas_v21-f6b98070.pt"
@@ -143,5 +143,31 @@ fi
 
 if [[ "$1" == "--run" || "$2" == "--run" || "$3" == "--run"  ]]
 then
-	python main_dnerf.py $DATASET_PATH --workspace $SCENE --fp16 -O  $GUIFLAG
+	# python main_dnerf.py $DATASET_PATH --workspace $SCENE --fp16 -O  $GUIFLAG
+	python main_dnerf.py $DATASET_PATH \
+			--workspace $SCENE \
+			--tensorboard_folder 'test' \
+			--encoder_s_fact 10 \
+			--encoder_dir_s_fact 10  \
+			--encoder_d_fact 10 \
+			--encoder_dir_d_fact 10 \
+			--encoder_d_constant 1  \
+			--encoder_time 3 \
+			--encoder_deform 9  \
+			--num_layers 2 \
+			--hidden_dim 256 \
+			--geo_feat_dim 64 \
+			--num_layers_color 3 \
+			--hidden_dim_color 256  \
+			--num_layers_deform 4 \
+			--hidden_dim_deform 512 \
+			--iters 12000 \
+			--noise_pct 0 \
+			--fp16 \
+			--pred_intrinsics 0 \
+			--pred_extrinsics 0 \
+			--barf 0 \
+			--nerfmm 0 \
+			-O
+
 fi

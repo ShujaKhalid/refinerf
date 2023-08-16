@@ -4,15 +4,16 @@ import tqdm
 import numpy as np
 
 DATASET = "sa160"
-DATASET_PATH = "/home/skhalid/Documents/datalake/sa160/"
+# DATASET_PATH = "/home/skhalid/Documents/datalake/sa160/"
+DATASET_PATH = "/home/skhalid/Desktop/sa160/"
 RESULTS_FOLDER = "/home/skhalid/Documents/torch-ngp/results/Ours/custom"
 BASE = "/home/skhalid/Documents/datalake/dnerf/custom/"
 DEST = "/home/skhalid/Desktop/" + DATASET + "/"
-all_clips = glob.glob(DATASET_PATH+"/*/*.mp4")
+all_clips = glob.glob(DATASET_PATH+"/*.mp4")
+MAX_CASES = 1
 
-
-for clip in tqdm.tqdm(all_clips):
-    #print("Extracting clip: {}".format(clip))
+for clip in tqdm.tqdm(all_clips[:MAX_CASES]):
+    # print("Extracting clip: {}".format(clip))
     case = clip.split("/")[-2] + "_" + clip.split("/")[-1].split(".")[0]
     new_dest = DEST + case
 

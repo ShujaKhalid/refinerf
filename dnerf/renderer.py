@@ -852,7 +852,7 @@ class NeRFRenderer(nn.Module):
                         print("fars_d.shape: {}".format(fars_d.shape))
 
             if (N_static > 0 and N_dynamic > 0):
-                # print("\n\nBLENDING!!!\n\n")
+                print("\n\nBLENDING!!!\n\n")
                 image_s_tmp = torch.zeros(
                     N, 3, dtype=dtype, device=device)
                 image_d_tmp = torch.zeros(
@@ -874,6 +874,8 @@ class NeRFRenderer(nn.Module):
 
                 image = image_d + (1 - weights_sum_d).unsqueeze(-1) * bg_color
                 # image = image_d_tmp
+                # print('image_s_tmp: {}'.format(torch.unique(image_s_tmp)))
+                # print('image_d_tmp: {}'.format(torch.unique(image_d_tmp)))
                 image = image_s_tmp + image_d_tmp
                 # image[image_s_tmp > 0] = 0
                 # FIXME: nears and fars are logically incorrect
@@ -884,6 +886,7 @@ class NeRFRenderer(nn.Module):
                 depth = depth.view(prefix_s + prefix_d)
 
             elif (N_static > 0):
+                # print('static')
                 image = image_s + (1 - weights_sum_s).unsqueeze(-1) * bg_color
                 # FIXME: nears and fars are logically incorrect
                 # depth = torch.clamp(depth_s - nears_s,
@@ -893,6 +896,7 @@ class NeRFRenderer(nn.Module):
                 depth = image[:, 0]  # FIXME
 
             elif (N_dynamic > 0):
+                # print('dynamic')
                 # image = image_d + (1 - weights_sum_d).unsqueeze(-1) * bg_color
                 # FIXME: nears and fars are logically incorrect
                 depth = torch.clamp(depth_d - nears_d,
