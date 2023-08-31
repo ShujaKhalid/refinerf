@@ -42,7 +42,7 @@ barf_arr=(0)
 nerfmm_arr=(0)
 # noise_pct_arr=(0.1 0.05 0.025 0.0)
 # noise_pct_arr=(0)
-iters=12000
+iters=6400
 
 for scene in "${cases[@]}";
 do

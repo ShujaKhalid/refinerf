@@ -36,7 +36,7 @@ def parse_args():
                         help="for dynamic scene, extraly save time calculated from frame index.")
     parser.add_argument("--estimate_affine_shape", action="store_true",
                         help="colmap SiftExtraction option, may yield better results, yet can only be run on CPU.")
-    parser.add_argument('--hold', type=int, default=8,
+    parser.add_argument('--hold', type=int, default=2,  # 8 before
                         help="hold out for validation every $ images")
 
     parser.add_argument("--video_fps", default=5)
@@ -309,7 +309,7 @@ def run_colmap(args):
         # f"colmap feature_extractor --ImageReader.camera_model OPENCV --SiftExtraction.estimate_affine_shape {flag_EAS} --SiftExtraction.domain_size_pooling {flag_EAS} --ImageReader.single_camera 1 --SiftExtraction.max_num_features 100000 --database_path {db} --image_path {images}")
         f"colmap feature_extractor --ImageReader.camera_model OPENCV --SiftExtraction.estimate_affine_shape {flag_EAS} --SiftExtraction.domain_size_pooling {flag_EAS} --ImageReader.single_camera 1 --database_path {db} --image_path {images}")
     do_system(
-        f"colmap {args.colmap_matcher}_matcher --SiftMatching.guided_matching {flag_EAS} --SiftMatching.confidence 0.5 --database_path {db}")
+        f"colmap {args.colmap_matcher}_matcher --SiftMatching.guided_matching {flag_EAS} --SiftMatching.confidence 0.05 --database_path {db}")
     try:
         shutil.rmtree(sparse)
     except:
@@ -508,7 +508,7 @@ if __name__ == "__main__":
                 name = '_'.join(elems[9:])
                 full_name = os.path.join(args.images, name)
                 rel_name = full_name[len(root_dir) + 1:]
-                rel_name_trn = rel_name.replace("images", "images_scaled")
+                rel_name_trn = rel_name.replace("images", "images_colmap")
                 print("\nfull_name: {}".format(full_name))
                 print("\rel_name_trn: {}".format(rel_name_trn))
 
@@ -549,7 +549,7 @@ if __name__ == "__main__":
                 up += c2w[0:3, 1]
 
                 frame = {
-                    "file_path": rel_name[1:] if args.mode == "val" else rel_name_trn,
+                    "file_path": rel_name if args.mode == "val" else rel_name_trn,
                     "sharpness": b,
                     "transform_matrix": c2w
                 }

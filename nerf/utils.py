@@ -100,20 +100,20 @@ def get_rays(poses, intrinsics, H, W, masks, N=-1, error_map=None, dynamic_iter=
             if (masks != None):
                 # mask = masks[e:masks.shape[0]-e, -1].to(device)
                 # mask = torch.amax(masks, -1).to(device)
-                print("masks: {}".format(masks.shape))
+                # print("masks: {}".format(masks.shape))
                 mask = masks.mean(1).to(device)
-                print("\nmask: {}".format(mask.shape))
+                # print("\nmask: {}".format(mask.shape))
 
                 thresh = 0.0  # training threshold
                 coords_s = torch.where(mask == thresh)[0]
                 coords_d = torch.where(mask > thresh)[0]  # For training
                 coords_s_mask = torch.where(mask == 0.0)[0]
                 coords_d_mask = torch.where(mask > 0.0)[0]  # For inference
-                print("coords_s: {}".format(coords_s))
-                print("coords_d: {}".format(coords_d))
-                print("coords_s_unq: {}".format(torch.unique(coords_s)))
-                print("coords_d_unq: {}".format(torch.unique(coords_d)))
-                print("mask.unique: {}".format(np.unique(mask.cpu().numpy())))
+                # print("coords_s: {}".format(coords_s))
+                # print("coords_d: {}".format(coords_d))
+                # print("coords_s_unq: {}".format(torch.unique(coords_s)))
+                # print("coords_d_unq: {}".format(torch.unique(coords_d)))
+                # print("mask.unique: {}".format(np.unique(mask.cpu().numpy())))
 
                 # inds = torch.cat([coords_s, coords_d], 0)
                 cond = np.array([key for key in dynamic_iters if dynamic_iter >= dynamic_iters[key][0] and dynamic_iter <

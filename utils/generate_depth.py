@@ -53,7 +53,7 @@ def run(input_path, output_path, output_img_path, model_path):
     model = MidasNet(model_path, non_negative=True)
     print("input_path: {}".format(input_path))
     sh = cv2.imread(
-        sorted(glob.glob(os.path.join(input_path, "*.jpg")))[0]).shape
+        sorted(glob.glob(os.path.join(input_path, "*.png")))[0]).shape
     net_w, net_h = sh[1], sh[0]
 
     resize_mode = "upper_bound"
@@ -79,7 +79,7 @@ def run(input_path, output_path, output_img_path, model_path):
     model.to(device)
 
     # get input
-    img_names = sorted(glob.glob(os.path.join(input_path, "*.jpg")))
+    img_names = sorted(glob.glob(os.path.join(input_path, "*.png")))
     num_images = len(img_names)
 
     # create output folder

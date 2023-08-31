@@ -328,7 +328,7 @@ class NeRFDataset:
 
         # [debug] uncomment to view examples of randomly generated poses.
         # visualize_poses(rand_poses(100, self.device, radius=self.radius).cpu().numpy())
-        self.FLOW_FLAG = False
+        self.FLOW_FLAG = True
         # self.PRED_POSE = True
         if (self.FLOW_FLAG):
             # TODO: ADD the additional pre-reqs here
@@ -592,8 +592,8 @@ class NeRFDataset:
             grid = torch.reshape(
                 grid, (grid.shape[0], -1, grid.shape[-1]))
 
-            print('masks.shape: {}'.format(masks.shape))
-            print('masks_val.shape: {}'.format(masks_val.shape))
+            # print('masks.shape: {}'.format(masks.shape))
+            # print('masks_val.shape: {}'.format(masks_val.shape))
 
         else:
             # FIXME: custom
@@ -617,8 +617,8 @@ class NeRFDataset:
             # self.disp = torch.reshape(self.disp, (-1, self.disp.shape[2], self.disp.shape[3]))[
             #     :, :, index]  # [B, N]
 
-            print('masks.shape: {}'.format(masks.shape))
-            print('masks_val.shape: {}'.format(masks_val.shape))
+            # print('masks.shape: {}'.format(masks.shape))
+            # print('masks_val.shape: {}'.format(masks_val.shape))
 
             # self.grid = np.empty(
             #     (len(self.images), self.H, self.W, 8), np.float32)

@@ -79,7 +79,7 @@ class NeRFRenderer(nn.Module):
         self.cascade = 1 + math.ceil(math.log2(bound))
         self.time_size = 1  # FIXME 64/24
         self.grid_size = 128  # FIXME 128
-        self.density_scale = density_scale * 5  # TODO: used to be 1
+        self.density_scale = density_scale * 1  # TODO: used to be 1
         self.min_near = min_near
         self.density_thresh = density_thresh
         self.bg_radius = bg_radius  # radius of the background sphere.
@@ -852,7 +852,7 @@ class NeRFRenderer(nn.Module):
                         print("fars_d.shape: {}".format(fars_d.shape))
 
             if (N_static > 0 and N_dynamic > 0):
-                print("\n\nBLENDING!!!\n\n")
+                # print("\n\nBLENDING!!!\n\n")
                 image_s_tmp = torch.zeros(
                     N, 3, dtype=dtype, device=device)
                 image_d_tmp = torch.zeros(

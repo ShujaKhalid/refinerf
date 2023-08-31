@@ -28,10 +28,9 @@ fi
 
 #DATASET_PATH="/home/skhalid/Documents/datalake/dynamic_scene_data_full/nvidia_data_full/$SCENE/dense"
 
-
 # Run custom scene
-SCENE="custom"
-DATASET_PATH="../datalake/dnerf/custom"
+# SCENE="custom"
+# DATASET_PATH="../datalake/dnerf/custom"
 
 NM_WEIGHTS="/home/skhalid/Documents/datalake/neural_motion_weights/"
 WEIGHTS_MIDAS=$NM_WEIGHTS"midas_v21-f6b98070.pt"
@@ -152,16 +151,16 @@ then
 			--encoder_d_fact 10 \
 			--encoder_dir_d_fact 10 \
 			--encoder_d_constant 1  \
-			--encoder_time 3 \
-			--encoder_deform 9  \
+			--encoder_time 6 \
+			--encoder_deform 15  \
 			--num_layers 2 \
-			--hidden_dim 256 \
+			--hidden_dim 128 \
 			--geo_feat_dim 64 \
 			--num_layers_color 3 \
-			--hidden_dim_color 256  \
-			--num_layers_deform 4 \
-			--hidden_dim_deform 512 \
-			--iters 12000 \
+			--hidden_dim_color 128  \
+			--num_layers_deform 8 \
+			--hidden_dim_deform 64 \
+			--iters 6400 \
 			--noise_pct 0 \
 			--fp16 \
 			--pred_intrinsics 0 \
